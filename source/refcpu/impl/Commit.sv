@@ -7,12 +7,12 @@ module Commit (
     always_comb begin
         out = ctx;
 
-        out.state = FETCH;
+        out.state = S_FETCH;
 
-        if (ctx.is_delayed) begin
-            out.is_delayed = 0;
+        if (ctx.delayed) begin
+            out.delayed = 0;
             out.pc = ctx.delayed_pc;
         end else
-            out.pc = ctx.pc + 4;
+            out.pc = ctx.next_pc;
     end
 endmodule

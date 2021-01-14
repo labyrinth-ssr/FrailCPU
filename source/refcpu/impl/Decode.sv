@@ -6,7 +6,8 @@ module Decode (
 );
     opcode_t opcode;
     funct_t funct;
-    regid_t rs, rt, rd, shamt;
+    regid_t rs, rt, rd;
+    shamt_t shamt;
     imm_t imm;
 
     assign {opcode, rs, rt, rd, shamt, funct} = ctx.t[0];
@@ -15,11 +16,11 @@ module Decode (
     always_comb begin
         out = ctx;
 
-        case (opcode)
+        unique case (opcode)
         OP_NOP:
-            out.state = COMMIT;
+            out.state = S_COMMIT;
         default:  // unknown instruction
-            out.state = UNKNOWN;
+            out.state = S_UNKNOWN;
         endcase
     end
 

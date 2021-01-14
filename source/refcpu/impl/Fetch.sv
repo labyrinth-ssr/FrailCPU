@@ -13,7 +13,7 @@ module Fetch (
         out = ctx;
 
         out.t[0] = iresp.data;
-        out.state = iresp.data_ok ? DECODE : FETCH;
+        out.state = iresp.data_ok ? S_DECODE : S_FETCH;
     end
 
     logic _unused_ok = &{iresp};

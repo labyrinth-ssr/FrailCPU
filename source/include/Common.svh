@@ -94,9 +94,9 @@ typedef struct packed {
 } cbus_req_t;
 
 typedef struct packed {
-    logic  ready;     // is data arrived in this cycle?
-    logic  is_final;  // is it the last word?
-    view_t data;      // the data from AXI bus
+    logic  ready;  // is data arrived in this cycle?
+    logic  last;   // is it the last word?
+    view_t data;   // the data from AXI bus
 } cbus_resp_t;
 
 `endif
