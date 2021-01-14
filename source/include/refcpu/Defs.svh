@@ -11,6 +11,7 @@ typedef enum uint {
     S_UNKNOWN = 0,  // see impl/Unknown.sv
     S_COMMIT,
     S_FETCH,
+    S_FETCH_ADDR_SENT,
     S_DECODE,
 
     // to record the number of available states

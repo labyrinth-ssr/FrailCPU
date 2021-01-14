@@ -47,6 +47,7 @@ module RefCPU (
 
     `DECLARE_CID(Unknown, S_UNKNOWN);
     `DECLARE_CI(Fetch, S_FETCH);
+    `DECLARE_CI(FetchAddrSent, S_FETCH_ADDR_SENT);
     `DECLARE_C(Decode, S_DECODE);
     `DECLARE_C(Commit, S_COMMIT);
 

@@ -11,10 +11,13 @@ module Fetch (
 
     always_comb begin
         out = ctx;
-
         out.t[0] = iresp.data;
-        out.state = iresp.data_ok ? S_DECODE : S_FETCH;
-    end
 
-    logic _unused_ok = &{iresp};
+        if (iresp.addr_ok && iresp.data_ok)
+            out.state = S_DECODE;
+        else if (iresp.addr_ok)
+            out.state = S_FETCH_ADDR_SENT;
+        else
+            out.state = S_FETCH;
+    end
 endmodule
