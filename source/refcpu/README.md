@@ -7,3 +7,5 @@ TODO:
 * [ ] demo instruction: `BNE`
 * [ ] delay slot
 * [ ] `NaiveBuffer`
+* [ ] include path in Vivado
+* [ ] `VTop`?
