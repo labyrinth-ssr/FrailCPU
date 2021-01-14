@@ -44,30 +44,15 @@ typedef i4 wrten_t;
  */
 
 /**
- * instruction memory bus
- */
-
-typedef struct packed {
-    logic  valid;  // in request?
-    addr_t addr;   // target address
-} ibus_req_t;
-
-typedef struct packed {
-    logic  addr_ok;  // is the address accepted by cache?
-    logic  data_ok;  // is the field "data" valid?
-    view_t data;     // the data read from cache
-} ibus_resp_t;
-
-/**
- * data memory bus
+ * data cache bus
  *
  * basically, dbus_resp_t is as same as ibus_resp_t.
  */
 
 typedef struct packed {
     logic   valid;     // in request?
-    wrten_t write_en;  // which bytes are enabled? set to zeros for read request
     addr_t  addr;      // target address
+    wrten_t write_en;  // which bytes are enabled? set to zeros for read request
     view_t  data;      // the data to write
 } dbus_req_t;
 
@@ -76,6 +61,17 @@ typedef struct packed {
     logic  data_ok;  // is the field "data" valid?
     view_t data;     // the data read from cache
 } dbus_resp_t;
+
+/**
+ * instruction cache bus
+ */
+
+typedef struct packed {
+    logic  valid;  // in request?
+    addr_t addr;   // target address
+} ibus_req_t;
+
+typedef dbus_resp_t ibus_resp_t;
 
 /**
  * cache bus: simplified burst AXI transaction
