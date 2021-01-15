@@ -68,14 +68,6 @@ typedef logic [5 :0] funct_t;
 typedef logic [4 :0] shamt_t;
 typedef logic [15:0] imm_t;
 
-// general-purpose registers
-typedef enum logic [4:0] {
-    R0, AT, V0, V1, A0, A1, A2, A3,
-    T0, T1, T2, T3, T4, T5, T6, T7,
-    S0, S1, S2, S3, S4, S5, S6, S7,
-    T8, T9, K0, K1, GP, SP, FP, RA
-} regid_t;
-
 // opcode: bit 31~26
 typedef enum logic [5:0] {
     OP_NOP

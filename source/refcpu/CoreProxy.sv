@@ -1,6 +1,6 @@
 `include "refcpu/Defs.svh"
 
-module RefCPUProxy (
+module CoreProxy (
     input logic clk, resetn,
 
     input context_t  [LAST_CPU_STATE:0] out_ctx,

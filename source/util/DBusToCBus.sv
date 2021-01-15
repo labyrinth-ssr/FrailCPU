@@ -7,19 +7,19 @@
 module DBusToCBus (
     input  dbus_req_t  dreq,
     output dbus_resp_t dresp,
-    output cbus_req_t  creq,
-    input  cbus_resp_t cresp
+    output cbus_req_t  dcreq,
+    input  cbus_resp_t dcresp
 );
-    assign creq.valid    = dreq.valid;
-    assign creq.is_write = |dreq.write_en;
-    assign creq.order    = '0;
-    assign creq.addr     = dreq.addr;
-    assign creq.data     = dreq.data;
+    assign dcreq.valid    = dreq.valid;
+    assign dcreq.is_write = |dreq.write_en;
+    assign dcreq.order    = '0;
+    assign dcreq.addr     = dreq.addr;
+    assign dcreq.data     = dreq.data;
 
     logic okay;
-    assign okay = cresp.ready && cresp.last;
+    assign okay = dcresp.ready && dcresp.last;
 
     assign dresp.addr_ok = okay;
     assign dresp.data_ok = okay;
-    assign dresp.data = cresp.data;
+    assign dresp.data = dcresp.data;
 endmodule

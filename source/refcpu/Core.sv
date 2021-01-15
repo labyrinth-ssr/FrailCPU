@@ -1,7 +1,7 @@
 `include "refcpu/Defs.svh"
 `include "refcpu/Impl.svh"
 
-module RefCPU (
+module Core (
     input logic clk, resetn,
 
     output ibus_req_t  ireq,
@@ -14,7 +14,7 @@ module RefCPU (
     dbus_req_t [LAST_CPU_STATE:0] out_dreq;
     context_t  [LAST_CPU_STATE:0] out_ctx;
 
-    RefCPUProxy proxy(.*);
+    CoreProxy proxy(.*);
 
     /**
      * BEGIN state implementer declarations
