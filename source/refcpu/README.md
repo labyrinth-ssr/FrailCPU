@@ -2,11 +2,12 @@
 
 TODO:
 
-* [ ] demo instruction: `ADD`
+* [ ] demo instruction: `SLL`
 * [ ] demo instruction: `ADDI`
 * [ ] demo instruction: `BNE`
 * [ ] delay slot
 * [ ] `NaiveBuffer`
 * [ ] include path in Vivado
 * [x] `VTop`?
-* [ ] uncached
+* [x] uncached interface
+* [ ] AXI4 support

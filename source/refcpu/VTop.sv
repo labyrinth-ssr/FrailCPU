@@ -10,7 +10,7 @@ module VTop (
     ibus_resp_t iresp;
     dbus_req_t  dreq;
     dbus_resp_t dresp;
-    cbus_req_t icreq, dcreq;
+    cbus_req_t  icreq,  dcreq;
     cbus_resp_t icresp, dcresp;
 
     Core core(.*);

@@ -1,5 +1,5 @@
 /**
- * this file contains basic definitions and typedefs for all designs.
+ * this file contains basic definitions and typedefs for general designs.
  */
 
 `ifndef __COMMON_SVH__
@@ -7,7 +7,12 @@
 
 typedef int unsigned uint;
 
+typedef logic [1 :0] i2;
+typedef logic [2 :0] i3;
 typedef logic [3 :0] i4;
+typedef logic [4 :0] i5;
+typedef logic [5 :0] i6;
+typedef logic [6 :0] i7;
 typedef logic [7 :0] i8;
 typedef logic [15:0] i16;
 typedef logic [31:0] i32;
@@ -23,11 +28,28 @@ typedef union packed {
     i8 [3:0] bytes;
 } view_t;
 
-// a 4-bit mask, namely "write enable"
-typedef i4 wrten_t;
+// number of bytes transferred in one memory r/w
+typedef enum i3 {
+    MSIZE1,
+    MSIZE2,
+    MSIZE4
+} msize_t;
+
+// length of a burst transaction
+// NOTE: WRAP mode in AXI3 only supports power-of-2 length.
+typedef enum i4 {
+    MLEN1  = 4'b0000,
+    MLEN2  = 4'b0001,
+    MLEN4  = 4'b0011,
+    MLEN8  = 4'b0111,
+    MLEN16 = 4'b1111
+} mlen_t;
+
+// a 4-bit mask for memory r/w, namely "write enable"
+typedef i4 strobe_t;
 
 // general-purpose registers
-typedef enum logic [4:0] {
+typedef enum i5 {
     R0, AT, V0, V1, A0, A1, A2, A3,
     T0, T1, T2, T3, T4, T5, T6, T7,
     S0, S1, S2, S3, S4, S5, S6, S7,
@@ -49,19 +71,21 @@ typedef enum logic [4:0] {
  * be used as a instruction cache.
  * powerful students are free to design their own bus interfaces to
  * enable superscalar pipelines and other advanced techniques.
+ *
+ * a request on cache bus can bypass a cache instance if the address
+ * is in uncached memory regions.
  */
 
 /**
  * data cache bus
- *
- * basically, dbus_resp_t is as same as ibus_resp_t.
  */
 
 typedef struct packed {
-    logic   valid;     // in request?
-    addr_t  addr;      // target address
-    wrten_t write_en;  // which bytes are enabled? set to zeros for read request
-    view_t  data;      // the data to write
+    logic    valid;   // in request?
+    msize_t  size;    // number of bytes
+    addr_t   addr;    // target address
+    strobe_t strobe;  // which bytes are enabled? set to zeros for read request
+    view_t   data;    // the data to write
 } dbus_req_t;
 
 typedef struct packed {
@@ -72,29 +96,30 @@ typedef struct packed {
 
 /**
  * instruction cache bus
+ *
+ * basically, ibus_resp_t is the same as dbus_resp_t.
  */
 
 typedef struct packed {
-    logic  valid;  // in request?
-    addr_t addr;   // target address
+    logic   valid;  // in request?
+    msize_t size;   // number of bytes
+    addr_t  addr;   // target address
 } ibus_req_t;
 
 typedef dbus_resp_t ibus_resp_t;
 
 /**
- * cache bus: simplified burst AXI transaction
+ * cache bus: simplified burst AXI transaction interface
  */
 
-parameter int CBUS_LEN_BITS   = 16;
-parameter int CBUS_LEN_MAX    = 2**(CBUS_LEN_BITS - 1);  // 2^15 = 32768
-parameter int CBUS_ORDER_BITS = $clog2(CBUS_LEN_BITS);   // 4
-
 typedef struct packed {
-    logic  valid;     // in request?
-    logic  is_write;  // is it a write transaction?
-    i4     order;     // the length of transaction, given by 2^order
-    addr_t addr;      // start address of the transaction
-    view_t data;      // the data to write
+    logic    valid;     // in request?
+    logic    is_write;  // is it a write transaction?
+    msize_t  size;      // number of bytes in one burst
+    addr_t   addr;      // start address
+    strobe_t strobe;    // which bytes are enabled?
+    view_t   data;      // the data to write
+    mlen_t   len;       // number of bursts
 } cbus_req_t;
 
 typedef struct packed {
@@ -102,5 +127,16 @@ typedef struct packed {
     logic  last;   // is it the last word?
     view_t data;   // the data from AXI bus
 } cbus_resp_t;
+
+/**
+ * AXI-related typedefs
+ */
+
+typedef enum i2 {
+    AXI_BURST_FIXED,
+    AXI_BURST_INCR,
+    AXI_BURST_WRAP,
+    AXI_BURST_RESERVED
+} axi_burst_type_t;
 
 `endif

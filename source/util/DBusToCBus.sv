@@ -10,16 +10,18 @@ module DBusToCBus (
     output cbus_req_t  dcreq,
     input  cbus_resp_t dcresp
 );
-    assign dcreq.valid    = dreq.valid;
-    assign dcreq.is_write = |dreq.write_en;
-    assign dcreq.order    = '0;
-    assign dcreq.addr     = dreq.addr;
-    assign dcreq.data     = dreq.data;
+    assign dcreq.valid    =  dreq.valid;
+    assign dcreq.is_write = |dreq.strobe;
+    assign dcreq.size     =  dreq.size;
+    assign dcreq.addr     =  dreq.addr;
+    assign dcreq.strobe   =  dreq.strobe;
+    assign dcreq.data     =  dreq.data;
+    assign dcreq.len      =  MLEN1;
 
     logic okay;
     assign okay = dcresp.ready && dcresp.last;
 
     assign dresp.addr_ok = okay;
     assign dresp.data_ok = okay;
-    assign dresp.data = dcresp.data;
+    assign dresp.data    = dcresp.data;
 endmodule

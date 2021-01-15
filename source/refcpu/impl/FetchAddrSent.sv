@@ -7,7 +7,10 @@ module FetchAddrSent (
     input  ibus_resp_t iresp
 );
     assign ireq.valid = '0;     // stop issuing request
-    assign ireq.addr = ctx.pc;  // for debugging
+
+    // for debugging
+    assign ireq.size = MSIZE4;
+    assign ireq.addr = ctx.pc;
 
     always_comb begin
         out = ctx;

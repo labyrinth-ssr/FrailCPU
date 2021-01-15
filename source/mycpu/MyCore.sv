@@ -1,6 +1,6 @@
 `include "Common.svh"
 
-module MyCPU (
+module MyCore (
     input logic clk, resetn,
 
     output ibus_req_t  ireq,

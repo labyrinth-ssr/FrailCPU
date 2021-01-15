@@ -16,7 +16,7 @@ typedef enum uint {
 
     // to record the number of available states
     NUM_CPU_STATES
-} state_t;
+} cpu_state_t;
 
 parameter uint LAST_CPU_STATE = NUM_CPU_STATES - 1;
 
@@ -37,7 +37,7 @@ parameter cp0_t CP0_RESET_VALUE = {
  */
 
 typedef struct packed {
-    state_t state;      // CPU state
+    cpu_state_t state;  // CPU state
     cp0_t cp0;          // CP0 registers
     addr_t pc;          // program counter
     addr_t next_pc;     // PC + 4, hardwired
@@ -64,12 +64,12 @@ parameter context_t CONTEXT_RESET_VALUE = {
  * instruction fields
  */
 
-typedef logic [5 :0] funct_t;
-typedef logic [4 :0] shamt_t;
-typedef logic [15:0] imm_t;
+typedef i6  funct_t;
+typedef i5  shamt_t;
+typedef i16 imm_t;
 
 // opcode: bit 31~26
-typedef enum logic [5:0] {
+typedef enum i6 {
     OP_NOP
 } opcode_t;
 

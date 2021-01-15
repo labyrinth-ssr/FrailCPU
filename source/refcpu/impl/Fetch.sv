@@ -7,6 +7,7 @@ module Fetch (
     input  ibus_resp_t iresp
 );
     assign ireq.valid = 1;
+    assign ireq.size = MSIZE4;
     assign ireq.addr = ctx.pc;
 
     always_comb begin

@@ -11,6 +11,8 @@ module DCache (
     /**
      * TODO (Lab3) your code here :)
      */
+
+    // remove following lines when you start
     assign {dresp, creq} = '0;
     logic _unused_ok = &{clk, resetn, dreq, cresp};
 endmodule
