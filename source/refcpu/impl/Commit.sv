@@ -1,4 +1,6 @@
-`include "refcpu/Defs.svh"
+`include "refcpu/pkgs.svh"
+
+import defs::*;
 
 module Commit (
     input  context_t ctx,

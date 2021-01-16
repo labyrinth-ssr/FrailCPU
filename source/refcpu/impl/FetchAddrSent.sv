@@ -1,4 +1,7 @@
-`include "refcpu/Defs.svh"
+`include "refcpu/pkgs.svh"
+
+import common::*;
+import defs::*;
 
 module FetchAddrSent (
     input  context_t   ctx,

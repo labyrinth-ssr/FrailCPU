@@ -6,7 +6,10 @@
  * data cache, port ireq, iresp, dreq and dresp can be ignored.
  */
 
-`include "refcpu/Defs.svh"
+`include "refcpu/pkgs.svh"
+
+import common::*;
+import defs::*;
 
 /**
  * NOTE: CPU should be reset to S_FETCH instead of S_UNKNOWN.

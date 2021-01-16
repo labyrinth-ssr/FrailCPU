@@ -1,7 +1,9 @@
-`include "Common.svh"
+`include "common.svh"
+
+import common::*;
 
 module mycpu_top (
-    input logic aclk, aresetn,
+    input  logic aclk, aresetn,
 
     output logic [3 :0] arid,
     output logic [31:0] araddr,
@@ -40,13 +42,13 @@ module mycpu_top (
     input  logic        bvalid,
     output logic        bready,
 
-    output addr_t  debug_wb_pc,
-    output wrten_t debug_wb_rf_wen,
-    output regid_t debug_wb_rf_wnum,
-    output word_t  debug_wb_rf_wdata,
+    output addr_t   debug_wb_pc,
+    output strobe_t debug_wb_rf_wen,
+    output regid_t  debug_wb_rf_wnum,
+    output word_t   debug_wb_rf_wdata,
 
     // external interrupt: unused
-    input logic [5:0] ext_int
+    input  logic [5:0] ext_int
 );
     // TODO: instantiate CPU and connect AXI ports
 

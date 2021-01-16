@@ -1,4 +1,6 @@
-`include "Common.svh"
+`include "refcpu/pkgs.svh"
+
+import common::*;
 
 module VTop (
     input logic clk, resetn,

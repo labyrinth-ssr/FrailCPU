@@ -11,3 +11,5 @@ TODO:
 * [x] `VTop`?
 * [x] uncached interface
 * [ ] AXI4 support
+* [ ] package
+* [ ] DPI-C

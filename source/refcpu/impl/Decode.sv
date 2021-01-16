@@ -1,4 +1,7 @@
-`include "refcpu/Defs.svh"
+`include "refcpu/pkgs.svh"
+
+import common::regid_t;
+import defs::*;
 
 module Decode (
     input  context_t ctx,

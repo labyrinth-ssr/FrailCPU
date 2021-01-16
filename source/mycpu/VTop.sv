@@ -1,4 +1,6 @@
-`include "Common.svh"
+`include "common.svh"
+
+import common::*;
 
 module VTop (
     input logic clk, resetn,

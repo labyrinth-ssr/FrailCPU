@@ -1,4 +1,6 @@
-`include "Common.svh"
+`include "common.svh"
+
+import common::*;
 
 module MyArbiter #(
     parameter int NUM_INPUTS = 2

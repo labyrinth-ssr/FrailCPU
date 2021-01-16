@@ -1,7 +1,11 @@
 `ifndef __REFCPU_DEFS_SVH__
 `define __REFCPU_DEFS_SVH__
 
-`include "Common.svh"
+`include "common.svh"
+
+package defs;
+
+import common::*;
 
 /**
  * CPU states
@@ -72,5 +76,7 @@ typedef i16 imm_t;
 typedef enum i6 {
     OP_NOP
 } opcode_t;
+
+endpackage
 
 `endif

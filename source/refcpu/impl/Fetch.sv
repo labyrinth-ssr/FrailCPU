@@ -1,4 +1,7 @@
-`include "refcpu/Defs.svh"
+`include "refcpu/pkgs.svh"
+
+import common::*;
+import defs::*;
 
 module Fetch (
     input  context_t   ctx,

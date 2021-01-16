@@ -5,18 +5,22 @@
 `ifndef __COMMON_SVH__
 `define __COMMON_SVH__
 
+`define BITS(x) logic[(x)-1:0]
+
+package common;
+
 typedef int unsigned uint;
 
-typedef logic [1 :0] i2;
-typedef logic [2 :0] i3;
-typedef logic [3 :0] i4;
-typedef logic [4 :0] i5;
-typedef logic [5 :0] i6;
-typedef logic [6 :0] i7;
-typedef logic [7 :0] i8;
-typedef logic [15:0] i16;
-typedef logic [31:0] i32;
-typedef logic [63:0] i64;
+typedef `BITS(2)  i2;
+typedef `BITS(3)  i3;
+typedef `BITS(4)  i4;
+typedef `BITS(5)  i5;
+typedef `BITS(6)  i6;
+typedef `BITS(7)  i7;
+typedef `BITS(8)  i8;
+typedef `BITS(16) i16;
+typedef `BITS(32) i32;
+typedef `BITS(64) i64;
 
 // all addresses and words are 32-bit
 typedef i32 addr_t;
@@ -138,5 +142,7 @@ typedef enum i2 {
     AXI_BURST_WRAP,
     AXI_BURST_RESERVED
 } axi_burst_type_t;
+
+endpackage
 
 `endif
