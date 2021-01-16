@@ -8,7 +8,6 @@ module Commit (
 );
     always_comb begin
         out = ctx;
-
         out.state = S_FETCH;
 
         if (ctx.delayed) begin

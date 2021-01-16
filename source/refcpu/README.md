@@ -4,12 +4,12 @@ TODO:
 
 * [ ] demo instruction: `SLL`
 * [ ] demo instruction: `ADDI`
-* [ ] demo instruction: `BNE`
-* [ ] delay slot
+* [x] demo instruction: `BEQ`, `BNE`
+* [x] delay slot
 * [ ] `NaiveBuffer`
 * [ ] include path in Vivado
 * [x] `VTop`?
 * [x] uncached interface
 * [ ] AXI4 support
-* [ ] package
+* [x] package
 * [ ] DPI-C

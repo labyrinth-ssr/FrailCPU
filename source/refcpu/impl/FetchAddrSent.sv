@@ -9,6 +9,11 @@ module FetchAddrSent (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp
 );
+    /**
+     * out:
+     *   t[0]: responded data
+     */
+
     assign ireq.valid = '0;     // stop issuing request
 
     // for debugging

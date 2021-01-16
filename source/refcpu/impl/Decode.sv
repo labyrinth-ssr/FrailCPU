@@ -1,31 +1,31 @@
 `include "refcpu/pkgs.svh"
 
-import common::regid_t;
 import defs::*;
 
 module Decode (
     input  context_t ctx,
     output context_t out
 );
-    opcode_t opcode;
-    funct_t funct;
-    regid_t rs, rt, rd;
-    shamt_t shamt;
-    imm_t imm;
+    /**
+     * in:
+     *   t[0]: fetched instruction
+     * out:
+     *   t[0]: fetched instruction
+     */
 
-    assign {opcode, rs, rt, rd, shamt, funct} = ctx.t[0];
-    assign imm = ctx.t[0][15:0];
+    opcode_t opcode;
+    assign opcode = ctx.t[0][31:26];
 
     always_comb begin
         out = ctx;
 
         unique case (opcode)
-        OP_NOP:
+        OP_RTYPE:
             out.state = S_COMMIT;
+        OP_BEQ, OP_BNE:
+            out.state = S_BRANCH_EVAL;
         default:  // unknown instruction
             out.state = S_UNKNOWN;
         endcase
     end
-
-    logic _unused_ok = &{funct, rs, rt, rd, shamt, imm};
 endmodule

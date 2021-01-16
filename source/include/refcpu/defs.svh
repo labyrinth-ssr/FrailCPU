@@ -17,12 +17,37 @@ typedef enum uint {
     S_FETCH,
     S_FETCH_ADDR_SENT,
     S_DECODE,
+    S_BRANCH_EVAL,
+    S_BRANCH,
 
     // to record the number of available states
     NUM_CPU_STATES
 } cpu_state_t;
 
 parameter uint LAST_CPU_STATE = NUM_CPU_STATES - 1;
+
+/**
+ * instruction fields
+ */
+
+typedef i6  funct_t;
+typedef i5  shamt_t;
+typedef i16 imm_t;
+
+// opcode: bit 31~26
+typedef enum i6 {
+    OP_RTYPE = 6'b000000,
+    OP_BEQ   = 6'b000100,
+    OP_BNE   = 6'b000101
+} opcode_t;
+
+// general-purpose registers
+typedef enum i5 {
+    R0, AT, V0, V1, A0, A1, A2, A3,
+    T0, T1, T2, T3, T4, T5, T6, T7,
+    S0, S1, S2, S3, S4, S5, S6, S7,
+    T8, T9, K0, K1, GP, SP, FP, RA
+} regid_t;
 
 /**
  * MIPS CP0 registers
@@ -63,19 +88,6 @@ parameter context_t CONTEXT_RESET_VALUE = {
     {32{32'b0}},      // [31:0] r
     {8{32'b0}}        // [7:0] t
 };
-
-/**
- * instruction fields
- */
-
-typedef i6  funct_t;
-typedef i5  shamt_t;
-typedef i16 imm_t;
-
-// opcode: bit 31~26
-typedef enum i6 {
-    OP_NOP
-} opcode_t;
 
 endpackage
 

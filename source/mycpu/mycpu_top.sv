@@ -44,7 +44,7 @@ module mycpu_top (
 
     output addr_t   debug_wb_pc,
     output strobe_t debug_wb_rf_wen,
-    output regid_t  debug_wb_rf_wnum,
+    output regidx_t debug_wb_rf_wnum,
     output word_t   debug_wb_rf_wdata,
 
     // external interrupt: unused

@@ -9,6 +9,11 @@ module Fetch (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp
 );
+    /**
+     * out:
+     *   t[0]: responded data
+     */
+
     assign ireq.valid = 1;
     assign ireq.size = MSIZE4;
     assign ireq.addr = ctx.pc;

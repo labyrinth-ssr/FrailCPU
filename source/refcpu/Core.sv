@@ -28,6 +28,8 @@ module Core (
     `IMPL_CIx(S_FETCH_ADDR_SENT, FetchAddrSent);
     `IMPL_Cxx(S_DECODE, Decode);
     `IMPL_Cxx(S_COMMIT, Commit);
+    `IMPL_Cxx(S_BRANCH_EVAL, BranchEval);
+    `IMPL_Cxx(S_BRANCH, Branch);
 
     /**
      * END state implementer declarations
