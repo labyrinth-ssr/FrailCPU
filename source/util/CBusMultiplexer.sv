@@ -1,6 +1,8 @@
-`include "Common.svh"
+`include "common.svh"
 
-module CBusArbiter #(
+import common::*;
+
+module CBusMultiplexer #(
     parameter int NUM_INPUTS = 2  // NOTE: NUM_INPUTS >= 1
 ) (
     input  cbus_req_t  [NUM_INPUTS - 1:0] ireqs,
