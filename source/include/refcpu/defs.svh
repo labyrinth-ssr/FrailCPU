@@ -3,10 +3,6 @@
 
 `include "common.svh"
 
-package defs;
-
-import common::*;
-
 /**
  * CPU states
  */
@@ -88,7 +84,5 @@ parameter context_t CONTEXT_RESET_VALUE = {
     {32{32'b0}},      // [31:0] r
     {8{32'b0}}        // [7:0] t
 };
-
-endpackage
 
 `endif

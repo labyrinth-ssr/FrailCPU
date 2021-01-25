@@ -1,7 +1,5 @@
 `include "common.svh"
 
-import common::*;
-
 module mycpu_top (
     input  logic aclk, aresetn,
 

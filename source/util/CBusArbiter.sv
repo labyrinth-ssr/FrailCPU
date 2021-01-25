@@ -1,7 +1,5 @@
 `include "common.svh"
 
-import common::*;
-
 module CBusArbiter #(
     parameter int NUM_INPUTS = 2,  // NOTE: NUM_INPUTS >= 1
 

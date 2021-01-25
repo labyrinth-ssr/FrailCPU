@@ -1,8 +1,5 @@
-`include "refcpu/pkgs.svh"
+`include "refcpu/defs.svh"
 `include "refcpu/impl.svh"
-
-import common::*;
-import defs::*;
 
 module Core (
     input logic clk, resetn,

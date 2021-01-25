@@ -1,7 +1,5 @@
 `include "common.svh"
 
-import common::*;
-
 module MyCore (
     input logic clk, resetn,
 

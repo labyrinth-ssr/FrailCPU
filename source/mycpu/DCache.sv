@@ -1,7 +1,5 @@
 `include "common.svh"
 
-import common::*;
-
 module DCache (
     input logic clk, resetn,
 

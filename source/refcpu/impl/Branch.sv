@@ -1,6 +1,4 @@
-`include "refcpu/pkgs.svh"
-
-import defs::*;
+`include "refcpu/defs.svh"
 
 module Branch (
     input  context_t ctx,

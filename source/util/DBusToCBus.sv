@@ -1,7 +1,5 @@
 `include "common.svh"
 
-import common::*;
-
 /**
  * NOTE: CBus does not support byte write enable mask (write_en).
  */

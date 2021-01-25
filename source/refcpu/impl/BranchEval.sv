@@ -1,7 +1,4 @@
-`include "refcpu/pkgs.svh"
-
-import common::*;
-import defs::*;
+`include "refcpu/defs.svh"
 
 module BranchEval (
     input  context_t ctx,

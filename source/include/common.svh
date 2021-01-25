@@ -7,8 +7,6 @@
 
 `define BITS(x) logic[(x)-1:0]
 
-package common;
-
 typedef int unsigned uint;
 
 typedef `BITS(2)  i2;
@@ -137,7 +135,5 @@ typedef enum i2 {
     AXI_BURST_WRAP,
     AXI_BURST_RESERVED
 } axi_burst_type_t;
-
-endpackage
 
 `endif

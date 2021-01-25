@@ -1,6 +1,4 @@
-`include "refcpu/pkgs.svh"
-
-import common::*;
+`include "refcpu/defs.svh"
 
 module mycpu_top (
     input logic  aclk, aresetn,

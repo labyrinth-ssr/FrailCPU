@@ -1,7 +1,5 @@
 `include "common.svh"
 
-import common::*;
-
 module VTop (
     input logic clk, resetn,
 
@@ -18,5 +16,9 @@ module VTop (
     MyCore core(.*);
     IBusToCBus icvt(.*);
     DBusToCBus dcvt(.*);
-    CBusArbiter arbiter(.ireqs({icreq, dcreq}), .iresps({icresp, dcresp}), .*);
+    CBusArbiter arbiter(
+        .ireqs({icreq, dcreq}),
+        .iresps({icresp, dcresp}),
+        .*
+    );
 endmodule

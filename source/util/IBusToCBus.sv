@@ -1,7 +1,5 @@
 `include "common.svh"
 
-import common::*;
-
 module IBusToCBus (
     input  ibus_req_t  ireq,
     output ibus_resp_t iresp,
