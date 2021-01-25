@@ -18,5 +18,9 @@ module VTop (
     Core core(.*);
     IBusToCBus icvt(.*);
     DBusToCBus dcvt(.*);
-    CBusArbiter arbiter(.ireqs({icreq, dcreq}), .iresps({icresp, dcresp}), .*);
+    CBusArbiter arbiter(
+        .ireqs({icreq, dcreq}),
+        .iresps({icresp, dcresp}),
+        .*
+    );
 endmodule

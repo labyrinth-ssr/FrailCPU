@@ -3,10 +3,12 @@
 import common::*;
 
 module CBusMultiplexer #(
-    parameter int NUM_INPUTS = 2  // NOTE: NUM_INPUTS >= 1
+    parameter int NUM_INPUTS = 2,  // NOTE: NUM_INPUTS >= 1
+
+    localparam int MAX_INDEX = NUM_INPUTS - 1
 ) (
-    input  cbus_req_t  [NUM_INPUTS - 1:0] ireqs,
-    output cbus_resp_t [NUM_INPUTS - 1:0] iresps,
+    input  cbus_req_t  [MAX_INDEX:0] ireqs,
+    output cbus_resp_t [MAX_INDEX:0] iresps,
     output cbus_req_t  oreq,
     input  cbus_resp_t oresp
 );
