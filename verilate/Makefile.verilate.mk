@@ -1,20 +1,20 @@
 SV = verilator
 SV_TARGET ?= RefCPU
 SV_MKFILE = build/V$(SV_TARGET).mk
-SV_DIR = $(shell echo $(SV_TARGET) | tr A-Z a-z)
-SV_VTOP = ./source/$(SV_DIR)/VTop.sv
+SV_ROOT := $(shell echo $(SV_TARGET) | tr A-Z a-z)
+SV_VTOP = ./source/$(SV_ROOT)/VTop.sv
 
-SV_FILES = \
+SV_FILES := \
 	$(wildcard ./source/util/*.sv) \
 	$(wildcard ./source/include/*.svh) \
-	$(wildcard ./source/include/$(SV_DIR)/*.svh) \
-	$(wildcard ./source/$(SV_DIR)/**/*.sv)
+	$(wildcard ./source/include/$(SV_ROOT)/*.svh) \
+	$(wildcard ./source/$(SV_ROOT)/**/*.sv)
 
 SV_INCLUDE = \
 	-y ./source/util/ \
 	-y ./source/include/ \
-	-y ./source/$(SV_DIR)/ \
-	-y ./source/$(SV_DIR)/*/
+	-y ./source/$(SV_ROOT)/ \
+	-y ./source/$(SV_ROOT)/*/
 
 SV_WARNINGS = \
 	-Wall \

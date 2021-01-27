@@ -7,3 +7,4 @@ clean:
 	rm -rf ./build/*
 
 include verilate/Makefile.verilate.mk
+include verilate/Makefile.vsim.mk

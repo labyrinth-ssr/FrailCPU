@@ -9,7 +9,7 @@ module Core (
     output dbus_req_t  dreq,
     input  dbus_resp_t dresp
 );
-    context_t ctx;
+    context_t ctx /* verilator public_flat_rd */;
     ibus_req_t [LAST_CPU_STATE:0] out_ireq;
     dbus_req_t [LAST_CPU_STATE:0] out_dreq;
     context_t  [LAST_CPU_STATE:0] out_ctx;
