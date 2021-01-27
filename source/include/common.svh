@@ -5,6 +5,13 @@
 `ifndef __COMMON_SVH__
 `define __COMMON_SVH__
 
+// Vivado does not support string parameters.
+`ifdef VERILATOR
+`define STRING string
+`else
+`define STRING /* f**k vivado */
+`endif
+
 `define BITS(x) logic[(x)-1:0]
 
 typedef int unsigned uint;
