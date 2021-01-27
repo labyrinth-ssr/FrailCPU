@@ -1,3 +1,4 @@
+`include "access.svh"
 `include "common.svh"
 
 module VTop (
@@ -16,7 +17,7 @@ module VTop (
     MyCore core(.*);
     IBusToCBus icvt(.*);
     DBusToCBus dcvt(.*);
-    CBusArbiter arbiter(
+    CBusMultiplexer mux(
         .ireqs({icreq, dcreq}),
         .iresps({icresp, dcresp}),
         .*

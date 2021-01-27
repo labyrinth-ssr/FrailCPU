@@ -1,5 +1,10 @@
 `include "common.svh"
 
+/**
+ * this implementation is not efficient, since
+ * it adds one cycle lantency to all requests.
+ */
+
 module CBusArbiter #(
     parameter int NUM_INPUTS = 2,  // NOTE: NUM_INPUTS >= 1
 
@@ -49,6 +54,7 @@ module CBusArbiter #(
             if (oresp.last)
                 {busy, saved_req} <= '0;
         end else begin
+            // if not valid, busy <= 0
             busy <= selected_req.valid;
             index <= select;
             saved_req <= selected_req;
