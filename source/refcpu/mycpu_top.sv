@@ -1,7 +1,7 @@
 `include "refcpu/defs.svh"
 
 module mycpu_top (
-    input logic  aclk, aresetn,
+    input logic aclk, aresetn,
 
     output logic [3 :0] arid,
     output logic [31:0] araddr,
@@ -46,9 +46,13 @@ module mycpu_top (
     output word_t   debug_wb_rf_wdata,
 
     // external interrupt: unused
-    input  logic [5:0] ext_int
+    input logic [5:0] ext_int
 );
-    // TODO: instantiate CPU and connect AXI ports
+    cbus_req_t  oreq;
+    cbus_resp_t oresp;
+
+    VTop top(.clk(aclk), .resetn(aresetn), .*);
+    CBusToAXI cvt(.creq(oreq), .cresp(oresp), .*);
 
     // TODO: connect debug ports
     assign debug_wb_pc       = '0;
