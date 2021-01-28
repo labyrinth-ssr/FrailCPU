@@ -4,6 +4,7 @@
 #include <sstream>
 #include <fstream>
 
+/*
 static bool startswith(const std::string &text, const std::string &pattern) {
     for (size_t i = 0; i < pattern.size(); i++) {
         if (i >= text.size() || text[i] != pattern[i])
@@ -11,9 +12,10 @@ static bool startswith(const std::string &text, const std::string &pattern) {
     }
     return true;
 }
+*/
 
 static bool endswith(const std::string &text, const std::string &pattern) {
-    for (int i = 0; i < pattern.size(); i++) {
+    for (size_t i = 0; i < pattern.size(); i++) {
         if (i >= text.size() ||
             text[text.size() - i - 1] != pattern[pattern.size() - i - 1])
             return false;

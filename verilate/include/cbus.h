@@ -5,7 +5,10 @@
 using CBusRespVType = uint64_t;
 
 enum class AXISize {
-    MSIZE1, MSIZE2, MSIZE4
+    MSIZE1 = 0,
+    MSIZE2 = 1,
+    MSIZE4 = 2,
+    MSIZE8 = 3,
 };
 
 enum class AXILength {
