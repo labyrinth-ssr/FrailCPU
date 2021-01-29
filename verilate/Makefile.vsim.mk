@@ -8,9 +8,10 @@ VTARGET = ./build/V$(SV_TARGET)__ALL.a
 VINCLUDE = ./verilate/include
 VSOURCE = ./verilate/source
 
+CXX_TARGET_FILES := $(wildcard $(VSOURCE)/$(VROOT)/*.cpp)
 CXX_FILES := \
 	$(wildcard $(VSOURCE)/*.cpp) \
-	$(wildcard $(VSOURCE)/$(VROOT)/*.cpp) \
+	$(CXX_TARGET_FILES) \
 	$(VERILATOR)/verilated.cpp \
 	$(VERILATOR)/verilated_fst_c.cpp
 
@@ -18,6 +19,7 @@ CXX_HEADERS := \
 	$(VINCLUDE)/common.h \
 	$(wildcard $(VINCLUDE)/$(VROOT)/*.h)
 
+CXX_TARGET_LIBS := $(addprefix ./build/, $(CXX_TARGET_FILES:%.cpp=%.o))
 CXX_LIBS := $(addprefix ./build/, $(CXX_FILES:%.cpp=%.o))
 
 CXX_INCLUDES = \
@@ -33,11 +35,12 @@ CXX_WARNINGS = \
 
 CXXFLAGS += \
 	-std=c++14 \
-	-lz \
+	-lz -g \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
 
-$(CXX_LIBS): ./build/%.o : %.cpp $(CXX_HEADERS) $(SV_READY)
+$(CXX_TARGET_LIBS): $(SV_READY)
+$(CXX_LIBS): ./build/%.o : %.cpp $(CXX_HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
@@ -47,7 +50,10 @@ $(VTARGET): $(SV_READY)
 $(VMAIN): $(CXX_LIBS) $(VTARGET)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-.PHONY: vbuild vsim
+.PHONY: vbuild vsim vsim-gdb
 vbuild: $(VMAIN)
 vsim: $(VMAIN)
 	./$(VMAIN)
+
+vsim-gdb: $(VMAIN)
+	gdb ./$(VMAIN)
