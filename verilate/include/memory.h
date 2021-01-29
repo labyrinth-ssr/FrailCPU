@@ -3,6 +3,7 @@
 #include "common.h"
 #include "icbus.h"
 
+#include <cstring>
 #include <vector>
 #include <string>
 #include <memory>
@@ -61,6 +62,10 @@ private:
         uint32_t Burst_Length;
         uint32_t Aligned_Address;
         uint32_t Wrap_Boundry;
+
+        void clear() {
+            memset(this, 0, sizeof(*this));
+        }
 
         void reset(uint32_t ADDR, uint32_t SIZE, uint32_t LEN) {
             N = 1;

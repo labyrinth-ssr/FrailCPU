@@ -19,15 +19,18 @@ void RefCPU::run() {
     oresp = 0;
     tick(10);  // 10 cycles to reset
 
-    auto print_ctx = [this]() {
+    auto print_ctx = [this](int i) {
         auto ctx = get_ctx();
-        printf("pc=%08x, next_pc=%08x\n", ctx.pc(), ctx.next_pc());
+        info(GREEN "[i=%d]" RESET " state=%u, pc=%08x, next_pc=%08x\n",
+            i, ctx.state(), ctx.pc(), ctx.next_pc());
     };
 
-    print_ctx();
-    for (int i = 0; i < 10; i++) {
+    enable_logging(true);
+
+    print_ctx(0);
+    for (int i = 1; i <= 16; i++) {
         tick();
-        print_ctx();
+        print_ctx(i);
     }
 
     final();

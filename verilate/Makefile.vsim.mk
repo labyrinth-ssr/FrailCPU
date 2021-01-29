@@ -9,7 +9,7 @@ VINCLUDE = ./verilate/include
 VSOURCE = ./verilate/source
 
 CXX_FILES := \
-	$(VSOURCE)/main.cpp \
+	$(wildcard $(VSOURCE)/*.cpp) \
 	$(wildcard $(VSOURCE)/$(VROOT)/*.cpp) \
 	$(VERILATOR)/verilated.cpp \
 	$(VERILATOR)/verilated_fst_c.cpp

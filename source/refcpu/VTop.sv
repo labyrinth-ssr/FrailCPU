@@ -9,6 +9,7 @@ module VTop (
 );
     `include "cbus_decl"
 
+    `STRUCT_ACCESSOR(context_t, state, cpu_state_t);
     `STRUCT_ACCESSOR(context_t, pc, addr_t);
     `STRUCT_ACCESSOR(context_t, next_pc, addr_t);
 

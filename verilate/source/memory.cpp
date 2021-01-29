@@ -77,7 +77,7 @@ auto Memory::eval(ICBus *req) -> CBusRespVType {
 
         // evaluate next transaction state
         if (last)
-            memset(&ntx, 0, sizeof(ntx));
+            ntx.clear();
         else {
             ntx = tx;
             ntx.N++;
