@@ -14,7 +14,6 @@ module FetchAddrSent (
     assign ireq.valid = '0;     // stop issuing request
 
     // for debugging
-    assign ireq.size = MSIZE4;
     assign ireq.addr = ctx.pc;
 
     always_comb begin

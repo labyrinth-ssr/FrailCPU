@@ -98,8 +98,8 @@ typedef i5 regidx_t;
 
 typedef struct packed {
     logic    valid;   // in request?
-    msize_t  size;    // number of bytes
     addr_t   addr;    // target address
+    msize_t  size;    // number of bytes
     strobe_t strobe;  // which bytes are enabled? set to zeros for read request
     view_t   data;    // the data to write
 } dbus_req_t;
@@ -112,17 +112,20 @@ typedef struct packed {
 
 /**
  * instruction cache bus
+ * addr must be aligned to 4 bytes.
  *
  * basically, ibus_resp_t is the same as dbus_resp_t.
  */
 
 typedef struct packed {
-    logic   valid;  // in request?
-    msize_t size;   // number of bytes
-    addr_t  addr;   // target address
+    logic  valid;  // in request?
+    addr_t addr;   // target address
 } ibus_req_t;
 
 typedef dbus_resp_t ibus_resp_t;
+
+`define IREQ_TO_DREQ(ireq) \
+    {ireq, MSIZE4, 4'b0, 32'b0}
 
 /**
  * cache bus: simplified burst AXI transaction interface

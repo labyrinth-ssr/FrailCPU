@@ -9,7 +9,7 @@ module IBusToSRAMx (
 );
     // since IBus is a subset of DBus, we can reuse DBusToSRAMx.
     DBusToSRAMx inst(
-        .dreq({ireq, 4'b0, 32'b0}),
+        .dreq(`IREQ_TO_DREQ(ireq)),
         .dresp(iresp),
         .dsreq(isreq), .dsresp(isresp)
     );

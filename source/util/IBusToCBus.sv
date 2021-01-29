@@ -8,7 +8,7 @@ module IBusToCBus (
 );
     // since IBus is a subset of DBus, we can reuse DBusToCBus.
     DBusToCBus inst(
-        .dreq({ireq, 4'b0, 32'b0}),
+        .dreq(`IREQ_TO_DREQ(ireq)),
         .dresp(iresp),
         .dcreq(icreq),
         .dcresp(icresp)
