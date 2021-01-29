@@ -10,6 +10,8 @@ TODO:
 * [ ] include path in Vivado
 * [x] `VTop`?
 * [x] uncached interface
-* [ ] AXI4 support
+* [x] AXI4 support
 * [x] package
-* [ ] DPI-C
+* [x] DPI-C -> Verilator public functions
+* [ ] NSCSCC functional test (simulation only)
+* [ ] NSCSCC performance test (simulation only)
