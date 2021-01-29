@@ -16,7 +16,8 @@ CXX_FILES := \
 	$(VERILATOR)/verilated_fst_c.cpp
 
 CXX_HEADERS := \
-	$(VINCLUDE)/common.h \
+	$(wildcard $(VINCLUDE)/*.h) \
+	$(wildcard $(VINCLUDE)/thirdparty/*.h) \
 	$(wildcard $(VINCLUDE)/$(VROOT)/*.h)
 
 CXX_TARGET_LIBS := $(addprefix ./build/, $(CXX_TARGET_FILES:%.cpp=%.o))
@@ -31,10 +32,11 @@ CXX_INCLUDES = \
 CXX_WARNINGS = \
 	-Wall -Wextra \
 	-Wno-aligned-new \
-	-Wno-sign-compare
+	-Wno-sign-compare \
+	-Wno-unused-const-variable
 
 CXXFLAGS += \
-	-std=c++14 \
+	-std=c++17 \
 	-lz -g \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
