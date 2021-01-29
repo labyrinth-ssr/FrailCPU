@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "thirdparty/nameof.hpp"
+
 RefCPU::RefCPU(size_t memory_size)
     : mem(std::make_unique<Memory>(new BlockMemory(memory_size))) {}
 
@@ -46,8 +48,8 @@ void RefCPU::run() {
 
     auto print_ctx = [this](int i) {
         auto ctx = get_ctx();
-        info(GREEN "[i=%d]" RESET " state=%u, pc=%08x\n",
-            i, ctx.state(), ctx.pc());
+        info(GREEN "[i=%d]" RESET " state=%s, pc=%08x\n",
+            i, nameof::nameof_enum(ctx.state()).data(), ctx.pc());
     };
 
     enable_logging(true);

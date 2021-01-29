@@ -18,7 +18,7 @@ typedef enum uint {
 
     // to record the number of available states
     NUM_CPU_STATES
-} cpu_state_t;
+} cpu_state_t /* verilator public */;
 
 parameter uint LAST_CPU_STATE = NUM_CPU_STATES - 1;
 
@@ -35,7 +35,7 @@ typedef enum i6 {
     OP_RTYPE = 6'b000000,
     OP_BEQ   = 6'b000100,
     OP_BNE   = 6'b000101
-} opcode_t;
+} opcode_t /* verilator public */;
 
 // general-purpose registers
 typedef enum i5 {
