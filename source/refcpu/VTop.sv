@@ -7,6 +7,8 @@ module VTop (
     output cbus_req_t  oreq,
     input  cbus_resp_t oresp
 );
+    `include "cbus_decl"
+
     `STRUCT_ACCESSOR(context_t, pc, addr_t);
     `STRUCT_ACCESSOR(context_t, next_pc, addr_t);
 

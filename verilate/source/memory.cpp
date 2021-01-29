@@ -61,7 +61,7 @@ void Memory::map(uint32_t addr, const ByteSeq &data) {
     mem->map(addr, data);
 }
 
-auto Memory::eval(CBusInterface *req) -> CBusRespVType {
+auto Memory::eval(ICBus *req) -> CBusRespVType {
     if (tx.busy) {
         // simple sanity checks
         assert(req->valid());
@@ -89,7 +89,7 @@ auto Memory::eval(CBusInterface *req) -> CBusRespVType {
             data = mem->load(addr);
 
         // return response
-        return CBusInterface::make_response(true, last, data);
+        return ICBus::make_response(true, last, data);
     } else if (req->valid()) {
         // no transaction in progress, and kick off a new one
         ntx.reset(

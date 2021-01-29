@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "cbus.h"
+#include "icbus.h"
 
 #include <vector>
 #include <string>
@@ -41,7 +41,7 @@ public:
 
     void reset();
     void map(uint32_t addr, const ByteSeq &data);
-    auto eval(CBusInterface *req) -> CBusRespVType;
+    auto eval(ICBus *req) -> CBusRespVType;
     void commit();
 
 private:
