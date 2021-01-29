@@ -2,6 +2,11 @@
 
 Spring 2021, Fudan University.
 
+## Prerequisites
+
+* Xilinx Vivado 2019.2 (HLx version)
+* Verilator (≥ 4.036)
+
 ## File Organization
 
 * `source/`: SystemVerilog source files.
