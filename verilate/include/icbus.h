@@ -31,11 +31,13 @@ public:
         return data | (uint64_t(ready) << 33) | (uint64_t(last) << 32);
     }
 
-    virtual auto valid() -> bool = 0;
-    virtual auto is_write() -> bool = 0;
-    virtual auto size() -> AXISize = 0;
-    virtual auto addr() -> uint32_t = 0;
-    virtual auto strobe() -> uint32_t = 0;
-    virtual auto data() -> uint32_t = 0;
-    virtual auto len() -> AXILength = 0;
+    virtual ~ICBus() = default;
+
+    virtual auto valid() const -> bool = 0;
+    virtual auto is_write() const -> bool = 0;
+    virtual auto size() const -> AXISize = 0;
+    virtual auto addr() const -> uint32_t = 0;
+    virtual auto strobe() const -> uint32_t = 0;
+    virtual auto data() const -> uint32_t = 0;
+    virtual auto len() const -> AXILength = 0;
 };

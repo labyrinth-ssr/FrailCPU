@@ -14,6 +14,8 @@ auto parse_memory_file(const std::string &path) -> ByteSeq;
 
 class MemoryImpl {
 public:
+    virtual ~MemoryImpl() = default;
+
     virtual void reset() = 0;
     virtual void map(uint32_t addr, const ByteSeq &data) = 0;
     virtual auto load(uint32_t addr) -> uint32_t = 0;
@@ -35,14 +37,17 @@ private:
     std::vector<uint32_t> mem;
 };
 
+/**
+ * class Memory should mimic the behavior of module CBusToAXI.
+ */
 class Memory {
 public:
-    Memory(std::unique_ptr<MemoryImpl> &&_mem)
-        : mem(std::move(_mem)) {}
+    Memory(MemoryImpl *_mem)
+        : mem(_mem) {}
 
     void reset();
     void map(uint32_t addr, const ByteSeq &data);
-    auto eval(ICBus *req) -> CBusRespVType;
+    auto eval(const ICBus &req) -> CBusRespVType;
     void commit();
 
 private:

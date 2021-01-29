@@ -1,3 +1,4 @@
+#include "common.h"
 #include "memory.h"
 
 #include <cassert>
@@ -37,20 +38,28 @@ void BlockMemory::map(uint32_t addr, const ByteSeq &data) {
 }
 
 auto BlockMemory::load(uint32_t addr) -> uint32_t {
+    uint32_t caddr = addr;
     addr -= offset;
     assert(addr < size);
 
     size_t index = addr / 4;  // align to 4 bytes
-    return mem[index];
+    uint32_t value = mem[index];
+
+    info("mem[%08x] -> %08x\n", caddr, value);
+
+    return value;
 }
 
 void BlockMemory::store(uint32_t addr, uint32_t data, uint32_t mask) {
+    uint32_t caddr = addr;
     addr -= offset;
     assert(addr < size);
 
     size_t index = addr / 4;  // align to 4 bytes
     uint32_t &value = mem[index];
     value = (value & ~mask) | (data & mask);
+
+    info("mem[%08x] <- %08x\n", caddr, value);
 }
 
 void Memory::reset() {
@@ -61,15 +70,20 @@ void Memory::map(uint32_t addr, const ByteSeq &data) {
     mem->map(addr, data);
 }
 
-auto Memory::eval(ICBus *req) -> CBusRespVType {
+auto Memory::eval(const ICBus &req) -> CBusRespVType {
+    /**
+     * we should guarantee that there's no combinatorial
+     * logic between the request and the response.
+     */
+
     if (tx.busy) {
         // simple sanity checks
-        assert(req->valid());
-        assert(req->is_write() == tx.is_write);
-        assert(req->addr() == tx.Start_Address);
+        assert(req.valid());
+        assert(req.is_write() == tx.is_write);
+        assert(req.addr() == tx.Start_Address);
 
-        _strobe = req->strobe();
-        _data = req->data();
+        _strobe = req.strobe();
+        _data = req.data();
 
         // evaluate current address
         uint32_t addr = tx.Address_N();
@@ -90,18 +104,18 @@ auto Memory::eval(ICBus *req) -> CBusRespVType {
 
         // return response
         return ICBus::make_response(true, last, data);
-    } else if (req->valid()) {
-        // no transaction in progress, and kick off a new one
+    } else if (req.valid()) {
+        // no transaction in progress, so we kick off a new one.
         ntx.reset(
-            req->addr(),
-            static_cast<uint32_t>(req->size()),
-            static_cast<uint32_t>(req->len())
+            req.addr(),
+            static_cast<uint32_t>(req.size()),
+            static_cast<uint32_t>(req.len())
         );
         ntx.busy = true;
-        ntx.is_write = req->is_write();
+        ntx.is_write = req.is_write();
 
         // NOTE: this transaction will be started in the next cycle,
-        //       so we fall through and just return 0.
+        //       so fall through and just return 0.
     }
 
     return 0;

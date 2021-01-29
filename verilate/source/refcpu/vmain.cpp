@@ -1,6 +1,8 @@
 #include "refcpu/top.h"
 
+constexpr size_t MEMORY_SIZE = 4096;
+
 void vmain(int /*argc*/, char */*argv*/[]) {
-    auto top = new RefCPU;
+    auto top = new RefCPU(MEMORY_SIZE);
     top->run();
 }

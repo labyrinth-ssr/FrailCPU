@@ -8,15 +8,13 @@ struct ContextWrapper {
     ContextWrapper(VTopType *_top, const ContextVType &_data)
         : top(_top), data(_data) {}
 
-    auto state() {
+    auto state() const -> uint32_t {
         return top->context_t_state(data);
     }
-
-    auto pc() {
+    auto pc() const -> uint32_t {
         return top->context_t_pc(data);
     }
-
-    auto next_pc() {
+    auto next_pc() const -> uint32_t {
         return top->context_t_next_pc(data);
     }
 
