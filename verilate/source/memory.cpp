@@ -4,7 +4,7 @@
 #include <cstring>
 #include <algorithm>
 
-constexpr uint32_t STROBE_TABLE[] = {
+constexpr uint32_t _MASK_TABLE[] = {
     0x00000000, 0x000000ff, 0x0000ff00, 0x0000ffff,
     0x00ff0000, 0x00ff00ff, 0x00ffff00, 0x00ffffff,
     0xff000000, 0xff0000ff, 0xff00ff00, 0xff00ffff,
@@ -101,7 +101,7 @@ auto Memory::eval(CBusInterface *req) -> CBusRespVType {
         ntx.is_write = req->is_write();
 
         // NOTE: this transaction will be started in the next cycle,
-        // so we fall through and return 0, just like a BRAM.
+        //       so we fall through and just return 0.
     }
 
     return 0;
@@ -111,7 +111,7 @@ void Memory::commit() {
     if (tx.busy && tx.is_write) {
         // perform write operation if needed
         uint32_t addr = tx.Address_N();
-        uint32_t mask = STROBE_TABLE[_strobe];
+        uint32_t mask = _MASK_TABLE[_strobe];
         mem->store(addr, _data, mask);
         _strobe = _data = 0;
     }

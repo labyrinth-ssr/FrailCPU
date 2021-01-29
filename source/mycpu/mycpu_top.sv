@@ -1,4 +1,10 @@
 `include "common.svh"
+`include "sramx.svh"
+
+/**
+ * TODO (Lab2) comment out the following line :)
+ */
+`define FIXED_LATENCY
 
 module mycpu_top (
     input logic aclk, aresetn,
@@ -48,13 +54,45 @@ module mycpu_top (
     // external interrupt: unused
     input logic [5:0] ext_int
 );
+`ifdef FIXED_LATENCY
+    sramx_req_t  isreq,  dsreq;
+    sramx_resp_t isresp, dsresp;
+
+    STop top(.clk(aclk), .resetn(aresetn), .*);
+    cpu_axi_interface cvt(
+        .clk(aclk), .resetn(aresetn),
+
+        .inst_req(isreq.req),
+        .inst_wr(isreq.wr),
+        .inst_size(isreq.size),
+        .inst_addr(isreq.addr),
+        .inst_wdata(isreq.wdata),
+        .inst_rdata(isresp.rdata),
+        .inst_addr_ok(isresp.addr_ok),
+        .inst_data_ok(isresp.data_ok),
+
+        .data_req(dsreq.req),
+        .data_wr(dsreq.wr),
+        .data_size(dsreq.size),
+        .data_addr(dsreq.addr),
+        .data_wdata(dsreq.wdata),
+        .data_rdata(dsresp.rdata),
+        .data_addr_ok(dsresp.addr_ok),
+        .data_data_ok(dsresp.data_ok),
+
+        .*
+    );
+`else
     cbus_req_t  oreq;
     cbus_resp_t oresp;
 
     VTop top(.clk(aclk), .resetn(aresetn), .*);
     CBusToAXI cvt(.creq(oreq), .cresp(oresp), .*);
+`endif
 
-    // TODO: connect debug ports
+    /**
+     * TODO (Lab1) connect debug ports :)
+     */
     assign debug_wb_pc       = '0;
     assign debug_wb_rf_wen   = '0;
     assign debug_wb_rf_wnum  = '0;
