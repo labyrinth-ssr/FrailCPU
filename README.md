@@ -4,8 +4,10 @@ Spring 2021, Fudan University.
 
 ## Prerequisites
 
-* Xilinx Vivado 2019.2 (HLx version)
+* Xilinx Vivado (= 2019.2, HLx version)
 * Verilator (≥ 4.036)
+* GNU g++ (≥ 9.0.0, C++17)
+* GNU gdb
 
 ## File Organization
 
