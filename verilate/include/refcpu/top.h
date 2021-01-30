@@ -11,9 +11,11 @@
 class RefCPU : public VRefCPU {
 public:
     RefCPU(size_t memory_size);
+    ~RefCPU();
 
+    void start_trace(const std::string &path);
+    void stop_trace();
     void tick(int count = 1);
-
     void run();
 
     auto get_ctx() const -> ContextWrapper {
@@ -31,4 +33,13 @@ public:
 
 private:
     std::unique_ptr<Memory> mem;
+    VerilatedFstC *tfp;
+    uint64_t trace_count;
+
+    auto time() -> uint64_t {
+        return 10 * trace_count;
+    }
+
+    void trace_dump(uint64_t t);
+    void _tick();
 };
