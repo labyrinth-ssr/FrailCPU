@@ -64,61 +64,56 @@ void BlockMemory::store(uint32_t addr, uint32_t data, uint32_t mask) {
 
 void Memory::reset() {
     mem->reset();
+    tx.reset();
+    ntx.reset();
+    _strobe = _data = 0;
 }
 
 void Memory::map(uint32_t addr, const ByteSeq &data) {
     mem->map(addr, data);
 }
 
-auto Memory::eval(const ICBus &req) -> CBusRespVType {
-    /**
-     * we should guarantee that there's no combinatorial
-     * logic between the request and the response.
-     */
+auto Memory::eval_resp() -> CBusRespVType {
+    if (tx.busy) {
+        // fetch data if needed
+        uint32_t data = 0;
+        if (!tx.is_write) {
+            uint32_t addr = tx.Address_N();
+            data = mem->load(addr);
+        }
 
+        // return response
+        return ICBus::make_response(true, tx.last(), data);
+    } else
+        return 0;
+}
+
+void Memory::eval_req(const ICBus &req) {
     if (tx.busy) {
         // simple sanity checks
         assert(req.valid());
         assert(req.is_write() == tx.is_write);
         assert(req.addr() == tx.Start_Address);
 
+        // pass arguments to commit
         _strobe = req.strobe();
         _data = req.data();
 
-        // evaluate current address
-        uint32_t addr = tx.Address_N();
-        bool last = tx.N == tx.Burst_Length;
-
         // evaluate next transaction state
-        if (last)
-            ntx.clear();
-        else {
-            ntx = tx;
+        if (tx.last())
+            ntx.reset();
+        else
             ntx.N++;
-        }
-
-        // fetch data if needed
-        uint32_t data = 0;
-        if (!tx.is_write)
-            data = mem->load(addr);
-
-        // return response
-        return ICBus::make_response(true, last, data);
     } else if (req.valid()) {
         // no transaction in progress, so we kick off a new one.
-        ntx.reset(
+        ntx.init_axi(
             req.addr(),
             static_cast<uint32_t>(req.size()),
             static_cast<uint32_t>(req.len())
         );
         ntx.busy = true;
         ntx.is_write = req.is_write();
-
-        // NOTE: this transaction will be started in the next cycle,
-        //       so fall through and just return 0.
     }
-
-    return 0;
 }
 
 void Memory::commit() {

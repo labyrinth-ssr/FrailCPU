@@ -13,7 +13,6 @@ public:
     RefCPU(size_t memory_size);
 
     void tick(int count = 1);
-    void eval_memory();
 
     void run();
 

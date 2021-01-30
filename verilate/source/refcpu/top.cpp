@@ -7,14 +7,10 @@
 RefCPU::RefCPU(size_t memory_size)
     : mem(std::make_unique<Memory>(new BlockMemory(memory_size))) {}
 
-void RefCPU::eval_memory() {
-    oresp = mem->eval(get_oreq());
-}
-
 void RefCPU::tick(int count) {
     while (count--) {
         clk = 0;
-        eval_memory();  // to update oresp
+        oresp = mem->eval_resp();
         eval();
 
         auto req = get_oreq();
@@ -31,7 +27,7 @@ void RefCPU::tick(int count) {
             );
         }
 
-        eval_memory();  // to process oreq
+        mem->eval_req(get_oreq());
 
         mem->commit();
         clk = 1;
