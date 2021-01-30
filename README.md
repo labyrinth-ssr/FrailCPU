@@ -6,8 +6,11 @@ Spring 2021, Fudan University.
 
 * Xilinx Vivado (= 2019.2, HLx version)
 * Verilator (≥ 4.036)
-* GNU g++ (≥ 9.0.0, C++17)
-* GNU gdb
+* `build-essential`
+    * GNU make
+    * GNU C++ (≥ 9.0.0, C++17)
+    * gdb
+* GTKWave
 
 ## File Organization
 
