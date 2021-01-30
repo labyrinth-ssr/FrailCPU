@@ -15,10 +15,10 @@ CXX_FILES := \
 	$(VERILATOR)/verilated.cpp \
 	$(VERILATOR)/verilated_fst_c.cpp
 
+CXX_TARGET_HEADERS := $(wildcard $(VINCLUDE)/$(VROOT)/*.h)
 CXX_HEADERS := \
 	$(wildcard $(VINCLUDE)/*.h) \
-	$(wildcard $(VINCLUDE)/thirdparty/*.h) \
-	$(wildcard $(VINCLUDE)/$(VROOT)/*.h)
+	$(wildcard $(VINCLUDE)/thirdparty/*.h)
 
 CXX_TARGET_LIBS := $(addprefix ./build/, $(CXX_TARGET_FILES:%.cpp=%.o))
 CXX_LIBS := $(addprefix ./build/, $(CXX_FILES:%.cpp=%.o))
@@ -41,7 +41,7 @@ CXXFLAGS += \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
 
-$(CXX_TARGET_LIBS): $(SV_READY)
+$(CXX_TARGET_LIBS): $(CXX_TARGET_HEADERS) $(SV_READY)
 $(CXX_LIBS): ./build/%.o : %.cpp $(CXX_HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
