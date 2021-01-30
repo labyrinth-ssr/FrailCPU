@@ -17,6 +17,10 @@ module VTop (
     MyCore core(.*);
     IBusToCBus icvt(.*);
     DBusToCBus dcvt(.*);
+
+    /**
+     * TODO (Lab2) replace mux with your own arbiter :)
+     */
     CBusMultiplexer mux(
         .ireqs({icreq, dcreq}),
         .iresps({icresp, dcresp}),

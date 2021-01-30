@@ -9,6 +9,18 @@
 module mycpu_top (
     input logic aclk, aresetn,
 
+`ifdef FIXED_LATENCY
+    output logic        inst_sram_en,
+    output logic [3 :0] inst_sram_wen,
+    output logic [31:0] inst_sram_addr,
+    output logic [31:0] inst_sram_wdata,
+    input  logic [31:0] inst_sram_rdata,
+    output logic        data_sram_en,
+    output logic [3 :0] data_sram_wen,
+    output logic [31:0] data_sram_addr,
+    output logic [31:0] data_sram_wdata,
+    input  logic [31:0] data_sram_rdata,
+`else
     output logic [3 :0] arid,
     output logic [31:0] araddr,
     output logic [3 :0] arlen,
@@ -45,6 +57,7 @@ module mycpu_top (
     input  logic [1 :0] bresp,
     input  logic        bvalid,
     output logic        bready,
+`endif
 
     output addr_t   debug_wb_pc,
     output strobe_t debug_wb_rf_wen,
@@ -55,33 +68,7 @@ module mycpu_top (
     input logic [5:0] ext_int
 );
 `ifdef FIXED_LATENCY
-    sramx_req_t  isreq,  dsreq;
-    sramx_resp_t isresp, dsresp;
-
-    STop top(.clk(aclk), .resetn(aresetn), .*);
-    cpu_axi_interface cvt(
-        .clk(aclk), .resetn(aresetn),
-
-        .inst_req(isreq.req),
-        .inst_wr(isreq.wr),
-        .inst_size(isreq.size),
-        .inst_addr(isreq.addr),
-        .inst_wdata(isreq.wdata),
-        .inst_rdata(isresp.rdata),
-        .inst_addr_ok(isresp.addr_ok),
-        .inst_data_ok(isresp.data_ok),
-
-        .data_req(dsreq.req),
-        .data_wr(dsreq.wr),
-        .data_size(dsreq.size),
-        .data_addr(dsreq.addr),
-        .data_wdata(dsreq.wdata),
-        .data_rdata(dsresp.rdata),
-        .data_addr_ok(dsresp.addr_ok),
-        .data_data_ok(dsresp.data_ok),
-
-        .*
-    );
+    SRAMTop top(.clk(aclk), .resetn(aresetn), .*);
 `else
     cbus_req_t  oreq;
     cbus_resp_t oresp;
