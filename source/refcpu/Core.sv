@@ -27,6 +27,8 @@ module Core (
     `IMPL_Cxx(S_COMMIT, Commit);
     `IMPL_Cxx(S_BRANCH_EVAL, BranchEval);
     `IMPL_Cxx(S_BRANCH, Branch);
+    `IMPL_Cxx(S_UNSIGNED_ARITHMETIC, UnsignedArithmetic);
+    `IMPL_Cxx(S_RTYPE, RType);
 
     /**
      * END state implementer declarations

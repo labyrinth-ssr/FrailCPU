@@ -11,17 +11,18 @@ module BranchEval (
      *   t[0]: next PC
      */
 
-    opcode_t opcode;
-    regid_t rs, rt;
-    imm_t offset;
-    assign {opcode, rs, rt, offset} = ctx.t[0];
+    localparam type offset_t = logic [17:0];
+
+    `FORMAT_ITYPE(opcode, rs, rt, imm, ctx.t[0]);
 
     word_t val1, val2;
     assign val1 = ctx.r[rs];
     assign val2 = ctx.r[rt];
 
     addr_t target_pc;
-    assign target_pc = ctx.next_pc + word_t'(offset);
+    offset_t offset;
+    assign offset = {imm, 2'b0};
+    assign target_pc = ctx.next_pc + `SIGN_EXTEND(offset);
 
     always_comb begin
         out = ctx;
@@ -35,5 +36,9 @@ module BranchEval (
         default:
             out.state = S_UNKNOWN;
         endcase
+
+        // UNPREDICTABLE: branch in delay slot
+        if (ctx.delayed)
+            out.state = S_UNKNOWN;
     end
 endmodule

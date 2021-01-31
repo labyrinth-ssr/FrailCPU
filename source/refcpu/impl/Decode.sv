@@ -22,6 +22,8 @@ module Decode (
             out.state = S_COMMIT;
         OP_BEQ, OP_BNE:
             out.state = S_BRANCH_EVAL;
+        OP_ADDIU:
+            out.state = S_UNSIGNED_ARITHMETIC;
         default:  // unknown instruction
             out.state = S_UNKNOWN;
         endcase
