@@ -76,8 +76,8 @@ typedef struct packed {
 parameter context_t CONTEXT_RESET_VALUE = {
     S_FETCH,          // state
     CP0_RESET_VALUE,  // cp0
-    32'b0,            // pc
-    32'h4,            // next_pc
+    32'hbfc00000,     // pc
+    32'hbfc00004,     // next_pc
     1'b0,             // is_delayed
     32'b0,            // delayed_pc
     {2{32'b0}},       // hi, lo

@@ -9,7 +9,9 @@
 constexpr int MAX_TRACE_DEPTH = 32;
 
 RefCPU::RefCPU(size_t memory_size) :
-    mem(std::make_unique<Memory>(new BlockMemory(memory_size))),
+    mem(std::make_unique<Memory>(
+        new BlockMemory(memory_size, 0x1fc00000)
+    )),
     tfp(nullptr), trace_count(0) {}
 
 RefCPU::~RefCPU() {

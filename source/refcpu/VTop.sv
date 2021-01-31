@@ -17,8 +17,8 @@ module VTop (
     ibus_resp_t iresp;
     dbus_req_t  dreq;
     dbus_resp_t dresp;
-    cbus_req_t  icreq,  dcreq;
-    cbus_resp_t icresp, dcresp;
+    cbus_req_t  icreq,  dcreq,  treq;
+    cbus_resp_t icresp, dcresp, tresp;
 
     Core core(.*);
     IBusToCBus icvt(.*);
@@ -26,6 +26,8 @@ module VTop (
     CBusArbiter arbiter(
         .ireqs({icreq, dcreq}),
         .iresps({icresp, dcresp}),
+        .oreq(treq), .oresp(tresp),
         .*
     );
+    AddressTranslator tr(.*);
 endmodule

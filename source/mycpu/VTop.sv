@@ -26,4 +26,8 @@ module VTop (
         .iresps({icresp, dcresp}),
         .*
     );
+
+    /**
+     * TODO (optional) translate addresses here.
+     */
 endmodule
