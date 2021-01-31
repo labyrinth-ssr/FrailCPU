@@ -20,18 +20,18 @@
  * x: corresponding ports are missed.
  */
 `define IMPL_Cxx(S, M) \
-    M M``_inst_L```__LINE__(.out(out_ctx[S]), .*); \
+    M M``_inst(.out(out_ctx[S]), .*); \
     assign {out_ireq[S], out_dreq[S]} = '0;
 `define IMPL_CIx(S, M) \
-    M M``_inst_L```__LINE__(.out(out_ctx[S]), .ireq(out_ireq[S]), .*); \
+    M M``_inst(.out(out_ctx[S]), .ireq(out_ireq[S]), .*); \
     assign out_dreq[S] = '0;
 `define IMPL_CxD(S, M) \
-    M M``_inst_L```__LINE__(.out(out_ctx[S]), .dreq(out_dreq[S]), .*); \
+    M M``_inst(.out(out_ctx[S]), .dreq(out_dreq[S]), .*); \
     assign out_ireq[S] = '0;
 
 // it's generally rare that an instruction interacts with
 // both instruction cache and data cache simultaneously...
 `define IMPL_CID(S, M) \
-    M M``_inst_L```__LINE__(.out(out_ctx[S]), .ireq(out_ireq[S]), .dreq(out_dreq[S]), .*);
+    M M``_inst(.out(out_ctx[S]), .ireq(out_ireq[S]), .dreq(out_dreq[S]), .*);
 
 `endif

@@ -2,16 +2,14 @@
 
 TODO:
 
-* [ ] demo instruction: `SLL`
-* [ ] demo instruction: `ADDI`
 * [x] demo instruction: `BEQ`, `BNE`
 * [x] delay slot
-* [ ] `NaiveBuffer`
-* [ ] include path in Vivado
+* [x] include path in Vivado
 * [x] `VTop`?
 * [x] uncached interface
 * [x] AXI4 support
 * [x] package
 * [x] DPI-C -> Verilator public functions
+* [x] debug ports
 * [ ] NSCSCC functional test (simulation only)
 * [ ] NSCSCC performance test (simulation only)

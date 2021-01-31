@@ -10,7 +10,7 @@
 `define STRUCT_ACCESSOR(struct_name, member_name, return_type) \
     function return_type struct_name``_``member_name(struct_name e); \
         /* verilator public */ \
-        logic _unused_ok = &e; \
+        automatic logic _unused_ok = &e; \
         return return_type'(e.member_name); \
     endfunction
 

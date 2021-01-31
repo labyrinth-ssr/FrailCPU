@@ -12,7 +12,7 @@ module Decode (
      */
 
     opcode_t opcode;
-    assign opcode = ctx.t[0][31:26];
+    assign opcode = opcode_t'(ctx.t[0][31:26]);
 
     always_comb begin
         out = ctx;

@@ -1,4 +1,5 @@
 #include "refcpu/top.h"
+#include "verilated.h"
 #include "verilated_fst_c.h"
 
 #include <cstring>
@@ -102,7 +103,7 @@ void RefCPU::run() {
     eval();
     print_ctx(0);
 
-    for (int i = 1; i <= 16; i++) {
+    for (int i = 1; i <= 16 && !Verilated::gotFinish(); i++) {
         tick();
         print_ctx(i);
     }

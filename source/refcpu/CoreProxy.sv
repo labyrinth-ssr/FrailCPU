@@ -42,6 +42,12 @@ module CoreProxy (
 
     always_ff @(posedge clk)
     if (resetn) begin
+        // stop when CPU trapped in S_UNKNOWN
+        if (ctx.state == S_UNKNOWN) begin
+            $display("ctx.pc=%08x\n", ctx.pc);
+            $finish;
+        end
+
         ctx <= new_ctx;
 
         // checkpoint context at COMMIT

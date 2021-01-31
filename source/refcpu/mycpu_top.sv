@@ -54,11 +54,11 @@ module mycpu_top (
     VTop top(.clk(aclk), .resetn(aresetn), .*);
     CBusToAXI cvt(.creq(oreq), .cresp(oresp), .*);
 
-    // TODO: connect debug ports
-    assign debug_wb_pc       = '0;
-    assign debug_wb_rf_wen   = '0;
-    assign debug_wb_rf_wnum  = '0;
-    assign debug_wb_rf_wdata = '0;
+    Debugger dbg(
+        .ctx(top.core.ctx),
+        .ctx0(top.core.proxy.ctx0),
+        .*
+    );
 
     logic _unused_ok = &{ext_int};
 endmodule

@@ -141,7 +141,7 @@ module CBusToAXI(
     if (aresetn) begin
         if (busy) begin
             if (cresp.ready && !cresp.last)
-                saved_req.len <= saved_req.len - mlen_t'(1);
+                saved_req.len <= mlen_t'(saved_req.len - mlen_t'(1));
 
             in_issue <= remain;
         end else begin

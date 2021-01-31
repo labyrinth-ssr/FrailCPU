@@ -8,6 +8,7 @@ SV_FILES := \
 	$(wildcard ./source/util/*.sv) \
 	$(wildcard ./source/include/*.svh) \
 	$(wildcard ./source/include/$(SV_ROOT)/*.svh) \
+	$(wildcard ./source/$(SV_ROOT)/*.sv) \
 	$(wildcard ./source/$(SV_ROOT)/**/*.sv)
 
 SV_INCLUDE = \
