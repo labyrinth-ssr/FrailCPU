@@ -18,6 +18,12 @@ typedef enum uint {
     S_BRANCH,
     S_UNSIGNED_ARITHMETIC,
     S_RTYPE,
+    S_EXCEPTION,
+    S_ADDR_CHECK,
+    S_LOAD,
+    S_LOAD_ADDR_SENT,
+    S_STORE,
+    S_STORE_ADDR_SENT,
 
     // to record the number of available states
     NUM_CPU_STATES
@@ -42,7 +48,9 @@ typedef enum i6 {
     OP_ANDI  = 6'b001100,
     OP_ORI   = 6'b001101,
     OP_XORI  = 6'b001110,
-    OP_LUI   = 6'b001111
+    OP_LUI   = 6'b001111,
+    OP_LW    = 6'b100011,
+    OP_SW    = 6'b101011
 } opcode_t /* verilator public */;
 
 // funct (in RType instructions): bit 5~0
@@ -83,6 +91,38 @@ typedef struct packed {
 parameter instr_t INSTR_NOP = 32'b0;
 
 /**
+ * exceptions
+ */
+
+// exception code
+typedef enum i5 {
+    EX_INT      = 0,
+    EX_MOD      = 1,
+    EX_TLBL     = 2,
+    EX_TLBS     = 3,
+    EX_ADEL     = 4,
+    EX_ADES     = 5,
+    EX_IBE      = 6,
+    EX_DBE      = 7,
+    EX_SYS      = 8,
+    EX_BP       = 9,
+    EX_RI       = 10,
+    EX_CPU      = 11,
+    EX_OV       = 12,
+    EX_TR       = 13,
+    EX_FPE      = 15,
+    EX_C2E      = 18,
+    EX_TLBRI    = 19,
+    EX_TLBXI    = 20,
+    EX_MDMX     = 22,
+    EX_WATCH    = 23,
+    EX_MCHECK   = 24,
+    EX_THREAD   = 25,
+    EX_DSPDIS   = 26,
+    EX_CACHEERR = 30
+} ecode_t;
+
+/**
  * MIPS CP0 registers
  */
 
@@ -119,6 +159,13 @@ typedef struct packed {
     struct packed {
         addr_t new_pc;
     } branch;
+    struct packed {
+        ecode_t code;
+    } exception;
+    struct packed {
+        addr_t addr;
+        msize_t size;
+    } mem;  // used by all load & store operations
 } args_t;
 
 // we also guarantee that args will be reset to zeros

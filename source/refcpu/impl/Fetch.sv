@@ -13,11 +13,12 @@ module Fetch (
         out = ctx;
         out.instr = iresp.data;
 
-        if (iresp.addr_ok && iresp.data_ok)
-            out.state = S_DECODE;
-        else if (iresp.addr_ok)
-            out.state = S_FETCH_ADDR_SENT;
-        else
-            out.state = S_FETCH;
+        `MEM_WAIT(iresp, S_FETCH, S_FETCH_ADDR_SENT, S_DECODE);
+
+        // PC must be aligned to 4 bytes
+        if (|ctx.pc[1:0]) begin
+            out.state = S_EXCEPTION;
+            out.args.exception.code = EX_ADEL;
+        end
     end
 endmodule

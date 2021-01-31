@@ -17,4 +17,16 @@
     funct_t funct; \
     assign {rs, rt, rd, shamt, funct} = instr.payload;
 
+`define ITYPE_RS ctx.instr.payload.itype.rs
+`define ITYPE_RT ctx.instr.payload.itype.rt
+`define ITYPE_IMM ctx.instr.payload.itype.imm
+
+`define MEM_WAIT(resp, self, step1, step2) \
+    if (resp.addr_ok && resp.data_ok) \
+        out.state = step2; \
+    else if (resp.addr_ok) \
+        out.state = step1; \
+    else \
+        out.state = self;
+
 `endif

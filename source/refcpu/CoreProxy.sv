@@ -30,10 +30,6 @@ module CoreProxy (
         if (new_ctx.state > LAST_CPU_STATE)
             new_ctx.state = S_UNKNOWN;
 
-        // PC must be aligned to 4 bytes
-        if (|new_ctx.pc[1:0])
-            new_ctx.state = S_UNKNOWN;
-
         // reset args
         if (ctx.state == S_COMMIT)
             new_ctx.args = ARGS_RESET_VALUE;

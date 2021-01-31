@@ -14,8 +14,11 @@ module RType (
         unique case (funct)
         FN_SLL:
             out.r[rd] = ctx.r[rt] << shamt;
-        default:
-            out.state = S_UNKNOWN;
+
+        default: begin
+            out.state = S_EXCEPTION;
+            out.args.exception.code = EX_RI;
+        end
         endcase
     end
 endmodule

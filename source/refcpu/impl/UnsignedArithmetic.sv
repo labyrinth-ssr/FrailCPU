@@ -21,8 +21,10 @@ module UnsignedArithmetic (
         OP_XORI:
             out.r[rt] = ctx.r[rs] ^ `ZERO_EXTEND(imm);
         OP_LUI:
-            out.r[rt][31:16] = imm;
+            out.r[rt] = {imm, 16'b0};
         default:
+            // Decode should guarantee that no other instruction
+            // enters this state.
             out.state = S_UNKNOWN;
         endcase
     end

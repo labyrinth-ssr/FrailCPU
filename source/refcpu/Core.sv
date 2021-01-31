@@ -37,6 +37,12 @@ module Core (
     `IMPL_Cxx(S_BRANCH, Branch);
     `IMPL_Cxx(S_UNSIGNED_ARITHMETIC, UnsignedArithmetic);
     `IMPL_Cxx(S_RTYPE, RType);
+    `IMPL_Cxx(S_EXCEPTION, Exception);
+    `IMPL_Cxx(S_ADDR_CHECK, AddrCheck);
+    `IMPL_CxD(S_LOAD, Load);
+    `IMPL_CxD(S_LOAD_ADDR_SENT, LoadAddrSent);
+    `IMPL_CxD(S_STORE, Store);
+    `IMPL_CxD(S_STORE_ADDR_SENT, StoreAddrSent);
 
     /**
      * END state implementer declarations

@@ -26,8 +26,11 @@ module BranchEval (
             out.args.branch.new_pc = val1 == val2 ? target_pc : ctx.next_pc;
         OP_BNE:
             out.args.branch.new_pc = val1 != val2 ? target_pc : ctx.next_pc;
-        default:
-            out.state = S_UNKNOWN;
+
+        default: begin
+            out.state = S_EXCEPTION;
+            out.args.exception.code = EX_RI;
+        end
         endcase
 
         // UNPREDICTABLE: branch in delay slot

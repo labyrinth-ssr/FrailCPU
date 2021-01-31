@@ -19,8 +19,14 @@ module Decode (
         OP_LUI:
             out.state = S_UNSIGNED_ARITHMETIC;
 
-        default:  // unknown instruction
-            out.state = S_UNKNOWN;
+        OP_LW, OP_SW:
+            out.state = S_ADDR_CHECK;
+
+        default: begin  // unknown instruction
+            out.state = S_EXCEPTION;
+            out.args.exception.code = EX_RI;
+        end
+
         endcase
     end
 endmodule
