@@ -22,7 +22,7 @@ public:
         return ContextWrapper(VTop, VTop->core__DOT__ctx);
     }
     auto get_ctx0() const -> ContextWrapper {
-        return ContextWrapper(VTop, VTop->core__DOT__proxy__DOT__ctx0);
+        return ContextWrapper(VTop, VTop->core__DOT__ctx0);
     }
     auto get_oreq() const -> CBusWrapper {
         return CBusWrapper(VTop, oreq);

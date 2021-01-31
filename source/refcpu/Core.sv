@@ -9,7 +9,15 @@ module Core (
     output dbus_req_t  dreq,
     input  dbus_resp_t dresp
 );
+    /**
+     * ctx0 is a snapshot of ctx at the beginning of the execution
+     * of each instruction, which is reserved for debugging and
+     * external interrupts(?).
+     * in COMMIT stage, ctx will be saved to ctx0.
+     */
     context_t ctx /* verilator public_flat_rd */;
+    context_t ctx0 /* verilator public_flat_rd */;
+
     ibus_req_t [LAST_CPU_STATE:0] out_ireq;
     dbus_req_t [LAST_CPU_STATE:0] out_dreq;
     context_t  [LAST_CPU_STATE:0] out_ctx;

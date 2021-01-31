@@ -6,17 +6,12 @@ module Fetch (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp
 );
-    /**
-     * out:
-     *   t[0]: responded data
-     */
-
     assign ireq.valid = 1;
     assign ireq.addr = ctx.pc;
 
     always_comb begin
         out = ctx;
-        out.t[0] = iresp.data;
+        out.instr = iresp.data;
 
         if (iresp.addr_ok && iresp.data_ok)
             out.state = S_DECODE;

@@ -4,16 +4,12 @@ module RType (
     input  context_t ctx,
     output context_t out
 );
-    /**
-     * in:
-     *   t[0]: fetched instruction
-     */
-
-    `FORMAT_RTYPE(_unused_rs, rt, rd, shamt, funct, ctx.t[0]);
+    `FORMAT_RTYPE(_unused_rs, rt, rd, shamt, funct, ctx.instr);
 
     always_comb begin
         out = ctx;
         out.state = S_COMMIT;
+        out.args.commit.target_id = rd;
 
         unique case (funct)
         FN_SLL:

@@ -7,25 +7,16 @@ module CoreProxy (
     input ibus_req_t [LAST_CPU_STATE:0] out_ireq,
     input dbus_req_t [LAST_CPU_STATE:0] out_dreq,
 
-    output context_t  ctx,
+    output context_t  ctx, ctx0,
     output ibus_req_t ireq,
     output dbus_req_t dreq
 );
-    /**
-     * ctx0 is a snapshot of ctx at the beginning of the execution
-     * of each instruction, which is reserved for debugging and
-     * external interrupts(?).
-     * in COMMIT stage, ctx will be saved to ctx0.
-     */
-    context_t ctx0 /* verilator public_flat_rd */;
-
     assign ireq = out_ireq[ctx.state];
     assign dreq = out_dreq[ctx.state];
 
     /**
      * update context
      */
-
     context_t new_ctx;
 
     always_comb begin
@@ -38,6 +29,14 @@ module CoreProxy (
         // detect invalid state
         if (new_ctx.state > LAST_CPU_STATE)
             new_ctx.state = S_UNKNOWN;
+
+        // PC must be aligned to 4 bytes
+        if (|new_ctx.pc[1:0])
+            new_ctx.state = S_UNKNOWN;
+
+        // reset args
+        if (ctx.state == S_COMMIT)
+            new_ctx.args = ARGS_RESET_VALUE;
     end
 
     always_ff @(posedge clk)

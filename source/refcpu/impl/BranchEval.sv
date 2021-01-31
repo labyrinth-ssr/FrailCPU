@@ -4,16 +4,9 @@ module BranchEval (
     input  context_t ctx,
     output context_t out
 );
-    /**
-     * in:
-     *   t[0]: fetched instruction
-     * out:
-     *   t[0]: next PC
-     */
-
     localparam type offset_t = logic [17:0];
 
-    `FORMAT_ITYPE(opcode, rs, rt, imm, ctx.t[0]);
+    `FORMAT_ITYPE(opcode, rs, rt, imm, ctx.instr);
 
     word_t val1, val2;
     assign val1 = ctx.r[rs];
@@ -30,9 +23,9 @@ module BranchEval (
 
         unique case (opcode)
         OP_BEQ:
-            out.t[0] = val1 == val2 ? target_pc : ctx.next_pc;
+            out.args.branch.new_pc = val1 == val2 ? target_pc : ctx.next_pc;
         OP_BNE:
-            out.t[0] = val1 != val2 ? target_pc : ctx.next_pc;
+            out.args.branch.new_pc = val1 != val2 ? target_pc : ctx.next_pc;
         default:
             out.state = S_UNKNOWN;
         endcase

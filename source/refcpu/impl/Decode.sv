@@ -4,26 +4,21 @@ module Decode (
     input  context_t ctx,
     output context_t out
 );
-    /**
-     * in:
-     *   t[0]: fetched instruction
-     * out:
-     *   t[0]: fetched instruction
-     */
-
-    opcode_t opcode;
-    assign opcode = opcode_t'(ctx.t[0][31:26]);
-
     always_comb begin
         out = ctx;
 
-        unique case (opcode)
+        unique case (ctx.instr.opcode)
         OP_RTYPE:
-            out.state = S_COMMIT;
+            out.state = S_RTYPE;
+
         OP_BEQ, OP_BNE:
             out.state = S_BRANCH_EVAL;
-        OP_ADDIU:
+
+        OP_ADDIU,
+        OP_ANDI, OP_ORI, OP_XORI,
+        OP_LUI:
             out.state = S_UNSIGNED_ARITHMETIC;
+
         default:  // unknown instruction
             out.state = S_UNKNOWN;
         endcase

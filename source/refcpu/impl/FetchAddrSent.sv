@@ -6,11 +6,6 @@ module FetchAddrSent (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp
 );
-    /**
-     * out:
-     *   t[0]: responded data
-     */
-
     assign ireq.valid = '0;     // stop issuing request
 
     // for debugging
@@ -18,7 +13,7 @@ module FetchAddrSent (
 
     always_comb begin
         out = ctx;
-        out.t[0] = iresp.data;
+        out.instr = iresp.data;
         out.state = iresp.data_ok ? S_DECODE : S_FETCH_ADDR_SENT;
     end
 
