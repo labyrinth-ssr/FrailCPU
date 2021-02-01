@@ -29,6 +29,10 @@ module RType (
             out.r[rd] = ctx.r[rs] ^ ctx.r[rt];
         FN_NOR:
             out.r[rd] = ~(ctx.r[rs] | ctx.r[rt]);
+        FN_SLT:
+            out.r[rd] = `SIGNED_CMP(ctx.r[rs], ctx.r[rt]);
+        FN_SLTU:
+            out.r[rd] = `UNSIGNED_CMP(ctx.r[rs], ctx.r[rt]);
 
         FN_JR: begin
             out.state = S_BRANCH;
@@ -44,6 +48,7 @@ module RType (
 
         default: begin
             out.state = S_EXCEPTION;
+            out.target_id = R0;  // cancel writeback
             out.args.exception.code = EX_RI;
         end
         endcase

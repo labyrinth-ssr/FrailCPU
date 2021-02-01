@@ -16,6 +16,7 @@ module Decode (
             out.state = S_BRANCH_EVAL;
 
         OP_ADDIU,
+        OP_SLTI, OP_SLTIU,
         OP_ANDI, OP_ORI, OP_XORI,
         OP_LUI:
             out.state = S_UNSIGNED_ARITHMETIC;

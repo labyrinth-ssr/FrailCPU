@@ -29,4 +29,9 @@
     else \
         out.state = self;
 
+`define SIGNED_CMP(a, b) \
+    {31'b0, ($signed(a) < $signed(b))}
+`define UNSIGNED_CMP(a, b) \
+    {31'b0, ({1'b0, (a)} < {1'b0, (b)})}
+
 `endif

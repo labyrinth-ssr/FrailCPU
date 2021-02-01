@@ -14,9 +14,12 @@ module Load (
 
     always_comb begin
         out = ctx;
-        out.r[`ITYPE_RT] = dresp.data;
-        out.target_id = dresp.addr_ok && dresp.data_ok ? `ITYPE_RT : R0;
 
-        `MEM_WAIT(dresp, S_STORE, S_STORE_ADDR_SENT, S_COMMIT);
+        if (dresp.addr_ok && dresp.data_ok) begin
+            out.r[`ITYPE_RT] = dresp.data;
+            out.target_id = `ITYPE_RT;
+        end
+
+        `MEM_WAIT(dresp, S_LOAD, S_LOAD_ADDR_SENT, S_COMMIT);
     end
 endmodule

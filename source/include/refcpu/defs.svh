@@ -47,6 +47,8 @@ typedef enum i6 {
     OP_BEQ   = 6'b000100,
     OP_BNE   = 6'b000101,
     OP_ADDIU = 6'b001001,
+    OP_SLTI  = 6'b001010,
+    OP_SLTIU = 6'b001011,
     OP_ANDI  = 6'b001100,
     OP_ORI   = 6'b001101,
     OP_XORI  = 6'b001110,
@@ -65,7 +67,9 @@ typedef enum i6 {
     FN_AND  = 6'b100100,
     FN_OR   = 6'b100101,
     FN_XOR  = 6'b100110,
-    FN_NOR  = 6'b100111
+    FN_NOR  = 6'b100111,
+    FN_SLT  = 6'b101010,
+    FN_SLTU = 6'b101011
 } funct_t /* verilator public */;
 
 // general-purpose registers

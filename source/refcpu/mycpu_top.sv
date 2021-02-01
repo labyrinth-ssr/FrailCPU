@@ -53,7 +53,12 @@ module mycpu_top (
 
     VTop top(.clk(aclk), .resetn(aresetn), .*);
     CBusToAXI cvt(.creq(oreq), .cresp(oresp), .*);
-    Debugger dbg(.ctx(top.core.ctx), .*);
+    Debugger dbg(
+        .pc(top.core.ctx.pc),
+        .id(top.core.proxy.new_ctx.target_id),
+        .r(top.core.proxy.new_ctx.r),
+        .*
+    );
 
     logic _unused_ok = &{ext_int};
 endmodule

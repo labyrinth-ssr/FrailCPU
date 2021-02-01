@@ -85,8 +85,10 @@ module CBusToAXI(
     assign remain = in_issue ^ handshake;
 
     // cache bus driver
-    assign cresp.ready = handshake[W] || handshake[R];
-    assign cresp.last  = cresp.ready && (!in_issue[R] || rlast) && is_last;
+    logic ready;
+    assign ready = handshake[W] || handshake[R];
+    assign cresp.ready = ready;
+    assign cresp.last  = ready && (!in_issue[R] || rlast) && is_last;
     assign cresp.data  = rdata;
 
     // AXI driver

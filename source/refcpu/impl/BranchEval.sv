@@ -27,9 +27,9 @@ module BranchEval (
 
         unique case (opcode)
         OP_BEQ:
-            new_pc = val1 == val2 ? target_pc : next_pc;
+            new_pc = val1 == val2 ? target_pc : link_pc;
         OP_BNE:
-            new_pc = val1 != val2 ? target_pc : next_pc;
+            new_pc = val1 != val2 ? target_pc : link_pc;
         OP_J, OP_JAL:
             new_pc = jump_pc;
 

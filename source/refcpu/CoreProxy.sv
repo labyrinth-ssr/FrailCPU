@@ -24,7 +24,6 @@ module CoreProxy (
 
         // (fake) hardwired values
         new_ctx.r[0] = '0;
-        new_ctx.target_id = R0;  // reset target_id on every cycle
 
         // detect invalid state
         if (new_ctx.state > LAST_CPU_STATE)
@@ -44,6 +43,7 @@ module CoreProxy (
         end
 
         ctx <= new_ctx;
+        ctx.target_id <= R0;  // reset on every cycle
 
         // checkpoint context at COMMIT
         if (ctx.state == S_COMMIT)
