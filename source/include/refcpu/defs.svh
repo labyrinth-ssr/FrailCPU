@@ -42,6 +42,8 @@ typedef i26 long_imm_t;
 // opcode: bit 31~26
 typedef enum i6 {
     OP_RTYPE = 6'b000000,
+    OP_J     = 6'b000010,
+    OP_JAL   = 6'b000011,
     OP_BEQ   = 6'b000100,
     OP_BNE   = 6'b000101,
     OP_ADDIU = 6'b001001,
@@ -57,6 +59,7 @@ typedef enum i6 {
 typedef enum i6 {
     FN_SLL  = 6'b000000,
     FN_JR   = 6'b001000,
+    FN_JALR = 6'b001001,
     FN_ADDU = 6'b100001,
     FN_SUBU = 6'b100011,
     FN_AND  = 6'b100100,
@@ -89,9 +92,7 @@ typedef struct packed {
             regid_t  rt;
             imm_t    imm;
         } itype;
-        struct packed {
-            long_imm_t imm;
-        } jtype;
+        long_imm_t index;  // J-type
     } payload;
 } instr_t;
 
@@ -170,10 +171,9 @@ typedef struct packed {
     args_t args;        // inter-state arguments
     cp0_t cp0;          // CP0 registers
     addr_t pc;          // program counter
-    addr_t next_pc;     // PC + 4, hardwired
     logic delayed;      // currently in delay slot?
     addr_t delayed_pc;  // PC of delayed branches
-    regid_t target_id;  // writeback register id, reset on every cycle
+    regid_t target_id;  // writeback register id, for debugging
     instr_t instr;      // current instruction
     word_t hi, lo;      // HI & LO special registers
     word_t [31:0] r;    // general-purpose registers, r[0] is hardwired to zero
@@ -186,7 +186,6 @@ parameter context_t CONTEXT_RESET_VALUE = '{
     args       : ARGS_RESET_VALUE,
     cp0        : CP0_RESET_VALUE,
     pc         : RESET_PC,
-    next_pc    : RESET_PC + 4,
     delayed    : 1'b0,
     delayed_pc : 32'b0,
     target_id  : R0,

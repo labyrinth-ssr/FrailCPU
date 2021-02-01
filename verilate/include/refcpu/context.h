@@ -14,9 +14,6 @@ struct ContextWrapper {
     auto pc() const -> uint32_t {
         return top->context_t_pc(data);
     }
-    auto next_pc() const -> uint32_t {
-        return top->context_t_next_pc(data);
-    }
 
 protected:
     VTopType *top;

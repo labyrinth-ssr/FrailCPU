@@ -6,6 +6,9 @@ module RType (
 );
     `FORMAT_RTYPE(rs, rt, rd, shamt, funct, ctx.instr);
 
+    addr_t link_pc;
+    assign link_pc = ctx.pc + 8;
+
     always_comb begin
         out = ctx;
         out.state = S_COMMIT;
@@ -30,6 +33,12 @@ module RType (
         FN_JR: begin
             out.state = S_BRANCH;
             out.target_id = R0;  // cancel writeback
+            out.args.branch.new_pc = ctx.r[rs];
+        end
+
+        FN_JALR: begin
+            out.state = S_BRANCH;
+            out.r[rd] = link_pc;
             out.args.branch.new_pc = ctx.r[rs];
         end
 

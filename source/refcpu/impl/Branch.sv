@@ -9,7 +9,7 @@ module Branch (
     always_comb begin
         out = ctx;
         out.state = S_FETCH;  // skip S_COMMIT
-        out.pc = ctx.next_pc;
+        out.pc = ctx.pc + 4;
         out.delayed = 1;
         out.delayed_pc = ctx.args.branch.new_pc;
     end

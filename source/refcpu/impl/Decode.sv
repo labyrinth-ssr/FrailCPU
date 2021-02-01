@@ -11,7 +11,8 @@ module Decode (
         OP_RTYPE:
             out.state = S_RTYPE;
 
-        OP_BEQ, OP_BNE:
+        OP_BEQ, OP_BNE,
+        OP_J, OP_JAL:
             out.state = S_BRANCH_EVAL;
 
         OP_ADDIU,

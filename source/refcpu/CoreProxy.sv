@@ -24,10 +24,7 @@ module CoreProxy (
 
         // (fake) hardwired values
         new_ctx.r[0] = '0;
-        new_ctx.next_pc = new_ctx.pc + 4;
-
-        // reset target_id on every cycle
-        new_ctx.target_id = R0;
+        new_ctx.target_id = R0;  // reset target_id on every cycle
 
         // detect invalid state
         if (new_ctx.state > LAST_CPU_STATE)

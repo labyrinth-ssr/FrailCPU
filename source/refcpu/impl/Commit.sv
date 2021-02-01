@@ -12,6 +12,6 @@ module Commit (
             out.delayed = 0;
             out.pc = ctx.delayed_pc;
         end else
-            out.pc = ctx.next_pc;
+            out.pc = ctx.pc + 4;
     end
 endmodule
