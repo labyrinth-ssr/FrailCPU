@@ -68,9 +68,43 @@ module RType (
                 out.r[rd] = v_sub[31:0];
         end
 
+        FN_MFHI:
+            out.r[rd] = ctx.hi;
+        FN_MTHI:
+            out.hi = ctx.r[rs];
+        FN_MFLO:
+            out.r[rd] = ctx.lo;
+        FN_MTLO:
+            out.lo = ctx.r[rs];
+        FN_MULT:
+            {out.hi, out.lo} =
+                $signed(`SIGN_EXTEND(ctx.r[rs], 64)) *
+                $signed(`SIGN_EXTEND(ctx.r[rt], 64));
+        FN_MULTU:
+            {out.hi, out.lo} =
+                `ZERO_EXTEND(ctx.r[rs], 64) *
+                `ZERO_EXTEND(ctx.r[rt], 64);
+        FN_DIV: begin
+            if (ctx.r[rt] == 32'b0)
+                out.state = S_UNKNOWN;
+            else
+                {out.hi, out.lo} = {
+                    $signed(ctx.r[rs]) % $signed(ctx.r[rt]),
+                    $signed(ctx.r[rs]) / $signed(ctx.r[rt])
+                };
+        end
+        FN_DIVU: begin
+            if (ctx.r[rt] == 32'b0)
+                out.state = S_UNKNOWN;
+            else
+                {out.hi, out.lo} = {
+                    ctx.r[rs] % ctx.r[rt],
+                    ctx.r[rs] / ctx.r[rt]
+                };
+        end
+
         FN_JR: begin
             out.state = S_BRANCH;
-            out.target_id = R0;  // cancel writeback
             out.args.branch.new_pc = ctx.r[rs];
         end
 
@@ -85,6 +119,17 @@ module RType (
             out.target_id = R0;  // cancel writeback
             out.args.exception.code = EX_RI;
         end
+        endcase
+
+        // cancel writeback for specific instructions
+        unique case (funct)
+        FN_MTHI, FN_MTLO,
+        FN_MULT, FN_MULTU,
+        FN_DIV, FN_DIVU,
+        FN_JR:
+            out.target_id = R0;
+
+        default: /* do nothing */;
         endcase
     end
 endmodule
