@@ -34,4 +34,13 @@
 `define UNSIGNED_CMP(a, b) \
     {31'b0, ({1'b0, (a)} < {1'b0, (b)})}
 
+`define THROW(ecode) \
+    begin \
+        out.state = S_EXCEPTION; \
+        out.args.exception.code = ecode; \
+        out.target_id = R0; \
+    end
+`define FATAL \
+    begin out.state = S_UNKNOWN; end
+
 `endif

@@ -15,6 +15,6 @@ module Branch (
 
         // UNPREDICTABLE: branch in delay slot
         if (ctx.delayed)
-            out.state = S_UNKNOWN;
+            `FATAL
     end
 endmodule

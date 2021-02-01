@@ -59,16 +59,10 @@ module BranchEval (
             BR_BGEZ, BR_BGEZAL:
                 new_pc = $signed(v_rs) >= 0 ? target_pc : link_pc;
 
-            default: begin
-                out.state = S_EXCEPTION;
-                out.args.exception.code = EX_RI;
-            end
+            default: `THROW(EX_RI)
             endcase
 
-        default:
-            // Decode should guarantee that no other instruction
-            // enters this state.
-            out.state = S_UNKNOWN;
+        default: `FATAL
         endcase
 
         out.args.branch.new_pc = new_pc;

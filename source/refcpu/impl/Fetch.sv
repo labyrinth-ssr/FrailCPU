@@ -16,9 +16,7 @@ module Fetch (
         `MEM_WAIT(iresp, S_FETCH, S_FETCH_ADDR_SENT, S_DECODE);
 
         // PC must be aligned to 4 bytes
-        if (|ctx.pc[1:0]) begin
-            out.state = S_EXCEPTION;
-            out.args.exception.code = EX_ADEL;
-        end
+        if (|ctx.pc[1:0])
+            `THROW(EX_ADEL)
     end
 endmodule

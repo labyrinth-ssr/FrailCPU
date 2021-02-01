@@ -22,6 +22,7 @@ typedef enum uint {
     S_ADDR_CHECK,
     S_LOAD,
     S_LOAD_ADDR_SENT,
+    S_LOADED,
     S_STORE,
     S_STORE_ADDR_SENT,
 
@@ -57,7 +58,13 @@ typedef enum i6 {
     OP_ORI   = 6'b001101,
     OP_XORI  = 6'b001110,
     OP_LUI   = 6'b001111,
+    OP_LB    = 6'b100000,
+    OP_LH    = 6'b100001,
     OP_LW    = 6'b100011,
+    OP_LBU   = 6'b100100,
+    OP_LHU   = 6'b100101,
+    OP_SB    = 6'b101000,
+    OP_SH    = 6'b101001,
     OP_SW    = 6'b101011
 } opcode_t /* verilator public */;
 
@@ -188,8 +195,11 @@ typedef `PACKED_UNION {
         ecode_t code;
     } exception;
     struct packed {
-        addr_t addr;
-        msize_t size;
+        // NOTE: same layout with dbus_req_t
+        addr_t   addr;
+        msize_t  size;
+        strobe_t strobe;
+        word_t   data;  // load uses this field to receive data
     } mem;  // used by all load & store operations
 } args_t;
 

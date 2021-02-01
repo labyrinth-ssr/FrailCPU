@@ -27,6 +27,7 @@
 
 typedef int unsigned uint;
 
+typedef logic     i1;
 typedef `BITS(2)  i2;
 typedef `BITS(3)  i3;
 typedef `BITS(4)  i4;
@@ -46,12 +47,6 @@ typedef i33 arith_t;
 // all addresses and words are 32-bit
 typedef i32 addr_t;
 typedef i32 word_t;
-
-// view a word as 4 bytes
-typedef union packed {
-    word_t word;
-    i8 [3:0] bytes;
-} view_t;
 
 // number of bytes transferred in one memory r/w
 typedef enum i3 {
@@ -117,13 +112,13 @@ typedef struct packed {
     addr_t   addr;    // target address
     msize_t  size;    // number of bytes
     strobe_t strobe;  // which bytes are enabled? set to zeros for read request
-    view_t   data;    // the data to write
+    word_t   data;    // the data to write
 } dbus_req_t;
 
 typedef struct packed {
     logic  addr_ok;  // is the address accepted by cache?
     logic  data_ok;  // is the field "data" valid?
-    view_t data;     // the data read from cache
+    word_t data;     // the data read from cache
 } dbus_resp_t;
 
 /**
@@ -153,14 +148,14 @@ typedef struct packed {
     msize_t  size;      // number of bytes in one burst
     addr_t   addr;      // start address
     strobe_t strobe;    // which bytes are enabled?
-    view_t   data;      // the data to write
+    word_t   data;      // the data to write
     mlen_t   len;       // number of bursts
 } cbus_req_t;
 
 typedef struct packed {
     logic  ready;  // is data arrived in this cycle?
     logic  last;   // is it the last word?
-    view_t data;   // the data from AXI bus
+    word_t data;   // the data from AXI bus
 } cbus_resp_t;
 
 /**

@@ -8,6 +8,6 @@ module Exception (
         out = ctx;
 
         // TODO: implement exception handler
-        out.state = S_UNKNOWN;
+        `FATAL
     end
 endmodule

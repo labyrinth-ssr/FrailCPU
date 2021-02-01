@@ -35,18 +35,12 @@ module Arithmetic (
             out.r[rt] = {imm, 16'b0};
 
         OP_ADDI: begin
-            if (v_addi[32] != v_addi[31]) begin
-                out.state = S_EXCEPTION;
-                out.target_id = R0;
-                out.args.exception.code = EX_OV;
-            end else
+            if (v_addi[32] != v_addi[31]) `THROW(EX_OV)
+            else
                 out.r[rt] = v_addi[31:0];
         end
 
-        default:
-            // Decode should guarantee that no other instruction
-            // enters this state.
-            out.state = S_UNKNOWN;
+        default: `FATAL
         endcase
     end
 endmodule

@@ -41,6 +41,7 @@ module Core (
     `IMPL_Cxx(S_ADDR_CHECK, AddrCheck);
     `IMPL_CxD(S_LOAD, Load);
     `IMPL_CxD(S_LOAD_ADDR_SENT, LoadAddrSent);
+    `IMPL_Cxx(S_LOADED, Loaded);
     `IMPL_CxD(S_STORE, Store);
     `IMPL_CxD(S_STORE_ADDR_SENT, StoreAddrSent);
 

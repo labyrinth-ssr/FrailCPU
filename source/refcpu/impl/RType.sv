@@ -51,20 +51,14 @@ module RType (
             out.r[rd] = `UNSIGNED_CMP(ctx.r[rs], ctx.r[rt]);
 
         FN_ADD: begin
-            if (v_add[32] != v_add[31]) begin
-                out.state = S_EXCEPTION;
-                out.target_id = R0;
-                out.args.exception.code = EX_OV;
-            end else
+            if (v_add[32] != v_add[31]) `THROW(EX_OV)
+            else
                 out.r[rd] = v_add[31:0];
         end
 
         FN_SUB: begin
-            if (v_sub[32] != v_sub[31]) begin
-                out.state = S_EXCEPTION;
-                out.target_id = R0;
-                out.args.exception.code = EX_OV;
-            end else
+            if (v_sub[32] != v_sub[31]) `THROW(EX_OV)
+            else
                 out.r[rd] = v_sub[31:0];
         end
 
@@ -114,11 +108,7 @@ module RType (
             out.args.branch.new_pc = ctx.r[rs];
         end
 
-        default: begin
-            out.state = S_EXCEPTION;
-            out.target_id = R0;  // cancel writeback
-            out.args.exception.code = EX_RI;
-        end
+        default: `THROW(EX_RI)
         endcase
 
         // cancel writeback for specific instructions

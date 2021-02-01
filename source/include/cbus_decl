@@ -19,7 +19,7 @@
 `STRUCT_ACCESSOR(cbus_req_t, size, msize_t);
 `STRUCT_ACCESSOR(cbus_req_t, addr, addr_t);
 `STRUCT_ACCESSOR(cbus_req_t, strobe, strobe_t);
-`STRUCT_ACCESSOR(cbus_req_t, data, view_t);
+`STRUCT_ACCESSOR(cbus_req_t, data, word_t);
 `STRUCT_ACCESSOR(cbus_req_t, len, mlen_t);
 
 `else
