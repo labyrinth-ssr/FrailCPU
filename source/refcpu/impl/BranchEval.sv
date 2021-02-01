@@ -8,9 +8,9 @@ module BranchEval (
 
     `FORMAT_ITYPE(opcode, rs, rt, imm, ctx.instr);
 
-    word_t val1, val2;
-    assign val1 = ctx.r[rs];
-    assign val2 = ctx.r[rt];
+    word_t v_rs, v_rt;
+    assign v_rs = ctx.r[rs];
+    assign v_rt = ctx.r[rt];
 
     offset_t offset;
     assign offset = {imm, 2'b0};
@@ -21,17 +21,49 @@ module BranchEval (
     assign target_pc = next_pc + `SIGN_EXTEND(offset, 32);
     assign jump_pc = {ctx.pc[31:28], ctx.instr.payload, 2'b00};
 
+    btype_t btype;
+    assign btype = btype_t'(rt);
+
+    logic need_link;
+    assign need_link =
+        opcode == OP_JAL ||
+        opcode == OP_BTYPE && (btype == BR_BLTZAL || btype == BR_BGEZAL);
+
     always_comb begin
         out = ctx;
         out.state = S_BRANCH;
 
+        // link to register
+        if (need_link) begin
+            out.target_id = RA;
+            out.r[RA] = link_pc;
+        end
+
+        // evaluate new_pc
         unique case (opcode)
         OP_BEQ:
-            new_pc = val1 == val2 ? target_pc : link_pc;
+            new_pc = v_rs == v_rt ? target_pc : link_pc;
         OP_BNE:
-            new_pc = val1 != val2 ? target_pc : link_pc;
+            new_pc = v_rs != v_rt ? target_pc : link_pc;
+        OP_BLEZ:
+            new_pc = $signed(v_rs) <= 0 ? target_pc : link_pc;
+        OP_BGTZ:
+            new_pc = $signed(v_rs) > 0 ? target_pc : link_pc;
         OP_J, OP_JAL:
             new_pc = jump_pc;
+
+        OP_BTYPE:
+            unique case (btype)
+            BR_BLTZ, BR_BLTZAL:
+                new_pc = $signed(v_rs) < 0 ? target_pc : link_pc;
+            BR_BGEZ, BR_BGEZAL:
+                new_pc = $signed(v_rs) >= 0 ? target_pc : link_pc;
+
+            default: begin
+                out.state = S_EXCEPTION;
+                out.args.exception.code = EX_RI;
+            end
+            endcase
 
         default:
             // Decode should guarantee that no other instruction
@@ -40,15 +72,5 @@ module BranchEval (
         endcase
 
         out.args.branch.new_pc = new_pc;
-
-        // link to register
-        if (opcode == OP_JAL) begin
-            out.target_id = RA;
-            out.r[RA] = link_pc;
-        end
-
-        // UNPREDICTABLE: branch in delay slot
-        if (ctx.delayed)
-            out.state = S_UNKNOWN;
     end
 endmodule

@@ -12,5 +12,9 @@ module Branch (
         out.pc = ctx.pc + 4;
         out.delayed = 1;
         out.delayed_pc = ctx.args.branch.new_pc;
+
+        // UNPREDICTABLE: branch in delay slot
+        if (ctx.delayed)
+            out.state = S_UNKNOWN;
     end
 endmodule

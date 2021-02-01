@@ -42,10 +42,13 @@ typedef i26 long_imm_t;
 // opcode: bit 31~26
 typedef enum i6 {
     OP_RTYPE = 6'b000000,
+    OP_BTYPE = 6'b000001,
     OP_J     = 6'b000010,
     OP_JAL   = 6'b000011,
     OP_BEQ   = 6'b000100,
     OP_BNE   = 6'b000101,
+    OP_BLEZ  = 6'b000110,
+    OP_BGTZ  = 6'b000111,
     OP_ADDI  = 6'b001000,
     OP_ADDIU = 6'b001001,
     OP_SLTI  = 6'b001010,
@@ -58,7 +61,7 @@ typedef enum i6 {
     OP_SW    = 6'b101011
 } opcode_t /* verilator public */;
 
-// funct (in RType instructions): bit 5~0
+// funct, for SPECIAL instructions: bit 5~0
 typedef enum i6 {
     FN_SLL  = 6'b000000,
     FN_SRL  = 6'b000010,
@@ -79,6 +82,14 @@ typedef enum i6 {
     FN_SLT  = 6'b101010,
     FN_SLTU = 6'b101011
 } funct_t /* verilator public */;
+
+// branch type, for REGIMM instructions
+typedef enum i5 {
+    BR_BLTZ   = 5'b00000,
+    BR_BGEZ   = 5'b00001,
+    BR_BLTZAL = 5'b10000,
+    BR_BGEZAL = 5'b10001
+} btype_t;
 
 // general-purpose registers
 typedef enum i5 {
