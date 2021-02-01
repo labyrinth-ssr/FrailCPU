@@ -39,7 +39,7 @@ module CoreProxy (
     if (resetn) begin
         // stop when CPU trapped in S_UNKNOWN
         if (ctx.state == S_UNKNOWN) begin
-            $display("ctx.pc=%08x\n", ctx.pc);
+            $display("RefCPU: internal error, ctx.pc=0x%08x\n", ctx.pc);
             $finish;
         end
 

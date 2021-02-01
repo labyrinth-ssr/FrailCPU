@@ -55,7 +55,14 @@ typedef enum i6 {
 
 // funct (in RType instructions): bit 5~0
 typedef enum i6 {
-    FN_SLL = 6'b000000
+    FN_SLL  = 6'b000000,
+    FN_JR   = 6'b001000,
+    FN_ADDU = 6'b100001,
+    FN_SUBU = 6'b100011,
+    FN_AND  = 6'b100100,
+    FN_OR   = 6'b100101,
+    FN_XOR  = 6'b100110,
+    FN_NOR  = 6'b100111
 } funct_t /* verilator public */;
 
 // general-purpose registers
