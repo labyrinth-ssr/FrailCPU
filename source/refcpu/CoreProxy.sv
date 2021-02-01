@@ -26,6 +26,9 @@ module CoreProxy (
         new_ctx.r[0] = '0;
         new_ctx.next_pc = new_ctx.pc + 4;
 
+        // reset target_id on every cycle
+        new_ctx.target_id = R0;
+
         // detect invalid state
         if (new_ctx.state > LAST_CPU_STATE)
             new_ctx.state = S_UNKNOWN;

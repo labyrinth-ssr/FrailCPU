@@ -9,7 +9,7 @@ module RType (
     always_comb begin
         out = ctx;
         out.state = S_COMMIT;
-        out.args.commit.target_id = rd;
+        out.target_id = rd;
 
         unique case (funct)
         FN_SLL:
@@ -29,7 +29,7 @@ module RType (
 
         FN_JR: begin
             out.state = S_BRANCH;
-            out.args.commit.target_id = R0;  // cancel writeback
+            out.target_id = R0;  // cancel writeback
             out.args.branch.new_pc = ctx.r[rs];
         end
 

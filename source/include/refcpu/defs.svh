@@ -150,9 +150,6 @@ typedef `PACKED_UNION {
     // if one state has argument, add a packed struct in the
     // union with the name of the corresponding state.
     struct packed {
-        regid_t target_id;
-    } commit;
-    struct packed {
         addr_t new_pc;
     } branch;
     struct packed {
@@ -176,6 +173,7 @@ typedef struct packed {
     addr_t next_pc;     // PC + 4, hardwired
     logic delayed;      // currently in delay slot?
     addr_t delayed_pc;  // PC of delayed branches
+    regid_t target_id;  // writeback register id, reset on every cycle
     instr_t instr;      // current instruction
     word_t hi, lo;      // HI & LO special registers
     word_t [31:0] r;    // general-purpose registers, r[0] is hardwired to zero
@@ -191,6 +189,7 @@ parameter context_t CONTEXT_RESET_VALUE = '{
     next_pc    : RESET_PC + 4,
     delayed    : 1'b0,
     delayed_pc : 32'b0,
+    target_id  : R0,
     instr      : INSTR_NOP,
     hi         : 32'b0,
     lo         : 32'b0,

@@ -9,7 +9,7 @@ module UnsignedArithmetic (
     always_comb begin
         out = ctx;
         out.state = S_COMMIT;
-        out.args.commit.target_id = rt;
+        out.target_id = rt;
 
         unique case (opcode)
         OP_ADDIU:

@@ -11,8 +11,8 @@ module Debugger (
     regid_t id;
     logic changed;
 
-    assign id = ctx.args.commit.target_id;
-    assign changed = ctx.state == S_COMMIT && |id;
+    assign id = ctx.target_id;
+    assign changed = id != R0;
 
     assign debug_wb_pc = ctx.pc;
     assign debug_wb_rf_wen = {4{changed}};
