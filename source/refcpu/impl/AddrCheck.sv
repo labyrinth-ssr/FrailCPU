@@ -7,7 +7,7 @@ module AddrCheck (
     `FORMAT_ITYPE(opcode, base, _unused_rt, offset, ctx.instr);
 
     addr_t addr;
-    assign addr = ctx.r[base] + `SIGN_EXTEND(offset);
+    assign addr = ctx.r[base] + `SIGN_EXTEND(offset, 32);
 
     always_comb begin
         out = ctx;

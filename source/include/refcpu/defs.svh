@@ -16,7 +16,7 @@ typedef enum uint {
     S_DECODE,
     S_BRANCH_EVAL,
     S_BRANCH,
-    S_UNSIGNED_ARITHMETIC,
+    S_ARITHMETIC,
     S_RTYPE,
     S_EXCEPTION,
     S_ADDR_CHECK,
@@ -46,6 +46,7 @@ typedef enum i6 {
     OP_JAL   = 6'b000011,
     OP_BEQ   = 6'b000100,
     OP_BNE   = 6'b000101,
+    OP_ADDI  = 6'b001000,
     OP_ADDIU = 6'b001001,
     OP_SLTI  = 6'b001010,
     OP_SLTIU = 6'b001011,
@@ -60,9 +61,16 @@ typedef enum i6 {
 // funct (in RType instructions): bit 5~0
 typedef enum i6 {
     FN_SLL  = 6'b000000,
+    FN_SRL  = 6'b000010,
+    FN_SRA  = 6'b000011,
+    FN_SRLV = 6'b000110,
+    FN_SRAV = 6'b000111,
+    FN_SLLV = 6'b000100,
     FN_JR   = 6'b001000,
     FN_JALR = 6'b001001,
+    FN_ADD  = 6'b100000,
     FN_ADDU = 6'b100001,
+    FN_SUB  = 6'b100010,
     FN_SUBU = 6'b100011,
     FN_AND  = 6'b100100,
     FN_OR   = 6'b100101,
@@ -108,30 +116,30 @@ parameter instr_t INSTR_NOP = 32'b0;
 
 // exception code
 typedef enum i5 {
-    EX_INT      = 0,
-    EX_MOD      = 1,
-    EX_TLBL     = 2,
-    EX_TLBS     = 3,
-    EX_ADEL     = 4,
-    EX_ADES     = 5,
-    EX_IBE      = 6,
-    EX_DBE      = 7,
-    EX_SYS      = 8,
-    EX_BP       = 9,
-    EX_RI       = 10,
-    EX_CPU      = 11,
-    EX_OV       = 12,
-    EX_TR       = 13,
-    EX_FPE      = 15,
-    EX_C2E      = 18,
-    EX_TLBRI    = 19,
-    EX_TLBXI    = 20,
-    EX_MDMX     = 22,
-    EX_WATCH    = 23,
-    EX_MCHECK   = 24,
-    EX_THREAD   = 25,
-    EX_DSPDIS   = 26,
-    EX_CACHEERR = 30
+    EX_INT      = 0,   // Interrupt
+    EX_MOD      = 1,   // TLB modification exception
+    EX_TLBL     = 2,   // TLB exception (load or instruction fetch)
+    EX_TLBS     = 3,   // TLB exception (store)
+    EX_ADEL     = 4,   // Address error exception (load or instruction fetch)
+    EX_ADES     = 5,   // Address error exception (store)
+    EX_IBE      = 6,   // Bus error exception (instruction fetch)
+    EX_DBE      = 7,   // Bus error exception (data reference: load or store)
+    EX_SYS      = 8,   // Syscall exception
+    EX_BP       = 9,   // Breakpoint exception
+    EX_RI       = 10,  // Reserved instruction exception
+    EX_CPU      = 11,  // Coprocessor Unusable exception
+    EX_OV       = 12,  // Arithmetic Overflow exception
+    EX_TR       = 13,  // Trap exception
+    EX_FPE      = 15,  // Floating point exception
+    EX_C2E      = 18,  // Reserved for precise Coprocessor 2 exceptions
+    EX_TLBRI    = 19,  // TLB Read-Inhibit exception
+    EX_TLBXI    = 20,  // TLB Execution-Inhibit exception
+    EX_MDMX     = 22,  // MDMX Unusable Exception (MDMX ASE)
+    EX_WATCH    = 23,  // Reference to WatchHi/WatchLo address
+    EX_MCHECK   = 24,  // Machine check
+    EX_THREAD   = 25,  // Thread Allocation, Deallocation, or Scheduling Exceptions (MIPS® MT ASE)
+    EX_DSPDIS   = 26,  // DSP ASE State Disabled exception (MIPS® DSP ASE)
+    EX_CACHEERR = 30   // Cache error
 } ecode_t;
 
 /**

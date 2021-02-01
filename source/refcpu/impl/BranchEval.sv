@@ -18,7 +18,7 @@ module BranchEval (
     addr_t next_pc, link_pc, target_pc, jump_pc, new_pc;
     assign next_pc = ctx.pc + 4;
     assign link_pc = ctx.pc + 8;
-    assign target_pc = next_pc + `SIGN_EXTEND(offset);
+    assign target_pc = next_pc + `SIGN_EXTEND(offset, 32);
     assign jump_pc = {ctx.pc[31:28], ctx.instr.payload, 2'b00};
 
     always_comb begin

@@ -15,11 +15,11 @@ module Decode (
         OP_J, OP_JAL:
             out.state = S_BRANCH_EVAL;
 
-        OP_ADDIU,
+        OP_ADDI, OP_ADDIU,
         OP_SLTI, OP_SLTIU,
         OP_ANDI, OP_ORI, OP_XORI,
         OP_LUI:
-            out.state = S_UNSIGNED_ARITHMETIC;
+            out.state = S_ARITHMETIC;
 
         OP_LW, OP_SW:
             out.state = S_ADDR_CHECK;

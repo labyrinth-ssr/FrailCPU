@@ -1,10 +1,10 @@
 `ifndef __REFCPU_SHORTCUT_SVH__
 `define __REFCPU_SHORTCUT_SVH__
 
-`define SIGN_EXTEND(imm) \
-    {{(31 - $high(imm)){imm[$high(imm)]}}, imm}
-`define ZERO_EXTEND(imm) \
-    {{(31 - $high(imm)){1'b0}}, imm}
+`define SIGN_EXTEND(imm, width) \
+    {{(((width) - 1) - $high(imm)){imm[$high(imm)]}}, imm}
+`define ZERO_EXTEND(imm, width) \
+    {{(((width) - 1) - $high(imm)){1'b0}}, imm}
 
 `define FORMAT_ITYPE(opcode, rs, rt, imm, instr) \
     opcode_t opcode; \

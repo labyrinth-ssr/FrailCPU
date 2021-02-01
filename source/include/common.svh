@@ -37,7 +37,11 @@ typedef `BITS(8)  i8;
 typedef `BITS(16) i16;
 typedef `BITS(26) i26;
 typedef `BITS(32) i32;
+typedef `BITS(33) i33;
 typedef `BITS(64) i64;
+
+// for arithmetic overflow detection
+typedef i33 arith_t;
 
 // all addresses and words are 32-bit
 typedef i32 addr_t;
