@@ -12,6 +12,17 @@
 `define STRING /* f**k vivado */
 `endif
 
+/**
+ * Vivado does not support that members of a packed union
+ * have different sizes. Therefore, we have to use struct
+ * instead of union in Vivado.
+ */
+`ifdef VERILATOR
+`define PACKED_UNION union packed
+`else
+`define PACKED_UNION struct packed
+`endif
+
 `define BITS(x) logic[(x)-1:0]
 
 typedef int unsigned uint;

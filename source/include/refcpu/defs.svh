@@ -130,27 +130,16 @@ typedef struct packed {
     logic _unused;
 } cp0_t;
 
-parameter cp0_t CP0_RESET_VALUE = {
-    1'b0  // _unused
+parameter cp0_t CP0_RESET_VALUE = '{
+    _unused: 1'b0
 };
 
 /**
  * CPU context
  */
 
-/**
- * temporary storage for inter-state arguments
- *
- * NOTE: Vivado does not support that members of a packed union
- * have different sizes. Therefore, we have to use struct instead
- * of union in Vivado.
- */
-`ifdef VERILATOR
-typedef union packed {
-`else
-typedef struct packed {
-`endif
-
+// temporary storage for inter-state arguments
+typedef `PACKED_UNION {
     // if one state has argument, add a packed struct in the
     // union with the name of the corresponding state.
     struct packed {
@@ -187,17 +176,18 @@ typedef struct packed {
 
 parameter addr_t RESET_PC = 32'hbfc00000;
 
-parameter context_t CONTEXT_RESET_VALUE = {
-    S_FETCH,           // state
-    ARGS_RESET_VALUE,  // args
-    CP0_RESET_VALUE,   // cp0
-    RESET_PC,          // pc
-    RESET_PC + 4,      // next_pc
-    1'b0,              // is_delayed
-    32'b0,             // delayed_pc
-    INSTR_NOP,         // instr
-    {2{32'b0}},        // hi, lo
-    {32{32'b0}}        // [31:0] r
+parameter context_t CONTEXT_RESET_VALUE = '{
+    state      : S_FETCH,
+    args       : ARGS_RESET_VALUE,
+    cp0        : CP0_RESET_VALUE,
+    pc         : RESET_PC,
+    next_pc    : RESET_PC + 4,
+    delayed    : 1'b0,
+    delayed_pc : 32'b0,
+    instr      : INSTR_NOP,
+    hi         : 32'b0,
+    lo         : 32'b0,
+    r          : {32{32'b0}}
 };
 
 `endif
