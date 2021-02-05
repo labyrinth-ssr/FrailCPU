@@ -31,7 +31,7 @@ module CoreProxy (
 
         // reset args
         if (ctx.state == S_COMMIT)
-            new_ctx.args = ARGS_RESET_VALUE;
+            new_ctx.args = ARGS_RESET;
     end
 
     always_ff @(posedge clk)
@@ -49,7 +49,7 @@ module CoreProxy (
         if (ctx.state == S_COMMIT)
             ctx0 <= new_ctx;
     end else begin
-        {ctx, ctx0} <= {2{CONTEXT_RESET_VALUE}};
+        {ctx, ctx0} <= {2{CONTEXT_RESET}};
     end
 
     // for Verilator

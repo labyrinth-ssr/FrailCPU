@@ -104,7 +104,7 @@ typedef enum i5 {
     BR_BGEZ   = 5'b00001,
     BR_BLTZAL = 5'b10000,
     BR_BGEZAL = 5'b10001
-} btype_t;
+} btype_t /* verilator public */;
 
 // general-purpose registers
 typedef enum i5 {
@@ -136,104 +136,7 @@ typedef struct packed {
 
 parameter instr_t INSTR_NOP = 32'b0;
 
-/**
- * exceptions
- */
-
-// exception code
-typedef enum i5 {
-    EX_INT      = 0,   // Interrupt
-    EX_MOD      = 1,   // TLB modification exception
-    EX_TLBL     = 2,   // TLB exception (load or instruction fetch)
-    EX_TLBS     = 3,   // TLB exception (store)
-    EX_ADEL     = 4,   // Address error exception (load or instruction fetch)
-    EX_ADES     = 5,   // Address error exception (store)
-    EX_IBE      = 6,   // Bus error exception (instruction fetch)
-    EX_DBE      = 7,   // Bus error exception (data reference: load or store)
-    EX_SYS      = 8,   // Syscall exception
-    EX_BP       = 9,   // Breakpoint exception
-    EX_RI       = 10,  // Reserved instruction exception
-    EX_CPU      = 11,  // Coprocessor Unusable exception
-    EX_OV       = 12,  // Arithmetic Overflow exception
-    EX_TR       = 13,  // Trap exception
-    EX_FPE      = 15,  // Floating point exception
-    EX_C2E      = 18,  // Reserved for precise Coprocessor 2 exceptions
-    EX_TLBRI    = 19,  // TLB Read-Inhibit exception
-    EX_TLBXI    = 20,  // TLB Execution-Inhibit exception
-    EX_MDMX     = 22,  // MDMX Unusable Exception (MDMX ASE)
-    EX_WATCH    = 23,  // Reference to WatchHi/WatchLo address
-    EX_MCHECK   = 24,  // Machine check
-    EX_THREAD   = 25,  // Thread Allocation, Deallocation, or Scheduling Exceptions (MIPS® MT ASE)
-    EX_DSPDIS   = 26,  // DSP ASE State Disabled exception (MIPS® DSP ASE)
-    EX_CACHEERR = 30   // Cache error
-} ecode_t;
-
-/**
- * MIPS CP0 registers
- */
-
-typedef struct packed {
-    logic _unused;
-} cp0_t;
-
-parameter cp0_t CP0_RESET_VALUE = '{
-    _unused: 1'b0
-};
-
-/**
- * CPU context
- */
-
-// temporary storage for inter-state arguments
-typedef `PACKED_UNION {
-    // if one state has argument, add a packed struct in the
-    // union with the name of the corresponding state.
-    struct packed {
-        addr_t new_pc;
-    } branch;
-    struct packed {
-        ecode_t code;
-    } exception;
-    struct packed {
-        // NOTE: same layout with dbus_req_t
-        addr_t   addr;
-        msize_t  size;
-        strobe_t strobe;
-        word_t   data;  // load uses this field to receive data
-    } mem;  // used by all load & store operations
-} args_t;
-
-// we also guarantee that args will be reset to zeros
-// at the beginning of each instruction.
-parameter args_t ARGS_RESET_VALUE = '0;
-
-typedef struct packed {
-    cpu_state_t state;  // CPU state
-    args_t args;        // inter-state arguments
-    cp0_t cp0;          // CP0 registers
-    addr_t pc;          // program counter
-    logic delayed;      // currently in delay slot?
-    addr_t delayed_pc;  // PC of delayed branches
-    regid_t target_id;  // writeback register id, for debugging
-    instr_t instr;      // current instruction
-    word_t hi, lo;      // HI & LO special registers
-    word_t [31:0] r;    // general-purpose registers, r[0] is hardwired to zero
-} context_t;
-
-parameter addr_t RESET_PC = 32'hbfc00000;
-
-parameter context_t CONTEXT_RESET_VALUE = '{
-    state      : S_FETCH,
-    args       : ARGS_RESET_VALUE,
-    cp0        : CP0_RESET_VALUE,
-    pc         : RESET_PC,
-    delayed    : 1'b0,
-    delayed_pc : 32'b0,
-    target_id  : R0,
-    instr      : INSTR_NOP,
-    hi         : 32'b0,
-    lo         : 32'b0,
-    r          : {32{32'b0}}
-};
+`include "cp0.svh"
+`include "context.svh"
 
 `endif
