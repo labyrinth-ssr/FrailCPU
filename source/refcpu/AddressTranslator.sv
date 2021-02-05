@@ -1,10 +1,13 @@
 `include "common.svh"
 
-module AddressTranslator (
-    input  cbus_req_t  treq,
-    output cbus_resp_t tresp,
-    output cbus_req_t  oreq,
-    input  cbus_resp_t oresp
+module AddressTranslator #(
+    parameter type req_t  = cbus_req_t,
+    parameter type resp_t = cbus_resp_t
+) (
+    input  req_t  treq,
+    output resp_t tresp,
+    output req_t  oreq,
+    input  resp_t oresp
 );
     always_comb begin
         oreq = treq;

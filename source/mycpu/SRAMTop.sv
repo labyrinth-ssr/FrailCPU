@@ -26,6 +26,10 @@ module SRAMTop(
     IBusToSRAMx icvt(.*);
     DBusToSRAMx dcvt(.*);
 
+    /**
+     * TODO (Lab1) add address translations for isreq.addr & dsreq.addr :)
+     */
+
     assign inst_sram_en    = isreq.en;
     assign inst_sram_wen   = isreq.wen;
     assign inst_sram_addr  = isreq.addr;

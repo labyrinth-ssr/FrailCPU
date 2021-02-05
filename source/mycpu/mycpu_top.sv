@@ -7,9 +7,9 @@
 `define FIXED_LATENCY
 
 module mycpu_top (
-    input logic aclk, aresetn,
-
 `ifdef FIXED_LATENCY
+    input logic clk, resetn,
+
     output logic        inst_sram_en,
     output logic [3 :0] inst_sram_wen,
     output logic [31:0] inst_sram_addr,
@@ -21,6 +21,8 @@ module mycpu_top (
     output logic [31:0] data_sram_wdata,
     input  logic [31:0] data_sram_rdata,
 `else
+    input logic aclk, aresetn,
+
     output logic [3 :0] arid,
     output logic [31:0] araddr,
     output logic [3 :0] arlen,
@@ -68,7 +70,7 @@ module mycpu_top (
     input logic [5:0] ext_int
 );
 `ifdef FIXED_LATENCY
-    SRAMTop top(.clk(aclk), .resetn(aresetn), .*);
+    SRAMTop top(.*);
 `else
     cbus_req_t  oreq;
     cbus_resp_t oresp;

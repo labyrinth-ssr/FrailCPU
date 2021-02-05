@@ -28,6 +28,6 @@ module VTop (
     );
 
     /**
-     * TODO (optional) translate addresses here.
+     * TODO (optional) add address translation for oreq.addr :)
      */
 endmodule

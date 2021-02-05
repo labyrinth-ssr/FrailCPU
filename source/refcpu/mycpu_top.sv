@@ -1,6 +1,24 @@
+`include "sramx.svh"
+
 `include "refcpu/defs.svh"
 
+`define FIXED_LATENCY
+
 module mycpu_top (
+`ifdef FIXED_LATENCY
+    input logic clk, resetn,
+
+    output logic        inst_sram_en,
+    output logic [3 :0] inst_sram_wen,
+    output logic [31:0] inst_sram_addr,
+    output logic [31:0] inst_sram_wdata,
+    input  logic [31:0] inst_sram_rdata,
+    output logic        data_sram_en,
+    output logic [3 :0] data_sram_wen,
+    output logic [31:0] data_sram_addr,
+    output logic [31:0] data_sram_wdata,
+    input  logic [31:0] data_sram_rdata,
+`else
     input logic aclk, aresetn,
 
     output logic [3 :0] arid,
@@ -39,6 +57,7 @@ module mycpu_top (
     input  logic [1 :0] bresp,
     input  logic        bvalid,
     output logic        bready,
+`endif
 
     output addr_t   debug_wb_pc,
     output strobe_t debug_wb_rf_wen,
@@ -48,11 +67,16 @@ module mycpu_top (
     // external interrupt: unused
     input logic [5:0] ext_int
 );
+`ifdef FIXED_LATENCY
+    SRAMTop top(.*);
+`else
     cbus_req_t  oreq;
     cbus_resp_t oresp;
 
     VTop top(.clk(aclk), .resetn(aresetn), .*);
     CBusToAXI cvt(.creq(oreq), .cresp(oresp), .*);
+`endif
+
     Debugger dbg(
         .pc(top.core.ctx.pc),
         .id(top.core.proxy.new_ctx.target_id),
