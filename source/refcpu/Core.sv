@@ -44,6 +44,7 @@ module Core (
     `IMPL_Cxx(S_LOADED, Loaded);
     `IMPL_CxD(S_STORE, Store);
     `IMPL_CxD(S_STORE_ADDR_SENT, StoreAddrSent);
+    `IMPL_Cxx(S_COP0, COP0);
 
     /**
      * END state implementer declarations

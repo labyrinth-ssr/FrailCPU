@@ -68,7 +68,7 @@ typedef enum i4 {
     NUM_CP0_REGS
 } cprid_t;
 
-parameter cprid_t LAST_CP0_REG = NUM_CP0_REGS - 1;
+parameter cprid_t LAST_CP0_REG = cprid_t'(NUM_CP0_REGS - cprid_t'(1));
 
 // CP0 Status register
 typedef struct packed {

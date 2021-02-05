@@ -4,6 +4,35 @@
 `include "defs.svh"
 
 /**
+ * CPU states
+ */
+
+typedef enum uint {
+    S_UNKNOWN = 0,  // see impl/Unknown.sv
+    S_COMMIT,
+    S_FETCH,
+    S_FETCH_ADDR_SENT,
+    S_DECODE,
+    S_BRANCH_EVAL,
+    S_BRANCH,
+    S_ARITHMETIC,
+    S_RTYPE,
+    S_EXCEPTION,
+    S_ADDR_CHECK,
+    S_LOAD,
+    S_LOAD_ADDR_SENT,
+    S_LOADED,
+    S_STORE,
+    S_STORE_ADDR_SENT,
+    S_COP0,
+
+    // to record the number of available states
+    NUM_CPU_STATES
+} cpu_state_t /* verilator public */;
+
+parameter uint LAST_CPU_STATE = NUM_CPU_STATES - 1;
+
+/**
  * CPU context
  */
 

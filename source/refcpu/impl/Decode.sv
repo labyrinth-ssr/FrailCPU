@@ -29,6 +29,9 @@ module Decode (
         OP_LW, OP_SW:
             out.state = S_ADDR_CHECK;
 
+        OP_COP0:
+            out.state = S_COP0;
+
         default: `THROW(EX_RI)
         endcase
     end

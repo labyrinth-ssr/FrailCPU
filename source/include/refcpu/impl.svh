@@ -14,10 +14,10 @@
  * M: implementer module name
  *
  * name encoding:
- * C: this implementer has "ctx" and "out" ports.
- * I: this implementer has "ireq" and "iresp" ports.
- * D: this implementer has "dreq" and "dresp" ports.
- * x: corresponding ports are missed.
+ * C: this implementer requires "ctx" and "out" ports.
+ * I: this implementer requires "ireq" and "iresp" ports.
+ * D: this implementer requires "dreq" and "dresp" ports.
+ * x: corresponding ports are not required.
  */
 `define IMPL_Cxx(S, M) \
     M M``_inst(.out(out_ctx[S]), .*); \

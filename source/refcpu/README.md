@@ -13,3 +13,4 @@ TODO:
 * [x] debug ports
 * [ ] NSCSCC functional test (simulation only)
 * [ ] NSCSCC performance test (simulation only)
+* [ ] kernel mode
