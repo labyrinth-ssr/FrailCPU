@@ -24,7 +24,9 @@ typedef enum uint {
     S_LOADED,
     S_STORE,
     S_STORE_ADDR_SENT,
-    S_COP0,
+    S_COP0_DECODE,
+    S_COP0_ACCESS,
+    S_EXCEPTION_RETURN,
 
     // to record the number of available states
     NUM_CPU_STATES
@@ -45,6 +47,7 @@ typedef `PACKED_UNION {
     } branch;
     struct packed {
         ecode_t code;
+        addr_t  bad_vaddr;
     } exception;
     struct packed {
         // NOTE: same layout with dbus_req_t

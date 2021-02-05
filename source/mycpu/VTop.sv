@@ -5,7 +5,9 @@ module VTop (
     input logic clk, resetn,
 
     output cbus_req_t  oreq,
-    input  cbus_resp_t oresp
+    input  cbus_resp_t oresp,
+
+    input i6 ext_int
 );
     ibus_req_t  ireq;
     ibus_resp_t iresp;
@@ -30,4 +32,6 @@ module VTop (
     /**
      * TODO (optional) add address translation for oreq.addr :)
      */
+
+    logic _unused_ok = &{ext_int};
 endmodule

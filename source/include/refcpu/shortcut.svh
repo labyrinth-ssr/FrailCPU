@@ -40,6 +40,11 @@
         out.args.exception.code = ecode; \
         out.target_id = R0; \
     end
+`define ADDR_ERROR(ecode, vaddr) \
+    begin \
+        out.args.exception.bad_vaddr = vaddr; \
+        `THROW(ecode) \
+    end
 `define FATAL \
     begin out.state = S_UNKNOWN; end
 

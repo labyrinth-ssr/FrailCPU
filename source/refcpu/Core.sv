@@ -7,7 +7,9 @@ module Core (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp,
     output dbus_req_t  dreq,
-    input  dbus_resp_t dresp
+    input  dbus_resp_t dresp,
+
+    input i6 ext_int
 );
     /**
      * ctx0 is a snapshot of ctx at the beginning of the execution
@@ -44,7 +46,9 @@ module Core (
     `IMPL_Cxx(S_LOADED, Loaded);
     `IMPL_CxD(S_STORE, Store);
     `IMPL_CxD(S_STORE_ADDR_SENT, StoreAddrSent);
-    `IMPL_Cxx(S_COP0, COP0);
+    `IMPL_Cxx(S_COP0_DECODE, COP0Decode);
+    `IMPL_Cxx(S_COP0_ACCESS, COP0Access);
+    `IMPL_Cxx(S_EXCEPTION_RETURN, ExceptionReturn);
 
     /**
      * END state implementer declarations

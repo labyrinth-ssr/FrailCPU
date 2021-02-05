@@ -15,8 +15,8 @@ module Fetch (
 
         `MEM_WAIT(iresp, S_FETCH, S_FETCH_ADDR_SENT, S_DECODE);
 
-        // PC must be aligned to 4 bytes
+        // PC must be aligned on word boundry.
         if (|ctx.pc[1:0])
-            `THROW(EX_ADEL)
+            `ADDR_ERROR(EX_ADEL, ctx.pc)
     end
 endmodule

@@ -37,6 +37,7 @@ typedef `BITS(7)  i7;
 typedef `BITS(8)  i8;
 typedef `BITS(9)  i9;
 typedef `BITS(16) i16;
+typedef `BITS(19) i19;
 typedef `BITS(26) i26;
 typedef `BITS(32) i32;
 typedef `BITS(33) i33;

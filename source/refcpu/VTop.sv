@@ -5,7 +5,9 @@ module VTop (
     input logic clk, resetn,
 
     output cbus_req_t  oreq,
-    input  cbus_resp_t oresp
+    input  cbus_resp_t oresp,
+
+    input i6 ext_int
 );
     `include "cbus_decl"
 

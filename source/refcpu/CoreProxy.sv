@@ -9,7 +9,9 @@ module CoreProxy (
 
     output context_t  ctx, ctx0,
     output ibus_req_t ireq,
-    output dbus_req_t dreq
+    output dbus_req_t dreq,
+
+    input i6 ext_int
 );
     assign ireq = out_ireq[ctx.state];
     assign dreq = out_dreq[ctx.state];
@@ -21,6 +23,17 @@ module CoreProxy (
 
     always_comb begin
         new_ctx = out_ctx[ctx.state];
+
+        // set external interrupts
+        new_ctx.cp0.r.Cause.IP[7] = ext_int[5] || new_ctx.cp0.r.Cause.TI;
+        new_ctx.cp0.r.Cause.IP[6:2] = ext_int[4:0];
+
+        // invoke timer interrupt at the next cycle
+        if (new_ctx.cp0.r.Count + 1 == new_ctx.cp0.r.Compare)
+            new_ctx.cp0.r.Cause.TI = 1;
+
+        // increment Count
+        new_ctx.cp0.r.Count = new_ctx.cp0.r.Count + 1;
 
         // (fake) hardwired values
         new_ctx.r[0] = '0;

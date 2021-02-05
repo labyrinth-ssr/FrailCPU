@@ -13,7 +13,9 @@ module SRAMTop(
     output logic [3 :0] data_sram_wen,
     output logic [31:0] data_sram_addr,
     output logic [31:0] data_sram_wdata,
-    input  logic [31:0] data_sram_rdata
+    input  logic [31:0] data_sram_rdata,
+
+    input i6 ext_int
 );
     ibus_req_t   ireq;
     ibus_resp_t  iresp;

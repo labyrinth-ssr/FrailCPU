@@ -64,7 +64,6 @@ module mycpu_top (
     output regidx_t debug_wb_rf_wnum,
     output word_t   debug_wb_rf_wdata,
 
-    // external interrupt: unused
     input logic [5:0] ext_int
 );
 `ifdef FIXED_LATENCY
@@ -83,6 +82,4 @@ module mycpu_top (
         .r(top.core.proxy.new_ctx.r),
         .*
     );
-
-    logic _unused_ok = &{ext_int};
 endmodule

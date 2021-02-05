@@ -1,6 +1,6 @@
 `include "refcpu/defs.svh"
 
-module COP0 (
+module COP0Access (
     input  context_t ctx,
     output context_t out
 );
@@ -56,7 +56,7 @@ module COP0 (
 
             // handle side effects
             if (id == CP0_COMPARE)
-                out.cp0.r.Cause.IP[7] = 0;  // clears timer interrupt
+                out.cp0.r.Cause.TI = 0;  // clears timer interrupt
         end
 
         // NOTE: we should report RI exception first before we

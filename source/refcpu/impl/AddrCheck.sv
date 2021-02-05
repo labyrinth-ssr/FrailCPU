@@ -48,22 +48,22 @@ module AddrCheck (
         OP_SB:
             out.args.mem = {addr, MSIZE1, strb[B], rep_b};
         OP_SH:
-            if (addr[0]) `THROW(EX_ADES)
+            if (addr[0]) `ADDR_ERROR(EX_ADES, addr)
             else
                 out.args.mem = {addr, MSIZE2, strb[H], rep_h};
         OP_SW:
-            if (|addr[1:0]) `THROW(EX_ADES)
+            if (|addr[1:0]) `ADDR_ERROR(EX_ADES, addr)
             else
                 out.args.mem = {addr, MSIZE4, strb[W], v_rt};
 
         OP_LB, OP_LBU:
             out.args.mem = {addr, MSIZE1, 36'b0};
         OP_LH, OP_LHU:
-            if (addr[0]) `THROW(EX_ADEL)
+            if (addr[0]) `ADDR_ERROR(EX_ADEL, addr)
             else
                 out.args.mem = {addr, MSIZE2, 36'b0};
         OP_LW:
-            if (|addr[1:0]) `THROW(EX_ADEL)
+            if (|addr[1:0]) `ADDR_ERROR(EX_ADEL, addr)
             else
                 out.args.mem = {addr, MSIZE4, 36'b0};
 

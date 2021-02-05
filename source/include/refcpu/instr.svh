@@ -42,32 +42,34 @@ typedef enum i6 {
 
 // funct, for SPECIAL instructions: bit 5~0
 typedef enum i6 {
-    FN_SLL   = 6'b000000,
-    FN_SRL   = 6'b000010,
-    FN_SRA   = 6'b000011,
-    FN_SRLV  = 6'b000110,
-    FN_SRAV  = 6'b000111,
-    FN_SLLV  = 6'b000100,
-    FN_JR    = 6'b001000,
-    FN_JALR  = 6'b001001,
-    FN_MFHI  = 6'b010000,
-    FN_MTHI  = 6'b010001,
-    FN_MFLO  = 6'b010010,
-    FN_MTLO  = 6'b010011,
-    FN_MULT  = 6'b011000,
-    FN_MULTU = 6'b011001,
-    FN_DIV   = 6'b011010,
-    FN_DIVU  = 6'b011011,
-    FN_ADD   = 6'b100000,
-    FN_ADDU  = 6'b100001,
-    FN_SUB   = 6'b100010,
-    FN_SUBU  = 6'b100011,
-    FN_AND   = 6'b100100,
-    FN_OR    = 6'b100101,
-    FN_XOR   = 6'b100110,
-    FN_NOR   = 6'b100111,
-    FN_SLT   = 6'b101010,
-    FN_SLTU  = 6'b101011
+    FN_SLL     = 6'b000000,
+    FN_SRL     = 6'b000010,
+    FN_SRA     = 6'b000011,
+    FN_SRLV    = 6'b000110,
+    FN_SRAV    = 6'b000111,
+    FN_SLLV    = 6'b000100,
+    FN_JR      = 6'b001000,
+    FN_JALR    = 6'b001001,
+    FN_SYSCALL = 6'b001100,
+    FN_BREAK   = 6'b001101,
+    FN_MFHI    = 6'b010000,
+    FN_MTHI    = 6'b010001,
+    FN_MFLO    = 6'b010010,
+    FN_MTLO    = 6'b010011,
+    FN_MULT    = 6'b011000,
+    FN_MULTU   = 6'b011001,
+    FN_DIV     = 6'b011010,
+    FN_DIVU    = 6'b011011,
+    FN_ADD     = 6'b100000,
+    FN_ADDU    = 6'b100001,
+    FN_SUB     = 6'b100010,
+    FN_SUBU    = 6'b100011,
+    FN_AND     = 6'b100100,
+    FN_OR      = 6'b100101,
+    FN_XOR     = 6'b100110,
+    FN_NOR     = 6'b100111,
+    FN_SLT     = 6'b101010,
+    FN_SLTU    = 6'b101011
 } funct_t /* verilator public */;
 
 // branch type, for REGIMM instructions
@@ -83,6 +85,11 @@ typedef enum i5 {
     CFN_MF = 5'b00000,
     CFN_MT = 5'b00100
 } cp0_fn_t;
+
+// funct for COP0 instructions when CO bit is set
+typedef enum i6 {
+    COFN_ERET = 6'b011000
+} cp0_cofn_t;
 
 // general-purpose registers
 typedef enum i5 {
@@ -114,14 +121,21 @@ typedef struct packed {
     i3       sel;
 } cop0_instr_t;
 
+typedef struct packed {
+    i1         co;
+    i19        _unused_1;  // reserved as zeros
+    cp0_cofn_t funct;
+} cop0_co_instr_t;
+
 // MIPS instruction formats
 typedef struct packed {
     opcode_t opcode;
     union packed {
-        rtype_instr_t rtype;
-        itype_instr_t itype;
-        cop0_instr_t  cop0;
-        long_imm_t    index;  // J-type
+        rtype_instr_t   rtype;
+        itype_instr_t   itype;
+        cop0_instr_t    cop0;
+        cop0_co_instr_t cop0_co;
+        long_imm_t      index;  // J-type
     } payload;
 } instr_t;
 

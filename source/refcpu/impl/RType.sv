@@ -108,6 +108,9 @@ module RType (
             out.args.branch.new_pc = ctx.r[rs];
         end
 
+        FN_SYSCALL: `THROW(EX_SYS)
+        FN_BREAK: `THROW(EX_BP)
+
         default: `THROW(EX_RI)
         endcase
 

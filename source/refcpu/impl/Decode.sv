@@ -30,7 +30,7 @@ module Decode (
             out.state = S_ADDR_CHECK;
 
         OP_COP0:
-            out.state = S_COP0;
+            out.state = S_COP0_DECODE;
 
         default: `THROW(EX_RI)
         endcase

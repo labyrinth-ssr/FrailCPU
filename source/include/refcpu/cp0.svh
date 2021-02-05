@@ -111,6 +111,8 @@ parameter cp0_status_t CP0_STATUS_MASK = '{
 };
 
 // CP0 Cause register
+// NOTE: we actually implement TI, although it's should return
+// zero on read in Release 1 implementations.
 typedef struct packed {
     i1      BD;       // 31: in branch delay slot?
     i1      TI;       // 30: timer interrupt, in Release 2
