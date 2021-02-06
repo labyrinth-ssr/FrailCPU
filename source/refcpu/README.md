@@ -12,5 +12,5 @@ TODO:
 * [x] DPI-C -> Verilator public functions
 * [x] debug ports
 * [x] NSCSCC functional test (simulation only)
-* [ ] NSCSCC performance test (simulation only)
+* [x] NSCSCC performance test (simulation only)
 * [ ] kernel mode
