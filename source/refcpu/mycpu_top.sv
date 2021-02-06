@@ -2,7 +2,7 @@
 
 `include "refcpu/defs.svh"
 
-`define FIXED_LATENCY
+// `define FIXED_LATENCY
 
 module mycpu_top (
 `ifdef FIXED_LATENCY

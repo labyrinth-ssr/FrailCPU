@@ -70,9 +70,12 @@ typedef enum i4 {
 
 parameter cprid_t LAST_CP0_REG = cprid_t'(NUM_CP0_REGS - cprid_t'(1));
 
-// CP0 Status register
+/**
+ * CP0 Status register
+ */
+
 typedef struct packed {
-    i4 CU;    // [31:28]: controls access to coprocessors
+    i4 CU;    // [31:28]: access to coprocessors
     i1 RP;    // 27: optional
     i1 FR;    // 26: floating point registers, optional
     i1 RE;    // 25: optional
@@ -101,6 +104,7 @@ parameter cp0_status_t CP0_STATUS_RESET = '{
 };
 
 parameter cp0_status_t CP0_STATUS_MASK = '{
+    CU  : 4'b0001,  // CU0 is writable, although it's ignored.
     BEV : 1'b1,
     IM  : 8'hff,
     ERL : 1'b1,
@@ -110,8 +114,11 @@ parameter cp0_status_t CP0_STATUS_MASK = '{
     default: '0
 };
 
-// CP0 Cause register
-// NOTE: we actually implement TI, although it's should return
+/**
+ * CP0 Cause register
+ */
+
+// NOTE: we actually implement TI bit, although it should return
 // zero on read in Release 1 implementations.
 typedef struct packed {
     i1      BD;       // 31: in branch delay slot?
@@ -137,7 +144,10 @@ parameter cp0_cause_t CP0_CAUSE_MASK = '{
     default: '0
 };
 
-// CP0 PRId
+/**
+ * CP0 PRId
+ */
+
 typedef struct packed {
     i8 company_options;  // [31:24]
     i8 company_id;       // [23:16]
@@ -145,9 +155,13 @@ typedef struct packed {
     i8 revision;         // [7:0]
 } cp0_prid_t;
 
+// a cup of tea :)
 parameter cp0_prid_t CP0_PRID_RESET = 32'h19260817;
 
-// CP0 Config
+/**
+ * CP0 Config
+ */
+
 typedef struct packed {
     i1 M;     // 31: validity of Config1
     i3 K23;   // [30:28]: optional
@@ -175,7 +189,10 @@ parameter cp0_config_t CP0_CONFIG_MASK = '{
     default: '0
 };
 
-// CP0 Config1
+/**
+ * CP0 Config1
+ */
+
 typedef struct packed {
     i1 M;        // 31: validity of Config2
     i6 MMUSize;  // [30:25]: MMUSize - 1
@@ -194,7 +211,9 @@ typedef struct packed {
     i1 FP;       // 0: FPU implemented?
 } cp0_config1_t;
 
-// CP0 register file
+/**
+ * CP0 register file
+ */
 
 typedef struct packed {
     addr_t        BadVAddr;

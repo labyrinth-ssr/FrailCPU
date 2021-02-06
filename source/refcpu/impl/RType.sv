@@ -101,20 +101,20 @@ module RType (
             out.state = S_BRANCH;
             out.args.branch.new_pc = ctx.r[rs];
         end
-
         FN_JALR: begin
             out.state = S_BRANCH;
             out.r[rd] = link_pc;
             out.args.branch.new_pc = ctx.r[rs];
         end
 
+        // NOTE: both SYSCALL and BREAK can be put in delay slots.
         FN_SYSCALL: `THROW(EX_SYS)
         FN_BREAK: `THROW(EX_BP)
 
         default: `THROW(EX_RI)
         endcase
 
-        // cancel writeback for specific instructions
+        // cancel writeback for some instructions
         unique case (funct)
         FN_MTHI, FN_MTLO,
         FN_MULT, FN_MULTU,

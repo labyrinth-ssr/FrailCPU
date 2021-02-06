@@ -34,7 +34,7 @@ module SRAMTop(
     AddressTranslator #(
         .req_t(sramx_req_t),
         .resp_t(sramx_resp_t)
-    ) itr(
+    ) i_tr(
         .treq(isreq), .tresp(isresp),
         .oreq(itreq), .oresp(itresp)
     );
@@ -42,7 +42,7 @@ module SRAMTop(
     AddressTranslator #(
         .req_t(sramx_req_t),
         .resp_t(sramx_resp_t)
-    ) dtr(
+    ) d_tr(
         .treq(dsreq), .tresp(dsresp),
         .oreq(dtreq), .oresp(dtresp)
     );

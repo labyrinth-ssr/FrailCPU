@@ -4,8 +4,8 @@ module Exception (
     input  context_t ctx,
     output context_t out
 );
-    ecode_t ecode;
-    assign ecode = ctx.args.exception.code;
+    exception_args_t args;
+    assign args = ctx.args.exception;
 
     always_comb begin
         out = ctx;
@@ -16,16 +16,16 @@ module Exception (
 
         // fill CP0 registers
         if (!ctx.cp0.r.Status.EXL) begin
-            out.cp0.r.Cause.BD = ctx.delayed;
-            out.cp0.r.EPC = ctx.delayed ? ctx.pc : ctx.pc - 4;
+            out.cp0.r.Cause.BD = args.delayed;
+            out.cp0.r.EPC = args.delayed ? ctx.pc - 4 : ctx.pc;
         end
 
         out.cp0.r.Status.EXL = 1;
-        out.cp0.r.BadVAddr = ctx.args.exception.bad_vaddr;
-        out.cp0.r.Cause.ExcCode = ecode;
+        out.cp0.r.BadVAddr = args.bad_vaddr;
+        out.cp0.r.Cause.ExcCode = args.code;
 
         // evaluate exception vector
-        if (ecode == EX_INT) begin
+        if (args.code == EX_INT) begin
             if (ctx.cp0.r.Status.EXL || ctx.cp0.r.Status.ERL)
                 `FATAL
 
@@ -37,6 +37,6 @@ module Exception (
             endcase
         end else
             out.pc = ctx.cp0.r.Status.BEV ?
-                32'h80000180 : 32'hbfc00380;
+                32'hbfc00380 : 32'h80000180;
     end
 endmodule

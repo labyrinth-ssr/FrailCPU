@@ -6,7 +6,7 @@ module FetchAddrSent (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp
 );
-    assign ireq.valid = '0;     // stop issuing request
+    assign ireq.valid = 0;  // stop issuing request
 
     // for debugging
     assign ireq.addr = ctx.pc;

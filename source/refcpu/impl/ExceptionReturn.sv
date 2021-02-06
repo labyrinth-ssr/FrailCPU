@@ -11,11 +11,10 @@ module ExceptionReturn (
         if (ctx.cp0.r.Status.ERL) begin
             out.pc = ctx.cp0.r.ErrorEPC;
             out.cp0.r.Status.ERL = 0;
-        end else if (ctx.cp0.r.Status.EXL) begin
+        end else begin
             out.pc = ctx.cp0.r.EPC;
             out.cp0.r.Status.EXL = 0;
-        end else
-            `FATAL
+        end
 
         if (ctx.delayed)
             `FATAL

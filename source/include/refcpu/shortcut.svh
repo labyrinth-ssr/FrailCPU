@@ -38,7 +38,9 @@
     begin \
         out.state = S_EXCEPTION; \
         out.args.exception.code = ecode; \
-        out.target_id = R0; \
+        out.args.exception.delayed = ctx.delayed; \
+        out.target_id = R0;  /* cancel writeback */ \
+        out.delayed = 0;     /* cancel branch */ \
     end
 `define ADDR_ERROR(ecode, vaddr) \
     begin \

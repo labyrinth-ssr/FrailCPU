@@ -99,6 +99,10 @@ typedef enum i5 {
     T8, T9, K0, K1, GP, SP, FP, RA
 } regid_t;
 
+/**
+ * MIPS instruction formats
+ */
+
 typedef struct packed {
     regid_t  rs;
     regid_t  rt;
@@ -122,12 +126,11 @@ typedef struct packed {
 } cop0_instr_t;
 
 typedef struct packed {
-    i1         co;
+    i1         co;         // should be 1
     i19        _unused_1;  // reserved as zeros
     cp0_cofn_t funct;
 } cop0_co_instr_t;
 
-// MIPS instruction formats
 typedef struct packed {
     opcode_t opcode;
     union packed {

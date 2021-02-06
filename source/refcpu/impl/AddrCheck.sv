@@ -34,7 +34,7 @@ module AddrCheck (
     always_comb begin
         out = ctx;
 
-        // dispatch load or store
+        // dispatch load and store
         unique case (opcode)
         OP_SB, OP_SH, OP_SW:
             out.state = S_STORE;

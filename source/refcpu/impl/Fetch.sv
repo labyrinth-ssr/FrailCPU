@@ -6,7 +6,11 @@ module Fetch (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp
 );
-    assign ireq.valid = 1;
+    logic addr_invalid;
+    assign addr_invalid = |ctx.pc[1:0];
+
+    // only issue fetches when address is aligned on word boundry.
+    assign ireq.valid = !addr_invalid;
     assign ireq.addr = ctx.pc;
 
     always_comb begin
@@ -15,8 +19,7 @@ module Fetch (
 
         `MEM_WAIT(iresp, S_FETCH, S_FETCH_ADDR_SENT, S_DECODE);
 
-        // PC must be aligned on word boundry.
-        if (|ctx.pc[1:0])
+        if (addr_invalid)
             `ADDR_ERROR(EX_ADEL, ctx.pc)
     end
 endmodule

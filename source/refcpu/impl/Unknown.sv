@@ -1,5 +1,5 @@
 /**
- * this file is a starter code for a new satge.
+ * this file is a starter code for a new state.
  *
  * port ctx and out are required.
  * if it does not interacts with instruction cache nor
@@ -15,7 +15,7 @@
  * undefined behaviors. For example, a branch instruction in
  * delay slot is UNPREDICTABLE according to MIPS specification,
  * and therefore decoder can check and refuse to execute the
- * branch by set ctx.state to S_UNKNOWN.
+ * branch by set out.state to S_UNKNOWN.
  *
  * simulators should report this when CPU goes to S_UNKNOWN.
  */
