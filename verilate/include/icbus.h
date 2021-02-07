@@ -26,7 +26,7 @@ enum class AXILength {
 class ICBus {
 public:
     static constexpr auto make_response(
-        bool ready, bool last, uint32_t data
+        bool ready, bool last, word_t data
     ) -> CBusRespVType {
         return data | (uint64_t(ready) << 33) | (uint64_t(last) << 32);
     }
@@ -36,8 +36,8 @@ public:
     virtual auto valid() const -> bool = 0;
     virtual auto is_write() const -> bool = 0;
     virtual auto size() const -> AXISize = 0;
-    virtual auto addr() const -> uint32_t = 0;
-    virtual auto strobe() const -> uint32_t = 0;
-    virtual auto data() const -> uint32_t = 0;
+    virtual auto addr() const -> word_t = 0;
+    virtual auto strobe() const -> word_t = 0;
+    virtual auto data() const -> word_t = 0;
     virtual auto len() const -> AXILength = 0;
 };

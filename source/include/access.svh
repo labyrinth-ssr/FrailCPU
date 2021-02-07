@@ -13,5 +13,11 @@
         automatic logic _unused_ok = &e; \
         return return_type'(e.member_name); \
     endfunction
+`define STRUCT_TASK_ACCESSOR(struct_name, member_name, return_type) \
+    task struct_name``_``member_name(input struct_name e, output return_type o); \
+        /* verilator public */ \
+        automatic logic _unused_ok = &e; \
+        assign o = return_type'(e.r); \
+    endtask
 
 `endif

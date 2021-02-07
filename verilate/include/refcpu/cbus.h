@@ -19,13 +19,13 @@ public:
     auto size() const -> AXISize {
         return static_cast<AXISize>(top->cbus_req_t_size(req));
     }
-    auto addr() const -> uint32_t {
+    auto addr() const -> addr_t {
         return top->cbus_req_t_addr(req);
     }
-    auto strobe() const -> uint32_t {
+    auto strobe() const -> word_t {
         return top->cbus_req_t_strobe(req);
     }
-    auto data() const -> uint32_t {
+    auto data() const -> word_t {
         return top->cbus_req_t_data(req);
     }
     auto len() const -> AXILength {

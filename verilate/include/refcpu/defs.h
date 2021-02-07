@@ -9,3 +9,4 @@
 using VTopType = VRefCPU_VTop;
 using CPUState = VRefCPU___024unit::cpu_state_t;
 using Opcode = VRefCPU___024unit::opcode_t;
+using RegisterID = VRefCPU___024unit::regid_t;

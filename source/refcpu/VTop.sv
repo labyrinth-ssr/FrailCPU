@@ -13,6 +13,9 @@ module VTop (
 
     `STRUCT_ACCESSOR(context_t, state, cpu_state_t);
     `STRUCT_ACCESSOR(context_t, pc, addr_t);
+    `STRUCT_ACCESSOR(context_t, instr, word_t);
+    `STRUCT_ACCESSOR(context_t, target_id, regid_t);
+    `STRUCT_TASK_ACCESSOR(context_t, r, regfile_t);
 
     ibus_req_t  ireq;
     ibus_resp_t iresp;

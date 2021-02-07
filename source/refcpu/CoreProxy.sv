@@ -19,7 +19,7 @@ module CoreProxy (
     /**
      * update context
      */
-    context_t new_ctx;
+    context_t new_ctx /* verilator public_flat_rd */;
 
     always_comb begin
         new_ctx = out_ctx[ctx.state];

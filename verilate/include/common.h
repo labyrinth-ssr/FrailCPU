@@ -1,6 +1,16 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include <cassert>
 #include <cstdint>
+
+using addr_t = uint32_t;
+using word_t = uint32_t;
+using ByteSeq = std::vector<uint8_t>;
+
+auto parse_memory_file(const std::string &path) -> ByteSeq;
 
 /**
  * basic logging
