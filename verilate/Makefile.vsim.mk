@@ -43,6 +43,10 @@ CXXFLAGS += \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
 
+ifeq ($(VSIM_OPT), 1)
+CXXFLAGS += -O2 -march=native
+endif
+
 $(CXX_TARGET_LIBS): $(CXX_TARGET_HEADERS) $(SV_READY)
 $(CXX_LIBS): ./build/%.o : %.cpp $(CXX_HEADERS)
 	@mkdir -p $(dir $@)

@@ -16,8 +16,8 @@ public:
     ~RefCPU();
 
     void install_memory(const std::shared_ptr<BlockMemory> &mem);
-    void start_trace(const std::string &path);
-    void stop_trace();
+    void start_fst_trace(const std::string &path);
+    void stop_fst_trace();
     void start_text_trace(const std::string &path);
     void stop_text_trace();
     void open_reference_trace(const std::string &path);
@@ -34,14 +34,14 @@ private:
     TextDiff diff;
 
     int current_num;
-    uint64_t trace_count;
+    uint64_t fst_trace_count;
     bool test_finished;
 
     auto time() -> uint64_t {
-        return 10 * trace_count;
+        return 10 * fst_trace_count;
     }
 
-    void trace_dump(uint64_t t);
+    void fst_trace_dump(uint64_t t);
     void text_trace_dump(addr_t pc, RegisterID id, word_t value);
 
     void _tick();

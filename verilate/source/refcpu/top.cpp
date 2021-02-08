@@ -1,16 +1,16 @@
 #include "refcpu/top.h"
 #include "verilated_fst_c.h"
 
-constexpr int MAX_TRACE_DEPTH = 32;
+constexpr int MAX_FST_TRACE_DEPTH = 32;
 
 RefCPU::RefCPU()
     : tfp(nullptr), text_tfp(nullptr),
-      current_num(0), trace_count(0),
+      current_num(0), fst_trace_count(0),
       test_finished(false) {}
 
 RefCPU::~RefCPU() {
     if (tfp)
-        stop_trace();
+        stop_fst_trace();
     if (text_tfp)
         stop_text_trace();
     if (diff.is_open())
@@ -28,18 +28,18 @@ void RefCPU::install_memory(const std::shared_ptr<BlockMemory> &mem) {
     dev = std::make_shared<CBusDevice>(router);
 }
 
-void RefCPU::start_trace(const std::string &path) {
+void RefCPU::start_fst_trace(const std::string &path) {
     assert(!tfp);
 
     tfp = new VerilatedFstC;
-    trace_count = 0;
-    trace(tfp, MAX_TRACE_DEPTH);
+    fst_trace_count = 0;
+    trace(tfp, MAX_FST_TRACE_DEPTH);
     tfp->open(path.data());
 
-    trace_dump(+0);
+    fst_trace_dump(+0);
 }
 
-void RefCPU::stop_trace() {
+void RefCPU::stop_fst_trace() {
     assert(tfp);
 
     notify("trace: stop @%d\n", time());
@@ -51,7 +51,7 @@ void RefCPU::stop_trace() {
     tfp = nullptr;
 }
 
-void RefCPU::trace_dump(uint64_t t) {
+void RefCPU::fst_trace_dump(uint64_t t) {
     if (tfp)
         tfp->dump(time() + t);
 }

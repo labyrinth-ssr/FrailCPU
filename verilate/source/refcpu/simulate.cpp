@@ -53,7 +53,7 @@ void RefCPU::_tick() {
     oresp = dev->eval_resp();
     eval();
 
-    trace_dump(+1);
+    fst_trace_dump(+1);
 
     // print_request();
     print_writeback();
@@ -75,9 +75,9 @@ void RefCPU::_tick() {
     dev->commit();
     eval();
 
-    trace_dump(+10);
+    fst_trace_dump(+10);
 
-    trace_count++;
+    fst_trace_count++;
 }
 
 void RefCPU::run() {

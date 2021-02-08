@@ -1,5 +1,10 @@
 Verilator-related files.
 
+## Make Arguments
+
+* `VSIM_ARGS`: pass arguments to the execution of `vmain`.
+* `VSIM_OPT`: set to 1 to use `-O2 -march=native` options in compiling testbench code.
+
 ## Tricks
 
 ### Using `nameof` with Verilog enumerations

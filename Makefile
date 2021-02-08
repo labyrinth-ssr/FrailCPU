@@ -4,7 +4,8 @@ help:
 	@echo 'Hello, world!'
 
 clean:
-	rm -rf ./build/*
+	@rm -rf ./build/*
+	@touch ./build/.gitkeep
 
 include verilate/Makefile.verilate.mk
 include verilate/Makefile.vsim.mk

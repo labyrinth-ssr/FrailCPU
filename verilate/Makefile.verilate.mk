@@ -23,7 +23,7 @@ SV_WARNINGS = \
 
 SV_FLAGS = \
 	--cc -sv --relative-includes \
-	--output-split 15000 \
+	--output-split 6000 \
 	--Mdir build \
 	--top-module VTop \
 	--prefix V$(SV_TARGET) \
