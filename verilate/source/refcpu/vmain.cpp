@@ -7,8 +7,8 @@ constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
 int vmain(int argc, char *argv[]) {
     std::string trace_path = "/tmp/trace.fst";
     std::string text_trace_path = "/tmp/trace.txt";
-    std::string ref_trace_path = "./asset/nscscc/func_test.txt";
-    std::string memfile_path = "./asset/nscscc/func_test.coe";
+    std::string ref_trace_path = "./misc/nscscc/func_test.txt";
+    std::string memfile_path = "./misc/nscscc/func_test.coe";
 
     auto app = CLI::App();
     app.add_option("-f,--fst-trace", trace_path, "File path to save FST trace.");
