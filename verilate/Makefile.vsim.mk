@@ -1,3 +1,5 @@
+VSIM_ARGS ?=
+
 VERILATOR = /usr/share/verilator/include
 
 SV_READY = $(SV_MKFILE)
@@ -55,7 +57,7 @@ $(VMAIN): $(CXX_LIBS) $(VTARGET)
 .PHONY: vbuild vsim vsim-gdb
 vbuild: $(VMAIN)
 vsim: $(VMAIN)
-	./$(VMAIN)
+	./$(VMAIN) $(VSIM_ARGS)
 
 vsim-gdb: $(VMAIN)
 	gdb ./$(VMAIN)
