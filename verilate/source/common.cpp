@@ -140,7 +140,7 @@ static bool _in_status_line = false;
 
 static void check_status_line(FILE *fp) {
     if (_in_status_line) {
-        fprintf(fp, MOVE_TO_FRONT CLEAR_TO_RIGHT);
+        fprintf(fp, CLEAR_ALL MOVE_TO_FRONT);
         _in_status_line = false;
     }
 }
@@ -185,9 +185,15 @@ void status_line(const char *message, ...) {
     va_start(args, message);
 
     _in_status_line = true;
-    fprintf(stderr, MOVE_TO_FRONT);
-    vfprintf(stderr, message, args);
-    fprintf(stderr, CLEAR_TO_RIGHT " ");
+    fprintf(stdout, MOVE_TO_FRONT);
+    vfprintf(stdout, message, args);
+    fprintf(stdout, CLEAR_TO_RIGHT " ");
+    fflush(stdout);
 
     va_end(args);
+}
+
+void log_separator() {
+    fputs("\n", stdout);
+    fputs("\n", stderr);
 }

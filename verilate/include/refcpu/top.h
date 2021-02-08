@@ -31,8 +31,11 @@ private:
 
     VerilatedFstC *tfp;
     FILE *text_tfp;
-    uint64_t trace_count;
     TextDiff diff;
+
+    int current_num;
+    uint64_t trace_count;
+    bool test_finished;
 
     auto time() -> uint64_t {
         return 10 * trace_count;
@@ -59,4 +62,8 @@ private:
     void set_oresp(const CBusRespVType &resp) {
         oresp = resp;
     }
+
+    void print_request();
+    void print_writeback();
+    void check_monitor();
 };

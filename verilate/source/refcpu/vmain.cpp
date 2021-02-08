@@ -4,6 +4,18 @@
 
 constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
 
+RefCPU *top;
+
+void exit_handler() {
+    top->close_reference_trace();
+    top->stop_trace();
+    top->stop_text_trace();
+}
+
+void abort_handler(int) {
+    exit_handler();
+}
+
 int vmain(int argc, char *argv[]) {
     std::string trace_path = "/tmp/trace.fst";
     std::string text_trace_path = "/tmp/trace.txt";
@@ -18,7 +30,9 @@ int vmain(int argc, char *argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    auto top = new RefCPU();
+    top = new RefCPU();
+    hook_signal(SIGABRT, abort_handler);
+    atexit(exit_handler);
 
     auto data = parse_memory_file(memfile_path);
     auto mem = std::make_shared<BlockMemory>(MEMORY_SIZE, data);
@@ -29,10 +43,6 @@ int vmain(int argc, char *argv[]) {
     top->start_text_trace(text_trace_path);
 
     top->run();
-
-    top->close_reference_trace();
-    top->stop_trace();
-    top->stop_text_trace();
 
     return 0;
 }

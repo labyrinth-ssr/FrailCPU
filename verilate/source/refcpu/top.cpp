@@ -4,7 +4,9 @@
 constexpr int MAX_TRACE_DEPTH = 32;
 
 RefCPU::RefCPU()
-    : tfp(nullptr), text_tfp(nullptr), trace_count(0) {}
+    : tfp(nullptr), text_tfp(nullptr),
+      current_num(0), trace_count(0),
+      test_finished(false) {}
 
 RefCPU::~RefCPU() {
     if (tfp)
@@ -67,12 +69,12 @@ void RefCPU::stop_text_trace() {
 
 void RefCPU::text_trace_dump(addr_t pc, RegisterID id, word_t value) {
     char buf[64];
-    sprintf(buf, "1 %08x %02x %08x", pc, id, value);
+    sprintf(buf, "%01x %08x %02x %08x", con->trace_enabled(), pc, id, value);
 
     if (text_tfp)
         fprintf(text_tfp, "%s\n", buf);
 
-    diff.check_line(buf);
+    diff.check_line(buf, con->trace_enabled());
 }
 
 void RefCPU::open_reference_trace(const std::string &path) {

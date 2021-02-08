@@ -11,6 +11,7 @@
 using addr_t = uint32_t;
 using word_t = uint32_t;
 using handler_t = void(int);
+using uchar = unsigned char;
 
 using ByteSeq = std::vector<uint8_t>;
 
@@ -45,6 +46,7 @@ auto identity_fn(T x) -> T {
 #define RESET   "\033[0m"
 
 #define CLEAR_TO_RIGHT "\033[K"
+#define CLEAR_ALL      "\033[2K"
 #define MOVE_TO_FRONT  "\r"
 
 #define LOG { \
@@ -59,3 +61,4 @@ void info(const char *message, ...);
 void warn(const char *message, ...);
 void notify(const char *message, ...);
 void status_line(const char *message, ...);
+void log_separator();

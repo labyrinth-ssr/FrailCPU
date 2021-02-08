@@ -1,6 +1,9 @@
 #include "confreg.h"
 
 void Confreg::reset() {
+    ctx.reset();
+    ctx0.reset();
+
     mem.clear();
     mem[CR0] = 0x00000000;
     mem[CR1] = 0x00000000;
@@ -29,30 +32,67 @@ void Confreg::reset() {
 auto Confreg::load(addr_t addr) -> word_t {
     addr &= ADDR_MASK;
     auto it = mem.find(addr);
-    assert(it != mem.end());
-    return it->second;
+
+    // assert(it != mem.end());
+    if (it == mem.end()) {
+        notify("CONFREG: load: ignored unknown destination 0x%04x.\n", addr);
+        return 0;
+    } else
+        return it->second;
+}
+
+static auto swap_bytes(word_t data) -> word_t {
+    return ((data >> 16) & 0xffff) | ((data << 16) & 0xffff0000);
 }
 
 // NOTE: confreg ignores mask.
 void Confreg::store(addr_t addr, word_t data, word_t /*mask*/) {
     addr &= ADDR_MASK;
     auto it = mem.find(addr);
-    assert(it != mem.end());
-    it->second = data;
 
-    if (addr == VIRTUAL_UART)
-        uart_written = true;
+    // assert(it != mem.end());
+    if (it == mem.end()) {
+        notify("CONFREG: store: ignored unknown destination 0x%04x.\n", addr);
+        return;
+    }
+
+    auto &value = it->second;
+    value = data;
+
+    // cache & handle side effects
+    switch (addr) {
+        case VIRTUAL_UART:
+            value &= 0xf;
+            ctx.uart_written = true;
+            ctx.uart_data = value;
+        break;
+
+        case NUM:
+            ctx.v_num = value;
+        break;
+
+        case SIMU_FLAG:
+            value = 0xffffffff;
+        break;
+
+        case IO_SIMU:
+            value = swap_bytes(value);
+        break;
+
+        case OPEN_TRACE:
+            value = bool(value);
+            ctx.v_open_trace = value;
+        break;
+
+        case NUM_MONITOR:
+            value &= 1;
+            ctx.v_num_monitor = value;
+        break;
+    }
 }
 
 void Confreg::update() {
-    uart_written = false;
+    ctx0 = ctx;
+    ctx0.uart_written = false;
     mem[TIMER]++;
-}
-
-auto Confreg::has_char() -> bool {
-    return uart_written;
-}
-
-auto Confreg::get_char() -> char {
-    return mem[VIRTUAL_UART] & 0xff;
 }

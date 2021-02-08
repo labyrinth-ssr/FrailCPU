@@ -39,6 +39,7 @@ auto TextDiff::check_line(const std::string &line, bool report) -> bool {
     bool same = line == ref;
 
     if (!same && report) {
+        log_separator();
         notify("TextDiff: on line %zu:\n", line_number);
         notify("\texpect: \"%s\"%s\n", ref.data(), eof_indicator(ref));
         notify("\t   got: \"%s\"%s\n", line.data(), eof_indicator(line));

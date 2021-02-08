@@ -216,16 +216,19 @@ typedef struct packed {
  */
 
 typedef struct packed {
-    addr_t        BadVAddr;
-    word_t        Count;
-    word_t        Compare;
-    cp0_status_t  Status;
-    cp0_cause_t   Cause;
-    addr_t        EPC;
-    cp0_prid_t    PRId;
-    cp0_config_t  Config;
-    cp0_config1_t Config1;
+    // we sort members descending in ther register number,
+    // due to a misbehavior of little endian bit numbering array
+    // in Verilator.
     addr_t        ErrorEPC;
+    cp0_config1_t Config1;
+    cp0_config_t  Config;
+    cp0_prid_t    PRId;
+    addr_t        EPC;
+    cp0_cause_t   Cause;
+    cp0_status_t  Status;
+    word_t        Compare;
+    word_t        Count;
+    addr_t        BadVAddr;
 } cp0_regfile_t;
 
 // verilator lint_save
@@ -236,7 +239,10 @@ typedef union packed {
 
     // we use little endian bit numbering here
     // to match the structure's layout.
-    word_t [0:LAST_CP0_REG] entry;
+    // word_t [0:LAST_CP0_REG] entry;
+
+    // TODO: Verilator issue: index is not reversed.
+    word_t [LAST_CP0_REG:0] entry;
 } cp0_t;
 
 // verilator lint_restore

@@ -42,10 +42,41 @@ public:
     void store(addr_t addr, word_t data, word_t mask);
 
     void update();
-    auto has_char() -> bool;
-    auto get_char() -> char;
+
+    auto trace_enabled() -> bool {
+        return ctx0.v_open_trace;
+    }
+    auto monitor_enabled() -> bool {
+        return ctx0.v_num_monitor;
+    }
+    auto has_char() -> bool {
+        return ctx0.uart_written;
+    }
+    auto get_char() -> uchar {
+        return ctx0.uart_data;
+    }
+    auto get_current_num() -> int {
+        return ctx0.v_num >> 24;
+    }
+    auto get_acked_num() -> int {
+        return ctx0.v_num & 0xff;
+    }
 
 private:
-    bool uart_written;
+    struct Context {
+        bool uart_written;
+        uchar uart_data;
+        bool v_open_trace, v_num_monitor;
+        word_t v_num;
+
+        void reset() {
+            uart_written = false;
+            uart_data = 0;
+            v_open_trace = true;
+            v_num_monitor = true;
+            v_num = 0;
+        }
+    } ctx, ctx0;
+
     std::unordered_map<addr_t, word_t> mem;
 };
