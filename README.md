@@ -15,6 +15,7 @@ Spring 2021, Fudan University.
 ## File Organization
 
 * `misc/`: miscellaneous files.
+* `doc/`: lab handouts.
 * `source/`: SystemVerilog source files.
 * `vivado/`: SoC and testbenches on Vivado.
 * `verilate/`: C++ source files for verilated simulation.
