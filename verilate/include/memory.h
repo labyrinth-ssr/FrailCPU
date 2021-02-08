@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <functional>
 
 class IMemory {
 public:
@@ -20,10 +21,13 @@ public:
 
 class MemoryRouter : public IMemory {
 public:
+    using TranslateFn = std::function<addr_t(addr_t)>;
+
     struct Entry {
         word_t mask;
         word_t prefix;
         std::shared_ptr<IMemory> mem;
+        TranslateFn translate;
     };
 
     MemoryRouter(const std::vector<Entry> _entries)
@@ -36,13 +40,14 @@ public:
 private:
     std::vector<Entry> entries;
 
-    auto search(addr_t addr) -> IMemory*;
+    auto search(addr_t addr) -> Entry*;
 };
 
 class BlockMemory : public IMemory {
 public:
     BlockMemory(size_t _size, addr_t _offset = 0);
     BlockMemory(const ByteSeq &data, addr_t _offset = 0);
+    BlockMemory(size_t _size, const ByteSeq &data, addr_t _offset = 0);
 
     void reset();
     auto load(addr_t addr) -> word_t;

@@ -41,6 +41,7 @@ public:
     auto load(addr_t addr) -> word_t;
     void store(addr_t addr, word_t data, word_t mask);
 
+    void update();
     auto has_char() -> bool;
     auto get_char() -> char;
 

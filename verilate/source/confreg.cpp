@@ -44,11 +44,15 @@ void Confreg::store(addr_t addr, word_t data, word_t /*mask*/) {
         uart_written = true;
 }
 
+void Confreg::update() {
+    uart_written = false;
+    mem[TIMER]++;
+}
+
 auto Confreg::has_char() -> bool {
     return uart_written;
 }
 
 auto Confreg::get_char() -> char {
-    uart_written = false;
     return mem[VIRTUAL_UART] & 0xff;
 }

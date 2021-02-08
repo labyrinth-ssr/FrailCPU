@@ -5,10 +5,10 @@
 #include <cstring>
 #include <algorithm>
 
-auto MemoryRouter::search(addr_t addr) -> IMemory* {
+auto MemoryRouter::search(addr_t addr) -> Entry* {
     for (auto &e : entries) {
         if ((addr & e.mask) == e.prefix)
-            return e.mem.get();
+            return &e;
     }
     return nullptr;
 }
@@ -20,15 +20,19 @@ void MemoryRouter::reset() {
 }
 
 auto MemoryRouter::load(addr_t addr) -> word_t {
-    auto mem = search(addr);
-    assert(mem);
-    return mem->load(addr);
+    auto e = search(addr);
+    assert(e);
+
+    auto paddr = e->translate(addr);
+    return e->mem->load(paddr);
 }
 
 void MemoryRouter::store(addr_t addr, word_t data, word_t mask) {
-    auto mem = search(addr);
-    assert(mem);
-    mem->store(addr, data, mask);
+    auto e = search(addr);
+    assert(e);
+
+    auto paddr = e->translate(addr);
+    e->mem->store(paddr, data, mask);
 }
 
 BlockMemory::BlockMemory(size_t _size, addr_t _offset)
@@ -40,6 +44,12 @@ BlockMemory::BlockMemory(size_t _size, addr_t _offset)
 
 BlockMemory::BlockMemory(const ByteSeq &data, addr_t _offset)
     : BlockMemory(data.size(), _offset) {
+    map(offset, data);
+    saved_mem = mem;
+}
+
+BlockMemory::BlockMemory(size_t _size, const ByteSeq &data, addr_t _offset)
+    : BlockMemory(_size, _offset) {
     map(offset, data);
     saved_mem = mem;
 }

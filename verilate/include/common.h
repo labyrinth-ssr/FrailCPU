@@ -6,11 +6,22 @@
 #include <cassert>
 #include <cstdint>
 
+#include <signal.h>
+
 using addr_t = uint32_t;
 using word_t = uint32_t;
+using handler_t = void(int);
+
 using ByteSeq = std::vector<uint8_t>;
 
+void hook_signal(int sig, handler_t *handler);
+auto trim(const std::string &text) -> std::string;
 auto parse_memory_file(const std::string &path) -> ByteSeq;
+
+template <typename T>
+auto identity_fn(T x) -> T {
+    return x;
+}
 
 /**
  * basic logging
@@ -18,6 +29,7 @@ auto parse_memory_file(const std::string &path) -> ByteSeq;
  * info: write to stdout.
  * warn: write to stderr.
  * notify: write to stderr, not controlled by the enable flag.
+ * status_line: write a line with clear and no '\n' to stdout.
  */
 
 // ANSI Escape sequences for colors
@@ -32,6 +44,9 @@ auto parse_memory_file(const std::string &path) -> ByteSeq;
 #define WHITE   "\033[37m"
 #define RESET   "\033[0m"
 
+#define CLEAR_TO_RIGHT "\033[K"
+#define MOVE_TO_FRONT  "\r"
+
 #define LOG { \
     enable_logging(true); \
     _.defer([] { \
@@ -43,3 +58,4 @@ void enable_logging(bool enable = true);
 void info(const char *message, ...);
 void warn(const char *message, ...);
 void notify(const char *message, ...);
+void status_line(const char *message, ...);

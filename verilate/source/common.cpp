@@ -6,6 +6,19 @@
 #include <sstream>
 #include <fstream>
 
+#include <errno.h>
+#include <unistd.h>
+
+void hook_signal(int sig, handler_t *handler) {
+    struct sigaction action;
+
+    action.sa_handler = handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+
+    assert(sigaction(sig, &action, NULL) >= 0);
+}
+
 /*
 static bool startswith(const std::string &text, const std::string &pattern) {
     for (size_t i = 0; i < pattern.size(); i++) {
@@ -25,7 +38,7 @@ static bool endswith(const std::string &text, const std::string &pattern) {
     return true;
 }
 
-static auto trim(const std::string &text) -> std::string {
+auto trim(const std::string &text) -> std::string {
     size_t i, j;
     for (i = 0; i < text.size(); i++) {
         if (std::isalnum(text[i]))
@@ -123,6 +136,14 @@ auto parse_memory_file(const std::string &path) -> ByteSeq {
 }
 
 static bool _log_enabled = false;
+static bool _in_status_line = false;
+
+static void check_status_line(FILE *fp) {
+    if (_in_status_line) {
+        fprintf(fp, MOVE_TO_FRONT CLEAR_TO_RIGHT);
+        _in_status_line = false;
+    }
+}
 
 void enable_logging(bool enable) {
     _log_enabled = enable;
@@ -130,6 +151,8 @@ void enable_logging(bool enable) {
 
 void info(const char *message, ...) {
     if (_log_enabled) {
+        check_status_line(stdout);
+
         va_list args;
         va_start(args, message);
         vfprintf(stdout, message, args);
@@ -139,6 +162,8 @@ void info(const char *message, ...) {
 
 void warn(const char *message, ...) {
     if (_log_enabled) {
+        check_status_line(stderr);
+
         va_list args;
         va_start(args, message);
         vfprintf(stderr, message, args);
@@ -147,8 +172,22 @@ void warn(const char *message, ...) {
 }
 
 void notify(const char *message, ...) {
+    check_status_line(stderr);
+
     va_list args;
     va_start(args, message);
     vfprintf(stderr, message, args);
+    va_end(args);
+}
+
+void status_line(const char *message, ...) {
+    va_list args;
+    va_start(args, message);
+
+    _in_status_line = true;
+    fprintf(stderr, MOVE_TO_FRONT);
+    vfprintf(stderr, message, args);
+    fprintf(stderr, CLEAR_TO_RIGHT " ");
+
     va_end(args);
 }
