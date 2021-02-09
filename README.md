@@ -13,14 +13,20 @@ Spring 2021, Fudan University.
 * GTKWave
 * `libz-dev` (or the correct devel packege for zlib on your Linux distribution)
 
-On Ubuntu 20.04:
+### Ubuntu 20.04
 
 ```shell
 apt update
 apt install -y build-essential gdb gtkwave libz-dev verilator
 ```
 
-On Ubuntu 18.04:
+Run RefCPU functional test:
+
+```shell
+make vsim -j
+```
+
+### Ubuntu 18.04
 
 Because Verilator 3.x on Ubuntu 18.04 is outdated, we need to install a newer version from SiFive. First, download the `.deb` package file from <https://github.com/sifive/verilator/releases> (or eLearning if your network connection to GitHub is not stable) and save it to `verilator4.deb`. And then execute the following commands as root:
 
@@ -34,7 +40,7 @@ ln -s /usr/local/share/verilator /usr/share/
 NOTE: there's no GCC 9 officialy on Ubuntu 18.04, so we installed clang instead. As a result, every time you run `make vsim`, you have to specify `CXX=clang++-9` in command line. For example:
 
 ```shell
-make vsim -j8 CXX=clang++-9
+make vsim -j CXX=clang++-9
 ```
 
 ## File Organization
