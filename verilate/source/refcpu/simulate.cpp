@@ -14,7 +14,7 @@ void RefCPU::print_status() {
 void RefCPU::print_request() {
     auto req = get_oreq();
     if (resetn && req.valid()) {
-        info(
+        debug(
             BLUE "[%s]" RESET " "
             "addr=%08x, data=%08x, len=%u, size=%u, strb=%x\n",
             req.is_write() ? "W" : "R",
@@ -33,7 +33,7 @@ void RefCPU::print_writeback() {
     if (ctx.target_id() != RegisterID::R0) {
         auto id = ctx.target_id();
         auto value = ctx.r(id);
-        info("R[%d \"%s\"] <- %08x\n",
+        debug("R[%d \"%s\"] <- %08x\n",
             id, nameof::nameof_enum(id).data(), value);
         text_trace_dump(ctx.pc(), id, value);
     }
@@ -44,7 +44,7 @@ void RefCPU::check_monitor() {
     int ack = con->get_acked_num();
     if (current_num != num) {
         assert(current_num + 1 == num);
-        notify(BLUE "(info)" RESET " #%d completed.\n", num);
+        info(BLUE "(info)" RESET " #%d completed.\n", num);
         assert(ack == num);
         current_num = num;
     }
@@ -65,13 +65,6 @@ void RefCPU::_tick() {
     print_writeback();
     check_monitor();
 
-    // check for the end of tests
-    if (get_ctx().pc() == TEST_END_PC + 4 ||
-        (con->has_char() && con->get_char() == 0xff)) {
-        test_finished = true;
-        return;
-    }
-
     // send request to memory
     dev->eval_req(get_oreq());
 
@@ -84,6 +77,18 @@ void RefCPU::_tick() {
     fst_trace_dump(+10);
 
     fst_trace_count++;
+
+    // check for the end of tests
+    auto c = con->get_char();
+
+    if (get_ctx().pc() == TEST_END_PC + 4 ||
+        (con->has_char() && c == 0xff)) {
+        test_finished = true;
+        return;
+    }
+
+    if (con->has_char() && c != 0xff)
+        notify_char(c);
 }
 
 void RefCPU::run() {
@@ -92,8 +97,6 @@ void RefCPU::run() {
     resetn = 0;
     oresp = 0;
     tick(10);  // 10 cycles to reset
-
-    // enable_logging(true);
 
     clk = 0;
     resetn = 1;
@@ -116,5 +119,5 @@ void RefCPU::run() {
     diff.check_eof();
     final();
 
-    notify(BLUE "(info)" RESET " testbench finished.\n");
+    info(BLUE "(info)" RESET " testbench finished.\n");
 }

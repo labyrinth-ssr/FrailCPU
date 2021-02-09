@@ -41,7 +41,8 @@ void RefCPU::start_fst_trace(const std::string &path) {
 }
 
 void RefCPU::stop_fst_trace() {
-    assert(tfp);
+    if (!tfp)
+        return;
 
     notify("trace: stop @%d\n", time());
     eval();
@@ -63,7 +64,9 @@ void RefCPU::start_text_trace(const std::string &path) {
 }
 
 void RefCPU::stop_text_trace() {
-    assert(text_tfp);
+    if (!text_tfp)
+        return;
+
     fclose(text_tfp);
     text_tfp = nullptr;
 }
@@ -83,7 +86,8 @@ void RefCPU::open_reference_trace(const std::string &path) {
 }
 
 void RefCPU::close_reference_trace() {
-    diff.close();
+    if (diff.is_open())
+        diff.close();
 }
 
 void RefCPU::tick(int count) {

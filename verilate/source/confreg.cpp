@@ -35,7 +35,7 @@ auto Confreg::load(addr_t addr) -> word_t {
 
     // assert(it != mem.end());
     if (it == mem.end()) {
-        notify("CONFREG: load: ignored unknown destination 0x%04x.\n", addr);
+        warn("CONFREG: load: ignored unknown destination 0x%04x.\n", addr);
         return 0;
     } else
         return it->second;
@@ -52,7 +52,7 @@ void Confreg::store(addr_t addr, word_t data, word_t /*mask*/) {
 
     // assert(it != mem.end());
     if (it == mem.end()) {
-        notify("CONFREG: store: ignored unknown destination 0x%04x.\n", addr);
+        warn("CONFREG: store: ignored unknown destination 0x%04x.\n", addr);
         return;
     }
 
@@ -62,7 +62,7 @@ void Confreg::store(addr_t addr, word_t data, word_t /*mask*/) {
     // cache & handle side effects
     switch (addr) {
         case VIRTUAL_UART:
-            value &= 0xf;
+            value &= 0xff;
             ctx.uart_written = true;
             ctx.uart_data = value;
         break;
@@ -93,6 +93,6 @@ void Confreg::store(addr_t addr, word_t data, word_t /*mask*/) {
 
 void Confreg::update() {
     ctx0 = ctx;
-    ctx0.uart_written = false;
+    ctx.uart_written = false;
     mem[TIMER]++;
 }

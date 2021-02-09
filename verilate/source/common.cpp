@@ -124,6 +124,7 @@ static auto parse_bin(std::ifstream &fp) -> ByteSeq {
 
 auto parse_memory_file(const std::string &path) -> ByteSeq {
     std::ifstream fp(path);
+    assert(fp);
 
     if (endswith(path, ".coe"))
         return parse_coe(fp);
@@ -135,62 +136,107 @@ auto parse_memory_file(const std::string &path) -> ByteSeq {
         return parse_bin(fp);
 }
 
-static bool _log_enabled = false;
-static bool _in_status_line = false;
+/**
+ * simple logging
+ */
 
-static void check_status_line(FILE *fp) {
-    if (_in_status_line) {
+static struct {
+    bool debug_enabled;
+    bool log_enabled;
+    bool status_enabled;
+    bool in_status_line;
+    int status_count;
+    int status_count_max;
+    std::string char_buffer;
+} _ctx;
+
+static void check_status_line(FILE *fp = stdout) {
+    if (_ctx.in_status_line) {
         fprintf(fp, CLEAR_ALL MOVE_TO_FRONT);
-        _in_status_line = false;
+        fflush(fp);
+        _ctx.in_status_line = false;
     }
+}
+
+void enable_debugging(bool enable) {
+    _ctx.debug_enabled = enable;
 }
 
 void enable_logging(bool enable) {
-    _log_enabled = enable;
+    _ctx.log_enabled = enable;
+}
+
+void enable_status_line(bool enable) {
+    _ctx.status_enabled = enable;
+}
+
+void set_status_countdown(int countdown) {
+    assert(countdown >= 0);
+    _ctx.status_count_max = countdown;
+}
+
+#define VPRINT(fp) { \
+    check_status_line(); \
+    va_list args; \
+    va_start(args, message); \
+    vfprintf(fp, message, args); \
+    va_end(args); \
+}
+
+void debug(const char *message, ...) {
+    if (_ctx.log_enabled && _ctx.debug_enabled)
+        VPRINT(stdout);
 }
 
 void info(const char *message, ...) {
-    if (_log_enabled) {
-        check_status_line(stdout);
-
-        va_list args;
-        va_start(args, message);
-        vfprintf(stdout, message, args);
-        va_end(args);
-    }
+    if (_ctx.log_enabled)
+        VPRINT(stdout);
 }
 
 void warn(const char *message, ...) {
-    if (_log_enabled) {
-        check_status_line(stderr);
-
-        va_list args;
-        va_start(args, message);
-        vfprintf(stderr, message, args);
-        va_end(args);
-    }
+    if (_ctx.log_enabled)
+        VPRINT(stderr);
 }
 
 void notify(const char *message, ...) {
-    check_status_line(stderr);
+    VPRINT(stderr);
+    fflush(stderr);
+}
 
-    va_list args;
-    va_start(args, message);
-    vfprintf(stderr, message, args);
-    va_end(args);
+void notify_char(char c) {
+    if (_ctx.status_enabled) {
+        auto &buf = _ctx.char_buffer;
+        buf.push_back(c);
+        if (buf.back() == '\n') {
+            check_status_line();
+            fputs(buf.data(), stderr);
+            buf.clear();
+        }
+    } else
+        fputc(c, stderr);
+
+    fflush(stderr);
 }
 
 void status_line(const char *message, ...) {
-    va_list args;
-    va_start(args, message);
+    if (_ctx.status_count > 0) {
+        _ctx.status_count--;
+        return;
+    } else
+        _ctx.status_count = _ctx.status_count_max;
 
-    _in_status_line = true;
-    fprintf(stdout, MOVE_TO_FRONT);
-    vfprintf(stdout, message, args);
-    fprintf(stdout, CLEAR_TO_RIGHT " ");
-    fflush(stdout);
+    if (_ctx.status_enabled) {
+        va_list args;
+        va_start(args, message);
 
-    va_end(args);
+        _ctx.in_status_line = true;
+        fprintf(stdout, MOVE_TO_FRONT);
+        vfprintf(stdout, message, args);
+        fprintf(stdout, CLEAR_TO_RIGHT " ");
+        fflush(stdout);
+
+        va_end(args);
+    }
 }
 
 void log_separator() {

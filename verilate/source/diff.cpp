@@ -3,12 +3,14 @@
 #include <filesystem>
 
 auto TextDiff::is_open() -> bool {
-    return fs.is_open();
+    return fs && fs.is_open();
 }
 
 void TextDiff::open(const std::string &path) {
     assert(!is_open());
     fs.open(path);
+    assert(fs);
+
     line_number = 0;
     byte_read = 0;
     file_size = std::filesystem::file_size(path);
@@ -46,9 +48,9 @@ auto TextDiff::check_line(const std::string &line, bool report) -> bool {
 
     if (!same && report) {
         log_separator();
-        notify("TextDiff: on line %zu:\n", line_number);
-        notify("\texpect: \"%s\"%s\n", ref.data(), eof_indicator(ref));
-        notify("\t   got: \"%s\"%s\n", line.data(), eof_indicator(line));
+        warn("TextDiff: on line %zu:\n", line_number);
+        warn("\texpect: \"%s\"%s\n", ref.data(), eof_indicator(ref));
+        warn("\t   got: \"%s\"%s\n", line.data(), eof_indicator(line));
         abort();
     }
 

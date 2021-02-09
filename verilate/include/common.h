@@ -27,9 +27,11 @@ auto identity_fn(T x) -> T {
 /**
  * basic logging
  *
+ * debug: write to stdout.
  * info: write to stdout.
  * warn: write to stderr.
  * notify: write to stderr, not controlled by the enable flag.
+ * notify_char: write a single char to stderr.
  * status_line: write a line with clear and no '\n' to stdout.
  */
 
@@ -57,8 +59,15 @@ auto identity_fn(T x) -> T {
 }
 
 void enable_logging(bool enable = true);
+void enable_debugging(bool enable = true);
+void enable_status_line(bool enable = true);
+void set_status_countdown(int countdown);
+
+void debug(const char *message, ...);
 void info(const char *message, ...);
 void warn(const char *message, ...);
 void notify(const char *message, ...);
+void notify_char(char c);
 void status_line(const char *message, ...);
+
 void log_separator();

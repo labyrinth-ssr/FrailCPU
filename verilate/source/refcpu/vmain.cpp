@@ -8,6 +8,9 @@ static std::string fst_trace_path = "" /*"/tmp/trace.fst"*/;
 static std::string text_trace_path = "" /*"/tmp/trace.txt"*/;
 static std::string ref_trace_path = "./misc/nscscc/func_test.txt";
 static std::string memfile_path = "./misc/nscscc/func_test.coe";
+static int status_countdown = 10000;
+static bool status_enable = true;
+static bool debug_enable = false;
 
 static RefCPU *top;
 
@@ -30,8 +33,16 @@ int vmain(int argc, char *argv[]) {
     app.add_option("-t,--text-trace", text_trace_path, "File path to save text trace.");
     app.add_option("-r,--ref-trace", ref_trace_path, "File path of reference text trace.");
     app.add_option("-m,--memfile", memfile_path, "File path of memory initialization file.");
+    app.add_flag("--status,!--no-status", status_enable, "Show status line.");
+    app.add_option("--status-count", status_countdown, "Slow down status line update.");
+    app.add_flag("--debug,!--no-debug", debug_enable, "Show debug messages.");
 
     CLI11_PARSE(app, argc, argv);
+
+    enable_logging();
+    enable_status_line(status_enable);
+    enable_debugging(debug_enable);
+    set_status_countdown(status_countdown);
 
     top = new RefCPU();
     hook_signal(SIGABRT, abort_handler);
