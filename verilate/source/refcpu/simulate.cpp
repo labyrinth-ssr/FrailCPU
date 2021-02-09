@@ -5,6 +5,12 @@
 constexpr int MAX_CYCLE = 100000000;
 constexpr addr_t TEST_END_PC = 0xbfc00100;
 
+void RefCPU::print_status() {
+    auto ctx = get_ctx();
+    status_line(GREEN "[%d]" RESET " ack=%zu (%d%%), pc=%08x",
+        current_cycle, diff.current_line(), diff.current_progress(), ctx.pc());
+}
+
 void RefCPU::print_request() {
     auto req = get_oreq();
     if (resetn && req.valid()) {
@@ -38,7 +44,7 @@ void RefCPU::check_monitor() {
     int ack = con->get_acked_num();
     if (current_num != num) {
         assert(current_num + 1 == num);
-        notify(BLUE "(info)" RESET " #%d has completed.\n", num);
+        notify(BLUE "(info)" RESET " #%d completed.\n", num);
         assert(ack == num);
         current_num = num;
     }
@@ -87,28 +93,28 @@ void RefCPU::run() {
     oresp = 0;
     tick(10);  // 10 cycles to reset
 
-    auto print_ctx = [this](int i) {
-        auto ctx = get_ctx();
-        status_line(GREEN "[%d]" RESET " pc=%08x, ack=%zu, instr=%08x, state=%s",
-            i, ctx.pc(), diff.current_line(), ctx.instr(),
-            nameof::nameof_enum(ctx.state()).data()
-        );
-    };
-
     // enable_logging(true);
 
     clk = 0;
     resetn = 1;
     eval();
-    print_ctx(0);
+    print_status();
 
-    for (int i = 1; i <= MAX_CYCLE && !test_finished && !Verilated::gotFinish(); i++) {
+    for (
+        current_cycle = 1;
+
+        current_cycle <= MAX_CYCLE &&
+        !test_finished &&
+        !Verilated::gotFinish();
+
+        current_cycle++
+    ) {
         tick();
-        print_ctx(i);
+        print_status();
     }
 
     diff.check_eof();
     final();
 
-    notify(BLUE "(info)" RESET " All tests have completed.\n");
+    notify(BLUE "(info)" RESET " testbench finished.\n");
 }

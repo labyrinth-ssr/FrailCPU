@@ -5,7 +5,8 @@ constexpr int MAX_FST_TRACE_DEPTH = 32;
 
 RefCPU::RefCPU()
     : tfp(nullptr), text_tfp(nullptr),
-      current_num(0), fst_trace_count(0),
+      current_cycle(0), current_num(0),
+      fst_trace_count(0),
       test_finished(false) {}
 
 RefCPU::~RefCPU() {

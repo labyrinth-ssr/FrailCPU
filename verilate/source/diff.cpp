@@ -1,5 +1,7 @@
 #include "diff.h"
 
+#include <filesystem>
+
 auto TextDiff::is_open() -> bool {
     return fs.is_open();
 }
@@ -8,6 +10,8 @@ void TextDiff::open(const std::string &path) {
     assert(!is_open());
     fs.open(path);
     line_number = 0;
+    byte_read = 0;
+    file_size = std::filesystem::file_size(path);
 }
 
 void TextDiff::close() {
@@ -20,6 +24,8 @@ auto TextDiff::get_line() -> std::string {
 
     do {
         std::getline(fs, buf);
+        byte_read += buf.size() + 1;
+
         buf = trim(buf);
         line_number++;
     } while (!fs.eof() && buf.empty());

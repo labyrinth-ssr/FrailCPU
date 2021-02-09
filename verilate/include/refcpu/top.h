@@ -33,6 +33,7 @@ private:
     FILE *text_tfp;
     TextDiff diff;
 
+    int current_cycle;
     int current_num;
     uint64_t fst_trace_count;
     bool test_finished;
@@ -63,6 +64,7 @@ private:
         oresp = resp;
     }
 
+    void print_status();
     void print_request();
     void print_writeback();
     void check_monitor();
