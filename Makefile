@@ -10,10 +10,10 @@ clean:
 USE_CLANG ?= 0
 
 ifeq ($(USE_CLANG), 1)
-ifeq ($(shell which clang++-9),)
+ifeq ($(shell which clang++-10),)
 CXX=clang++
 else
-CXX=clang++-9  # for Ubuntu 18.04
+CXX=clang++-10  # for Ubuntu 18.04
 endif
 endif
 

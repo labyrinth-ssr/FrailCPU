@@ -8,7 +8,7 @@ Spring 2021, Fudan University.
 * Verilator (≥ 4.028)
 * `build-essential`
     * GNU make
-    * C++17 capable compiler: GNU C++ (≥ 9.0.0) or LLVM clang (≥ 9.0.0)
+    * C++17 capable compiler: GNU C++ (≥ 9.0.0) or LLVM clang (≥ 7.0.0)
     * gdb
 * GTKWave
 * `libz-dev` (or the correct devel packege for zlib on your Linux distribution)
@@ -32,7 +32,7 @@ Because Verilator 3.x on Ubuntu 18.04 is outdated, we need to install a newer ve
 
 ```shell
 apt update
-apt install -y make gdb gtkwave libz-dev clang-9 libc++-9-dev libc++abi-9-dev
+apt install -y make gdb gtkwave libz-dev clang-10 libc++-10-dev libc++abi-10-dev
 # wget -O verilator4.deb https://github.com/sifive/verilator/releases/download/4.036-0sifive2/verilator_4.036-0sifive2_amd64.deb
 dpkg -i verilator4.deb
 ln -s /usr/local/share/verilator /usr/share/
