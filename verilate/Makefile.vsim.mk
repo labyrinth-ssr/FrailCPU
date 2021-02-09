@@ -38,7 +38,7 @@ CXX_WARNINGS = \
 	-Wno-sign-compare \
 	-Wno-unused-const-variable
 
-CXX_LINKS = -lz -lpthread
+CXX_LINKS = -lz -lpthread -latomic
 CXXFLAGS += \
 	-std=c++17 -g \
 	-DVL_THREADED \
