@@ -31,6 +31,10 @@ SV_FLAGS = \
 	$(SV_INCLUDE) \
 	$(SV_WARNINGS)
 
+ifeq ($(USE_CLANG), 1)
+SV_FLAGS += -CFLAGS -stdlib=libc++
+endif
+
 $(SV_MKFILE): $(SV_VTOP) $(SV_FILES)
 	$(SV) $(SV_FLAGS) $(SV_VTOP)
 

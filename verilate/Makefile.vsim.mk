@@ -38,12 +38,16 @@ CXX_WARNINGS = \
 	-Wno-sign-compare \
 	-Wno-unused-const-variable
 
-CXX_LINKS = -lz -lpthread -latomic
+CXX_LINKS = -lz
 CXXFLAGS += \
 	-std=c++17 -g \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
 	# -DVL_THREADED
+
+ifeq ($(USE_CLANG), 1)
+CXXFLAGS += -stdlib=libc++
+endif
 
 ifeq ($(VSIM_OPT), 1)
 CXXFLAGS += -O2 -march=native
@@ -55,7 +59,7 @@ $(CXX_LIBS): ./build/%.o : %.cpp $(CXX_HEADERS)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
 $(VTARGET): $(SV_READY)
-	cd build; $(MAKE) -f $(notdir $(SV_MKFILE))
+	cd build; $(MAKE) -f $(notdir $(SV_MKFILE)) CXX=$(CXX)
 
 $(VMAIN): $(CXX_LIBS) $(VTARGET)
 	$(CXX) $(CXXFLAGS) $^ $(CXX_LINKS) -o $@
