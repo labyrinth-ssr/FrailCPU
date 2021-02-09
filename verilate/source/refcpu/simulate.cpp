@@ -119,5 +119,5 @@ void RefCPU::run() {
     diff.check_eof();
     final();
 
-    info(BLUE "(info)" RESET " testbench finished.\n");
+    info(BLUE "(info)" RESET " testbench finished in %d cycles.\n", current_cycle);
 }

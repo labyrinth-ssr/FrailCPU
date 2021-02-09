@@ -1,5 +1,7 @@
 #include "memory.h"
 
+#include <random>
+
 constexpr word_t _MASK_TABLE[] = {
     0x00000000, 0x000000ff, 0x0000ff00, 0x0000ffff,
     0x00ff0000, 0x00ff00ff, 0x00ffff00, 0x00ffffff,
@@ -15,6 +17,9 @@ void CBusDevice::reset() {
 }
 
 auto CBusDevice::eval_resp() -> CBusRespVType {
+    if (!enable)
+        return 0;
+
     if (tx.busy) {
         // fetch data if needed
         word_t data = 0;
@@ -30,6 +35,9 @@ auto CBusDevice::eval_resp() -> CBusRespVType {
 }
 
 void CBusDevice::eval_req(const ICBus &req) {
+    if (!enable)
+        return;
+
     if (tx.busy) {
         // simple sanity checks
         assert(req.valid());
@@ -58,13 +66,20 @@ void CBusDevice::eval_req(const ICBus &req) {
 }
 
 void CBusDevice::commit() {
-    if (tx.busy && tx.is_write) {
-        // perform write operation if needed
-        auto addr = tx.Address_N();
-        auto mask = _MASK_TABLE[_strobe];
-        mem->store(addr, _data, mask);
-        _strobe = _data = 0;
+    if (enable) {
+        if (tx.busy && tx.is_write) {
+            // perform write operation if needed
+            auto addr = tx.Address_N();
+            auto mask = _MASK_TABLE[_strobe];
+            mem->store(addr, _data, mask);
+            _strobe = _data = 0;
+        }
+
+        tx = ntx;
     }
 
-    tx = ntx;
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution<float> dist(0.0, 1.0);
+    enable = dist(gen) >= p_disable;
 }

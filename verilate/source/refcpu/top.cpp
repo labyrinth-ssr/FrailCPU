@@ -3,11 +3,12 @@
 
 constexpr int MAX_FST_TRACE_DEPTH = 32;
 
-RefCPU::RefCPU()
+RefCPU::RefCPU(float _p_disable)
     : tfp(nullptr), text_tfp(nullptr),
       current_cycle(0), current_num(0),
       fst_trace_count(0),
-      test_finished(false) {}
+      test_finished(false),
+      p_disable(_p_disable) {}
 
 RefCPU::~RefCPU() {
     if (tfp)
@@ -26,7 +27,7 @@ void RefCPU::install_memory(const std::shared_ptr<BlockMemory> &mem) {
         {0x00000000, 0x00000000, mem, identity_fn<addr_t>},
     };
     auto router = std::make_shared<MemoryRouter>(layout);
-    dev = std::make_shared<CBusDevice>(router);
+    dev = std::make_shared<CBusDevice>(router, p_disable);
 }
 
 void RefCPU::start_fst_trace(const std::string &path) {

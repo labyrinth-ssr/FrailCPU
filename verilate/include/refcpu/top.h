@@ -12,7 +12,7 @@
 
 class RefCPU : public VRefCPU {
 public:
-    RefCPU();
+    RefCPU(float _p_disable = 0.0f);
     ~RefCPU();
 
     void install_memory(const std::shared_ptr<BlockMemory> &mem);
@@ -37,6 +37,7 @@ private:
     int current_num;
     uint64_t fst_trace_count;
     bool test_finished;
+    float p_disable;
 
     auto time() -> uint64_t {
         return 10 * fst_trace_count;

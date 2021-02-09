@@ -4,22 +4,25 @@
 
 constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
 
-static std::string fst_trace_path = "" /*"/tmp/trace.fst"*/;
-static std::string text_trace_path = "" /*"/tmp/trace.txt"*/;
-static std::string ref_trace_path = "./misc/nscscc/func_test.txt";
-static std::string memfile_path = "./misc/nscscc/func_test.coe";
-static int status_countdown = 10000;
-static bool status_enable = true;
-static bool debug_enable = false;
+static struct {
+    std::string fst_trace_path = "" /*"/tmp/trace.fst"*/;
+    std::string text_trace_path = "" /*"/tmp/trace.txt"*/;
+    std::string ref_trace_path = "./misc/nscscc/func_test.txt";
+    std::string memfile_path = "./misc/nscscc/func_test.coe";
+    int status_countdown = 10000;
+    bool status_enable = true;
+    bool debug_enable = false;
+    float p_disable = 0.0f;
+} args;
 
 static RefCPU *top;
 
 void exit_handler() {
-    if (!ref_trace_path.empty())
+    if (!args.ref_trace_path.empty())
         top->close_reference_trace();
-    if (!fst_trace_path.empty())
+    if (!args.fst_trace_path.empty())
         top->stop_fst_trace();
-    if (!text_trace_path.empty())
+    if (!args.text_trace_path.empty())
         top->stop_text_trace();
 }
 
@@ -29,35 +32,36 @@ void abort_handler(int) {
 
 int vmain(int argc, char *argv[]) {
     auto app = CLI::App();
-    app.add_option("-f,--fst-trace", fst_trace_path, "File path to save FST trace.");
-    app.add_option("-t,--text-trace", text_trace_path, "File path to save text trace.");
-    app.add_option("-r,--ref-trace", ref_trace_path, "File path of reference text trace.");
-    app.add_option("-m,--memfile", memfile_path, "File path of memory initialization file.");
-    app.add_flag("--status,!--no-status", status_enable, "Show status line.");
-    app.add_option("--status-count", status_countdown, "Slow down status line update.");
-    app.add_flag("--debug,!--no-debug", debug_enable, "Show debug messages.");
+    app.add_option("-f,--fst-trace", args.fst_trace_path, "File path to save FST trace.");
+    app.add_option("-t,--text-trace", args.text_trace_path, "File path to save text trace.");
+    app.add_option("-r,--ref-trace", args.ref_trace_path, "File path of reference text trace.");
+    app.add_option("-m,--memfile", args.memfile_path, "File path of memory initialization file.");
+    app.add_flag("--status,!--no-status", args.status_enable, "Show status line.");
+    app.add_option("--status-count", args.status_countdown, "Slow down status line update.");
+    app.add_flag("--debug,!--no-debug", args.debug_enable, "Show debug messages.");
+    app.add_option("-p,--p-disable", args.p_disable, "Probability that CBusDevice pause in a cycle. Set to 0 to disable random delay.");
 
     CLI11_PARSE(app, argc, argv);
 
     enable_logging();
-    enable_status_line(status_enable);
-    enable_debugging(debug_enable);
-    set_status_countdown(status_countdown);
+    enable_status_line(args.status_enable);
+    enable_debugging(args.debug_enable);
+    set_status_countdown(args.status_countdown);
 
-    top = new RefCPU();
+    top = new RefCPU(args.p_disable);
     hook_signal(SIGABRT, abort_handler);
     atexit(exit_handler);
 
-    auto data = parse_memory_file(memfile_path);
+    auto data = parse_memory_file(args.memfile_path);
     auto mem = std::make_shared<BlockMemory>(MEMORY_SIZE, data);
 
     top->install_memory(std::move(mem));
-    if (!ref_trace_path.empty())
-        top->open_reference_trace(ref_trace_path);
-    if (!fst_trace_path.empty())
-        top->start_fst_trace(fst_trace_path);
-    if (!text_trace_path.empty())
-        top->start_text_trace(text_trace_path);
+    if (!args.ref_trace_path.empty())
+        top->open_reference_trace(args.ref_trace_path);
+    if (!args.fst_trace_path.empty())
+        top->start_fst_trace(args.fst_trace_path);
+    if (!args.text_trace_path.empty())
+        top->start_text_trace(args.text_trace_path);
 
     top->run();
 

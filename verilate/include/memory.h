@@ -66,8 +66,8 @@ private:
  */
 class CBusDevice {
 public:
-    CBusDevice(const std::shared_ptr<IMemory> &mem)
-        : mem(mem) {}
+    CBusDevice(const std::shared_ptr<IMemory> &mem, float _p_disable = 0.0f)
+        : mem(mem), enable(true), p_disable(_p_disable) {}
 
     void reset();
 
@@ -82,6 +82,8 @@ public:
 private:
     std::shared_ptr<IMemory> mem;
 
+    bool enable;
+    float p_disable;
     word_t _strobe, _data;
     AXITransaction tx, ntx;  // ntx: new transaction state
 };
