@@ -38,11 +38,21 @@ dpkg -i verilator4.deb
 ln -s /usr/local/share/verilator /usr/share/
 ```
 
-NOTE: there's no GCC 9 officialy on Ubuntu 18.04, so we installed clang instead. As a result, every time you run `make vsim`, you have to specify `USE_CLANG=1` in command line. For example:
+NOTE: there's no GCC 9 officially on Ubuntu 18.04, so we installed clang instead. As a result, every time you run `make vsim`, you have to specify `USE_CLANG=1` in command line. For example:
 
 ```shell
 make vsim -j USE_CLANG=1
 ```
+
+## NSCSCC Performance Test
+
+By default, `make vsim` will simulate RefCPU with NSCSCC functional test. We provide memory initialization files (`.coe`) of performance test from NSCSCC. For example, if you want to run CoreMark on verilated models, you can specify the `--memfile` (or `-m` for short) and set `--ref-trace` (ot `-r` for short) to empty string to disable text trace diff.
+
+```shell
+make vsim -j VSIM_ARGS='--no-status -m ./misc/nscscc/coremark.coe -r ""'
+```
+
+See `make vsim VSIM_ARGS='-h'` for more details.
 
 ## File Organization
 
