@@ -8,7 +8,7 @@ Spring 2021, Fudan University.
 * Verilator (≥ 4.028)
 * `build-essential`
     * GNU make
-    * GNU C++ (≥ 9.0.0, C++17)
+    * C++17 capable compiler: GNU C++ (≥ 9.0.0) or LLVM clang (≥ 6.0.0)
     * gdb
 * GTKWave
 * `libz-dev` (or the correct devel packege for zlib on your Linux distribution)
@@ -16,7 +16,25 @@ Spring 2021, Fudan University.
 On Ubuntu 20.04:
 
 ```shell
-apt install build-essential verilator gtkwave libz-dev
+apt update
+apt install -y build-essential gdb gtkwave libz-dev verilator
+```
+
+On Ubuntu 18.04:
+
+Because Verilator 3.x on Ubuntu 18.04 is outdated, we need to install a newer version from SiFive. First, download the `.deb` package file from <https://github.com/sifive/verilator/releases> (or eLearning if your network connection to GitHub is not stable) and save it to `verilator4.deb`. And then execute the following commands as root:
+
+```shell
+apt update
+apt install -y build-essential gdb gtkwave libz-dev clang-9
+dpkg -i verilator4.deb
+ln -s /usr/local/share/verilator /usr/share/
+```
+
+NOTE: there's no GCC 9 officialy on Ubuntu 18.04, so we installed clang instead. As a result, every time you run `make vsim`, you have to specify `CXX=clang++-9` in command line. For example:
+
+```shell
+make vsim -j8 CXX=clang++-9
 ```
 
 ## File Organization
