@@ -25,6 +25,8 @@ SV_FLAGS = \
 	--cc -sv --relative-includes \
 	--output-split 6000 \
 	--Mdir build \
+	--threads 1 \
+	--trace-threads 1 \
 	--top-module VTop \
 	--prefix V$(SV_TARGET) \
 	--trace-fst --trace-structs \

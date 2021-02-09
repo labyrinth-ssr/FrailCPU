@@ -15,7 +15,8 @@ CXX_FILES := \
 	$(wildcard $(VSOURCE)/*.cpp) \
 	$(CXX_TARGET_FILES) \
 	$(VERILATOR)/verilated.cpp \
-	$(VERILATOR)/verilated_fst_c.cpp
+	$(VERILATOR)/verilated_fst_c.cpp \
+	$(VERILATOR)/verilated_threads.cpp
 
 CXX_TARGET_HEADERS := $(wildcard $(VINCLUDE)/$(VROOT)/*.h)
 CXX_HEADERS := \
@@ -37,9 +38,10 @@ CXX_WARNINGS = \
 	-Wno-sign-compare \
 	-Wno-unused-const-variable
 
-CXX_LINKS = -lz
+CXX_LINKS = -lz -lpthread
 CXXFLAGS += \
 	-std=c++17 -g \
+	-DVL_THREADED \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
 

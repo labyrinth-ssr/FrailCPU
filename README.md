@@ -5,13 +5,19 @@ Spring 2021, Fudan University.
 ## Prerequisites
 
 * Xilinx Vivado (= 2019.2, HLx version)
-* Verilator (≥ 4.036)
+* Verilator (≥ 4.028)
 * `build-essential`
     * GNU make
     * GNU C++ (≥ 9.0.0, C++17)
     * gdb
 * GTKWave
 * `libz-dev` (or the correct devel packege for zlib on your Linux distribution)
+
+On Ubuntu 20.04:
+
+```shell
+apt install build-essential verilator gtkwave libz-dev
+```
 
 ## File Organization
 
