@@ -98,6 +98,8 @@ void RefCPU::run() {
     oresp = 0;
     tick(10);  // 10 cycles to reset
 
+    t_run_start = Clock::now();
+
     clk = 0;
     resetn = 1;
     eval();
@@ -119,5 +121,9 @@ void RefCPU::run() {
     diff.check_eof();
     final();
 
-    info(BLUE "(info)" RESET " testbench finished in %d cycles.\n", current_cycle);
+    auto t_run_end = Clock::now();
+    auto span = std::chrono::duration<double>(t_run_end - t_run_start).count();
+
+    info(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf MHz).\n",
+        current_cycle, current_cycle / span / 1000);
 }

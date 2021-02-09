@@ -3,15 +3,15 @@
 
 constexpr int MAX_FST_TRACE_DEPTH = 32;
 
-RefCPU::RefCPU(float _p_disable)
-    : tfp(nullptr), text_tfp(nullptr),
+RefCPU::RefCPU()
+    : force_diff(false), p_disable(0.0f),
+      fst_tfp(nullptr), text_tfp(nullptr),
       current_cycle(0), current_num(0),
       fst_trace_count(0),
-      test_finished(false),
-      p_disable(_p_disable) {}
+      test_finished(false) {}
 
 RefCPU::~RefCPU() {
-    if (tfp)
+    if (fst_tfp)
         stop_fst_trace();
     if (text_tfp)
         stop_text_trace();
@@ -31,37 +31,39 @@ void RefCPU::install_memory(const std::shared_ptr<BlockMemory> &mem) {
 }
 
 void RefCPU::start_fst_trace(const std::string &path) {
-    assert(!tfp);
+    assert(!fst_tfp);
 
-    tfp = new VerilatedFstC;
+    fst_tfp = new VerilatedFstC;
     fst_trace_count = 0;
-    trace(tfp, MAX_FST_TRACE_DEPTH);
-    tfp->open(path.data());
+    trace(fst_tfp, MAX_FST_TRACE_DEPTH);
+    fst_tfp->open(path.data());
+    assert(fst_tfp->isOpen());
 
     fst_trace_dump(+0);
 }
 
 void RefCPU::stop_fst_trace() {
-    if (!tfp)
+    if (!fst_tfp)
         return;
 
     notify("trace: stop @%d\n", time());
     eval();
-    tfp->dump(time() + 10);
+    fst_tfp->dump(time() + 10);
 
-    tfp->flush();
-    tfp->close();
-    tfp = nullptr;
+    fst_tfp->flush();
+    fst_tfp->close();
+    fst_tfp = nullptr;
 }
 
 void RefCPU::fst_trace_dump(uint64_t t) {
-    if (tfp)
-        tfp->dump(time() + t);
+    if (fst_tfp)
+        fst_tfp->dump(time() + t);
 }
 
 void RefCPU::start_text_trace(const std::string &path) {
     assert(!text_tfp);
     text_tfp = fopen(path.data(), "w");
+    assert(text_tfp);
 }
 
 void RefCPU::stop_text_trace() {
@@ -79,7 +81,7 @@ void RefCPU::text_trace_dump(addr_t pc, RegisterID id, word_t value) {
     if (text_tfp)
         fprintf(text_tfp, "%s\n", buf);
 
-    diff.check_line(buf, con->trace_enabled());
+    diff.check_line(buf, force_diff || con->trace_enabled());
 }
 
 void RefCPU::open_reference_trace(const std::string &path) {

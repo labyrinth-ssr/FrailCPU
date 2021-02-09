@@ -13,6 +13,7 @@ static struct {
     bool status_enable = true;
     bool debug_enable = false;
     float p_disable = 0.0f;
+    bool force_diff = false;
 } args;
 
 static RefCPU *top;
@@ -40,17 +41,21 @@ int vmain(int argc, char *argv[]) {
     app.add_option("--status-count", args.status_countdown, "Slow down status line update.");
     app.add_flag("--debug,!--no-debug", args.debug_enable, "Show debug messages.");
     app.add_option("-p,--p-disable", args.p_disable, "Probability that CBusDevice pause in a cycle. Set to 0 to disable random delay.");
+    app.add_flag("--force-diff,!--no-force-diff", args.force_diff, "Ignore OPEN_TRACE bit from Confreg.");
 
     CLI11_PARSE(app, argc, argv);
+
+    hook_signal(SIGABRT, abort_handler);
+    atexit(exit_handler);
 
     enable_logging();
     enable_status_line(args.status_enable);
     enable_debugging(args.debug_enable);
     set_status_countdown(args.status_countdown);
 
-    top = new RefCPU(args.p_disable);
-    hook_signal(SIGABRT, abort_handler);
-    atexit(exit_handler);
+    top = new RefCPU();
+    top->p_disable = args.p_disable;
+    top->force_diff = args.force_diff;
 
     auto data = parse_memory_file(args.memfile_path);
     auto mem = std::make_shared<BlockMemory>(MEMORY_SIZE, data);

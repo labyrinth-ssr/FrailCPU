@@ -9,11 +9,15 @@
 #include "context.h"
 
 #include <memory>
+#include <chrono>
 
 class RefCPU : public VRefCPU {
 public:
-    RefCPU(float _p_disable = 0.0f);
+    RefCPU();
     ~RefCPU();
+
+    bool force_diff;
+    float p_disable;
 
     void install_memory(const std::shared_ptr<BlockMemory> &mem);
     void start_fst_trace(const std::string &path);
@@ -29,7 +33,7 @@ private:
     std::shared_ptr<Confreg> con;
     std::shared_ptr<CBusDevice> dev;
 
-    VerilatedFstC *tfp;
+    VerilatedFstC *fst_tfp;
     FILE *text_tfp;
     TextDiff diff;
 
@@ -37,7 +41,9 @@ private:
     int current_num;
     uint64_t fst_trace_count;
     bool test_finished;
-    float p_disable;
+
+    using Clock = std::chrono::high_resolution_clock;
+    Clock::time_point t_run_start;
 
     auto time() -> uint64_t {
         return 10 * fst_trace_count;
