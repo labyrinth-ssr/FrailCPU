@@ -11,6 +11,7 @@ Spring 2021, Fudan University.
     * GNU C++ (≥ 9.0.0, C++17)
     * gdb
 * GTKWave
+* `libz-dev` (or the correct devel packege for zlib on your Linux distribution)
 
 ## File Organization
 

@@ -37,9 +37,9 @@ CXX_WARNINGS = \
 	-Wno-sign-compare \
 	-Wno-unused-const-variable
 
+CXX_LINKS = -lz
 CXXFLAGS += \
-	-std=c++17 \
-	-lz -g \
+	-std=c++17 -g \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
 
@@ -56,7 +56,7 @@ $(VTARGET): $(SV_READY)
 	cd build; $(MAKE) -f $(notdir $(SV_MKFILE))
 
 $(VMAIN): $(CXX_LIBS) $(VTARGET)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ $(CXX_LINKS) -o $@
 
 .PHONY: vbuild vsim vsim-gdb
 vbuild: $(VMAIN)
