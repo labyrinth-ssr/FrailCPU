@@ -15,8 +15,8 @@ CXX_FILES := \
 	$(wildcard $(VSOURCE)/*.cpp) \
 	$(CXX_TARGET_FILES) \
 	$(VERILATOR)/verilated.cpp \
-	$(VERILATOR)/verilated_fst_c.cpp \
-	$(VERILATOR)/verilated_threads.cpp
+	$(VERILATOR)/verilated_fst_c.cpp
+	# $(VERILATOR)/verilated_threads.cpp
 
 CXX_TARGET_HEADERS := $(wildcard $(VINCLUDE)/$(VROOT)/*.h)
 CXX_HEADERS := \
@@ -41,9 +41,9 @@ CXX_WARNINGS = \
 CXX_LINKS = -lz -lpthread -latomic
 CXXFLAGS += \
 	-std=c++17 -g \
-	-DVL_THREADED \
 	$(CXX_INCLUDES) \
 	$(CXX_WARNINGS)
+	# -DVL_THREADED
 
 ifeq ($(VSIM_OPT), 1)
 CXXFLAGS += -O2 -march=native
