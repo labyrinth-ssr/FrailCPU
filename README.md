@@ -2,22 +2,46 @@
 
 Spring 2021, Fudan University.
 
+## TODO
+
+* [ ] Lab handouts
+    * [ ] Lab 0: Preparation
+    * [ ] Lab 1: MIPS Pipeline
+    * [ ] Lab 2: Memory Bus
+    * [ ] Lab 3: Cache
+    * [ ] Lab 4: Multiplication & Division
+    * [ ] Lab 5: Exception
+    * [ ] PJ: ???
+* [ ] Cautions on Verilator
+* [ ] `OneLineBuffer`
+* [ ] `BRAM` & `LUTRAM` module
+
+## File Organization
+
+* `misc/`: miscellaneous files.
+* `doc/`: lab handouts.
+* `source/`: SystemVerilog source files.
+* `vivado/`: SoC and testbenches on Vivado.
+* `verilate/`: C++ source files for verilated simulation.
+* `build/`: temporary build files.
+
 ## Prerequisites
 
 * Xilinx Vivado (= 2019.2, HLx version)
 * Verilator (≥ 4.028)
+* GDB (for `vsim-gdb`)
+* GTKWave
 * `build-essential`
     * GNU make
     * C++17 capable compiler: GNU C++ (≥ 9.0.0) or LLVM clang (≥ 7.0.0)
-    * gdb
-* GTKWave
+    * corresponding `libstdc++` (GNU C++) or `libc++` (LLVM clang)
 * `libz-dev` (or the correct devel packege for zlib on your Linux distribution)
 
 ### Ubuntu 20.04
 
 ```shell
 apt update
-apt install -y build-essential gdb gtkwave libz-dev verilator
+apt install -y verilator gdb gtkwave build-essential libz-dev
 ```
 
 Run RefCPU functional test:
@@ -32,7 +56,7 @@ Because Verilator 3.x on Ubuntu 18.04 is outdated, we need to install a newer ve
 
 ```shell
 apt update
-apt install -y make gdb gtkwave libz-dev clang-10 libc++-10-dev libc++abi-10-dev
+apt install -y gdb gtkwave make clang-10 libc++-10-dev libc++abi-10-dev libz-dev
 # wget -O verilator4.deb https://github.com/sifive/verilator/releases/download/4.036-0sifive2/verilator_4.036-0sifive2_amd64.deb
 dpkg -i verilator4.deb
 ln -s /usr/local/share/verilator /usr/share/
@@ -53,12 +77,3 @@ make vsim -j VSIM_ARGS='--no-status -m ./misc/nscscc/coremark.coe -r ""'
 ```
 
 See `make vsim VSIM_ARGS='-h'` for more details.
-
-## File Organization
-
-* `misc/`: miscellaneous files.
-* `doc/`: lab handouts.
-* `source/`: SystemVerilog source files.
-* `vivado/`: SoC and testbenches on Vivado.
-* `verilate/`: C++ source files for verilated simulation.
-* `build/`: temporary build files.
