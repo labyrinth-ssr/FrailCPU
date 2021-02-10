@@ -35,7 +35,7 @@ module top (
 
     logic [7:0][6:0] segs;
     for (genvar i = 0; i < 8; i++) begin
-        seg7 seg7_inst(.in(soc_axi_lite_top_inst.confreg.num_data[(i*4+3):(i*4)]), .out(segs[i]));
+        seg7 seg7_inst(.in(soc_axi_lite_top_inst.u_confreg.num_data[(i*4+3):(i*4)]), .out(segs[i]));
     end
     assign A2G = segs[counter[10:8]];
     assign AN = ~({7'b0, resetn} << counter[10:8]);
