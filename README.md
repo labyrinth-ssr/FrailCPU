@@ -12,9 +12,17 @@ Spring 2021, Fudan University.
     * [ ] Lab 4: Multiplication & Division
     * [ ] Lab 5: Exception
     * [ ] PJ: ???
-* [ ] Cautions on Verilator
-* [ ] `OneLineBuffer`
-* [ ] `BRAM` & `LUTRAM` module
+* [ ] @riteme
+    * [ ] Cautions on Verilator
+    * [ ] Refactor `top.h`
+    * [ ] Testbench for `MyCPU`
+    * [ ] `BRAM` & `LUTRAM` module
+    * [ ] `OneLineBuffer`
+    * [ ] Reference model for `OneLineBuffer`
+    * [ ] Unit test framework
+    * [ ] Unit tests for cache
+    * [ ] Unit tests for `MULT`/`DIV`
+    * [ ] VGA simulation
 
 ## File Organization
 
