@@ -1,4 +1,4 @@
-#include "refcpu/top.h"
+#include "top.h"
 #include "verilated_fst_c.h"
 
 constexpr int MAX_FST_TRACE_DEPTH = 32;

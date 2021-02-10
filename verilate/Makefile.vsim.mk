@@ -1,36 +1,41 @@
 VSIM_ARGS ?=
+VSIM_OPT ?= 0
+VSIM_SANITIZE ?= 0
 
-VERILATOR = /usr/share/verilator/include
+VERILATOR_ROOT = /usr/share/verilator/include
 
 SV_READY = $(SV_MKFILE)
 
 VMAIN = build/vmain
-VROOT = $(SV_ROOT)
-VTARGET = ./build/V$(SV_TARGET)__ALL.a
-VINCLUDE = ./verilate/include
-VSOURCE = ./verilate/source
+VROOT = $(SV_TARGET)#                       # refcpu/VTop
+VLIBRARY = $(SV_BUILD)/$(SV_PREFIX)__ALL.a# # build/verilated/refcpu/VTop/VTop__ALL.a
+VINCLUDE = verilate/include
+VSOURCE = verilate/source
+
+CXX_BUILD = build/obj
 
 CXX_TARGET_FILES := $(wildcard $(VSOURCE)/$(VROOT)/*.cpp)
 CXX_FILES := \
 	$(wildcard $(VSOURCE)/*.cpp) \
 	$(CXX_TARGET_FILES) \
-	$(VERILATOR)/verilated.cpp \
-	$(VERILATOR)/verilated_fst_c.cpp
-	# $(VERILATOR)/verilated_threads.cpp
+	$(VERILATOR_ROOT)/verilated.cpp \
+	$(VERILATOR_ROOT)/verilated_fst_c.cpp
+	# $(VERILATOR_ROOT)/verilated_threads.cpp
 
-CXX_TARGET_HEADERS := $(wildcard $(VINCLUDE)/$(VROOT)/*.h)
+CXX_TARGET_HEADERS := $(wildcard $(VSOURCE)/$(VROOT)/*.h)
 CXX_HEADERS := \
 	$(wildcard $(VINCLUDE)/*.h) \
 	$(wildcard $(VINCLUDE)/thirdparty/*.h)
 
-CXX_TARGET_LIBS := $(addprefix ./build/, $(CXX_TARGET_FILES:%.cpp=%.o))
-CXX_LIBS := $(addprefix ./build/, $(CXX_FILES:%.cpp=%.o))
+CXX_TARGET_LIBS := $(addprefix $(CXX_BUILD)/, $(CXX_TARGET_FILES:%.cpp=%.o))
+CXX_LIBS := $(addprefix $(CXX_BUILD)/, $(CXX_FILES:%.cpp=%.o))
 
 CXX_INCLUDES = \
-	-I./build/ \
+	-I$(SV_BUILD) \
 	-I$(VINCLUDE) \
-	-I$(VERILATOR) \
-	-I$(VERILATOR)/vltstd/
+	-I$(VSOURCE)/$(VROOT) \
+	-I$(VERILATOR_ROOT) \
+	-I$(VERILATOR_ROOT)/vltstd/
 
 CXX_WARNINGS = \
 	-Wall -Wextra \
@@ -53,19 +58,25 @@ ifeq ($(VSIM_OPT), 1)
 CXXFLAGS += -O2 -march=native -flto
 endif
 
+ifeq ($(VSIM_SANITIZE), 1)
+CXXFLAGS += -fsanitize=undefined,address
+endif
+
 $(CXX_TARGET_LIBS): $(CXX_TARGET_HEADERS) $(SV_READY)
-$(CXX_LIBS): ./build/%.o : %.cpp $(CXX_HEADERS)
+$(CXX_LIBS): $(CXX_BUILD)/%.o : %.cpp $(CXX_HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
-$(VTARGET): $(SV_READY)
-	cd build; $(MAKE) -f $(notdir $(SV_MKFILE)) CXX=$(CXX)
+$(VLIBRARY): $(SV_READY)
+	cd $(SV_BUILD); $(MAKE) -f $(notdir $(SV_MKFILE)) CXX=$(CXX)
 
-$(VMAIN): $(CXX_LIBS) $(VTARGET)
+$(VMAIN): $(CXX_LIBS) $(VLIBRARY)
 	$(CXX) $(CXXFLAGS) $^ $(CXX_LINKS) -o $@
 
 .PHONY: vbuild vsim vsim-gdb
+
 vbuild: $(VMAIN)
+
 vsim: $(VMAIN)
 	./$(VMAIN) $(VSIM_ARGS)
 

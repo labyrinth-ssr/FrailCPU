@@ -27,6 +27,8 @@ Spring 2021, Fudan University.
 
 ## Prerequisites
 
+We recommend you work on a Linux distribution (Ubuntu, Manjaro, ArchLinux, etc.) or WSL2 if you stick to Microsoft Windows. We at least guarantee that all stuffs will function correctly on Ubuntu 20.04. If you find something that doesn't work, please feel free to contact TAs or consider running a virtual machine.
+
 * Xilinx Vivado (= 2019.2, HLx version)
 * Verilator (≥ 4.028)
 * GDB (for `vsim-gdb`)

@@ -2,6 +2,3 @@
 build/*
 !build/.gitkeep
 .vscode/
-
-# clangd
-compile_flags.txt

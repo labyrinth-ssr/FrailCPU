@@ -2,7 +2,7 @@
 
 #include "defs.h"
 
-using ContextVType = decltype(VRefCPU::VTop->core__DOT__ctx);
+using ContextVType = decltype(VModel::VTop->core__DOT__ctx);
 
 struct ContextWrapper {
     ContextWrapper(VTopType *_top, const ContextVType &_data)

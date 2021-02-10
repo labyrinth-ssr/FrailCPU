@@ -3,7 +3,7 @@
 #include "icbus.h"
 #include "defs.h"
 
-using CBusReqVType = decltype(VRefCPU::oreq);
+using CBusReqVType = decltype(VModel::oreq);
 
 class CBusWrapper : public ICBus {
 public:

@@ -1,6 +1,6 @@
 #include "thirdparty/CLI11.hpp"
 
-#include "refcpu/top.h"
+#include "top.h"
 
 constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
 

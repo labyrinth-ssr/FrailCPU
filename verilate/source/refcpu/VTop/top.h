@@ -11,7 +11,7 @@
 #include <memory>
 #include <chrono>
 
-class RefCPU : public VRefCPU {
+class RefCPU : public VModel {
 public:
     RefCPU();
     ~RefCPU();
