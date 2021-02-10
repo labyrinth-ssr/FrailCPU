@@ -40,6 +40,7 @@ module BranchEval (
         end
 
         // evaluate new_pc
+        new_pc = '0;  // to avoid latch
         unique case (opcode)
         OP_BEQ:
             new_pc = v_rs == v_rt ? target_pc : link_pc;

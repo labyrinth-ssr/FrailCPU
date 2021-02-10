@@ -50,7 +50,7 @@ CXXFLAGS += -stdlib=libc++
 endif
 
 ifeq ($(VSIM_OPT), 1)
-CXXFLAGS += -O2 -march=native
+CXXFLAGS += -O2 -march=native -flto
 endif
 
 $(CXX_TARGET_LIBS): $(CXX_TARGET_HEADERS) $(SV_READY)

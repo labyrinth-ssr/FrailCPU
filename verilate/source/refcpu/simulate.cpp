@@ -124,6 +124,6 @@ void RefCPU::run() {
     auto t_run_end = Clock::now();
     auto span = std::chrono::duration<double>(t_run_end - t_run_start).count();
 
-    info(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf MHz).\n",
+    info(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf KHz).\n",
         current_cycle, current_cycle / span / 1000);
 }
