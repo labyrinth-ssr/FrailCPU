@@ -43,22 +43,22 @@ public:
 
     void update();
 
-    auto trace_enabled() -> bool {
+    auto trace_enabled() const -> bool {
         return ctx0.v_open_trace;
     }
-    auto monitor_enabled() -> bool {
+    auto monitor_enabled() const -> bool {
         return ctx0.v_num_monitor;
     }
-    auto has_char() -> bool {
+    auto has_char() const -> bool {
         return ctx0.uart_written;
     }
-    auto get_char() -> uchar {
+    auto get_char() const -> uchar {
         return ctx0.uart_data;
     }
-    auto get_current_num() -> int {
+    auto get_current_num() const -> int {
         return ctx0.v_num >> 24;
     }
-    auto get_acked_num() -> int {
+    auto get_acked_num() const -> int {
         return ctx0.v_num & 0xff;
     }
 

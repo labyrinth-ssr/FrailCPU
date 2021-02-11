@@ -35,7 +35,7 @@ class ModelBase : public VModel {
 public:
     ModelBase() :
         force_diff(false), p_disable(0.0f),
-        _memory_installed(false),
+        _memory_installed(false), _fst_count(0), _current_num(0),
         _fst_tfp(nullptr), _text_tfp(nullptr) {}
     virtual ~ModelBase();
 
@@ -54,6 +54,7 @@ public:
     void open_text_diff(const std::string &path);
     void close_text_diff();
 
+    virtual void reset() = 0;
     virtual void tick() = 0;
     virtual void run() = 0;
 
@@ -71,9 +72,14 @@ protected:
 
     auto get_text_diff() const -> const TextDiff &;
 
+    virtual void print_num_monitor(int num);
+    void checkout_confreg();
+
 private:
     bool _memory_installed;
     size_t _fst_count;
+    int _current_num;
+
     VerilatedFstC *_fst_tfp;
     FILE *_text_tfp;
     TextDiff _text_diff;

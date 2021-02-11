@@ -4,25 +4,19 @@
 #include "context.h"
 #include "cbus.h"
 
-#include <chrono>
-
 class RefCPU : public ModelBase {
 public:
     RefCPU() :
         current_cycle(0),
-        current_num(0),
         test_finished(false) {}
 
+    void reset();
     void tick();
     void run();
 
 private:
     int current_cycle;
-    int current_num;
     bool test_finished;
-
-    using Clock = std::chrono::high_resolution_clock;
-    Clock::time_point t_run_start;
 
     auto get_ctx() const -> ContextWrapper {
         return ContextWrapper(VTop, VTop->core__DOT__ctx);
@@ -43,5 +37,4 @@ private:
     void print_status();
     void print_request();
     void print_writeback();
-    void check_monitor();
 };

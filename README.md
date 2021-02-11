@@ -14,7 +14,7 @@ Spring 2021, Fudan University.
     * [ ] PJ: ???
 * [ ] @riteme
     * [ ] Cautions on Verilator
-    * [ ] Refactor `top.h`
+    * [x] Refactor `top.h`
     * [ ] Testbench for `MyCPU`
     * [ ] `BRAM` & `LUTRAM` module
     * [ ] `OneLineBuffer`

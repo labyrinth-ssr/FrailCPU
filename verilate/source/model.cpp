@@ -121,3 +121,22 @@ void ModelBase::ticks(int count) {
         count--;
     }
 }
+
+void ModelBase::print_num_monitor(int num) {
+    info(BLUE "(info)" RESET " #%u completed.\n", num);
+}
+
+void ModelBase::checkout_confreg() {
+    int num = con->get_current_num();
+    int ack = con->get_acked_num();
+
+    if (_current_num != num) {
+        assert(_current_num + 1 == num);
+        info(BLUE "(info)" RESET " #%d completed.\n", num);
+        assert(ack == num);
+        _current_num = num;
+    }
+
+    if (con->has_char() && con->get_char() <= 0x7f)
+        notify_char(con->get_char());
+}

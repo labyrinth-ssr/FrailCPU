@@ -14,6 +14,7 @@ void TextDiff::open(const std::string &path) {
     line_number = 0;
     byte_read = 0;
     file_size = std::filesystem::file_size(path);
+    error_count = 0;
 }
 
 void TextDiff::close() {
@@ -39,26 +40,32 @@ static auto eof_indicator(const std::string &line) -> const char * {
     return line.empty() ? " (EOF)" : "";
 }
 
-auto TextDiff::check_line(const std::string &line, bool report) -> bool {
+auto TextDiff::check_line(const std::string &line, bool report, bool abort_on_error) -> bool {
     if (!is_open())
         return true;
 
     auto ref = get_line();
     bool same = line == ref;
 
-    if (!same && report) {
-        log_separator();
-        warn("TextDiff: on line %zu:\n", line_number);
-        warn("\texpect: \"%s\"%s\n", ref.data(), eof_indicator(ref));
-        warn("\t   got: \"%s\"%s\n", line.data(), eof_indicator(line));
-        abort();
+    if (!same) {
+        error_count++;
+
+        if (report) {
+            log_separator();
+            warn("TextDiff: on line %zu:\n", line_number);
+            warn("\texpect: \"%s\"%s\n", ref.data(), eof_indicator(ref));
+            warn("\t   got: \"%s\"%s\n", line.data(), eof_indicator(line));
+
+            if (abort_on_error)
+                abort();
+        }
     }
 
     return same;
 }
 
-auto TextDiff::check_eof(bool report) -> bool {
-    return check_line("", report);
+auto TextDiff::check_eof(bool report, bool abort_on_error) -> bool {
+    return check_line("", report, abort_on_error);
 }
 
 auto TextDiff::current_progress() const -> int {
@@ -70,4 +77,8 @@ auto TextDiff::current_progress() const -> int {
 
 auto TextDiff::current_line() const -> size_t {
     return line_number + 1;
+}
+
+auto TextDiff::get_error_count() const -> size_t {
+    return error_count;
 }

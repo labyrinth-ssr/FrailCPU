@@ -1,5 +1,7 @@
 #include "refcpu.h"
 
+#include <chrono>
+
 #include "thirdparty/nameof.hpp"
 
 constexpr int MAX_CYCLE = 100000000;
@@ -44,15 +46,12 @@ void RefCPU::print_writeback() {
     }
 }
 
-void RefCPU::check_monitor() {
-    int num = con->get_current_num();
-    int ack = con->get_acked_num();
-    if (current_num != num) {
-        assert(current_num + 1 == num);
-        info(BLUE "(info)" RESET " #%d completed.\n", num);
-        assert(ack == num);
-        current_num = num;
-    }
+void RefCPU::reset() {
+    dev->reset();
+    clk = 0;
+    resetn = 0;
+    oresp = 0;
+    ticks(10);  // 10 cycles to reset
 }
 
 void RefCPU::tick() {
@@ -63,12 +62,10 @@ void RefCPU::tick() {
     clk = 0;
     oresp = dev->eval_resp();
     eval();
-
     fst_dump(+1);
 
     // print_request();
     print_writeback();
-    check_monitor();
 
     // send request to memory
     dev->eval_req(get_oreq());
@@ -78,31 +75,23 @@ void RefCPU::tick() {
     con->update();
     dev->commit();
     eval();
-
     fst_advance();
     fst_dump(+0);
 
+    checkout_confreg();
+
     // check for the end of tests
-    auto c = con->get_char();
-
     if (get_ctx().pc() == TEST_END_PC + 4 ||
-        (con->has_char() && c == 0xff)) {
+        (con->has_char() && con->get_char() == 0xff))
         test_finished = true;
-        return;
-    }
-
-    if (con->has_char() && c != 0xff)
-        notify_char(c);
 }
 
 void RefCPU::run() {
-    dev->reset();
-    clk = 0;
-    resetn = 0;
-    oresp = 0;
-    ticks(10);  // 10 cycles to reset
+    using clock = std::chrono::high_resolution_clock;
 
-    t_run_start = Clock::now();
+    reset();
+
+    auto t_run_start = clock::now();
 
     clk = 0;
     resetn = 1;
@@ -125,9 +114,12 @@ void RefCPU::run() {
     diff_eof();
     final();
 
-    auto t_run_end = Clock::now();
+    auto t_run_end = clock::now();
     auto span = std::chrono::duration<double>(t_run_end - t_run_start).count();
 
     info(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf KHz).\n",
         current_cycle, current_cycle / span / 1000);
+    if (get_text_diff().get_error_count() > 0)
+        warn(RED "(warn)" RESET " TextDiff: %zu error(s) suppressed.\n",
+            get_text_diff().get_error_count());
 }
