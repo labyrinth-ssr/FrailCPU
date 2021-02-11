@@ -1,8 +1,8 @@
 #include "runner.h"
 
-#include "refcpu.h"
+#include "mycpu.h"
 
-ProgramRunner<RefCPU> app;
+ProgramRunner<MyCPU> app;
 
 void on_abort(int) {
     app.~ProgramRunner();

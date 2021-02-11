@@ -15,7 +15,7 @@ Spring 2021, Fudan University.
 * [ ] @riteme
     * [ ] Cautions on Verilator
     * [x] Refactor `top.h`
-    * [ ] Testbench for `MyCPU`
+    * [x] Testbench for `MyCPU`
     * [ ] `BRAM` & `LUTRAM` module
     * [ ] `OneLineBuffer`
     * [ ] Reference model for `OneLineBuffer`

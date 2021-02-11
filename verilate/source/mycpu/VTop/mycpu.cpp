@@ -1,4 +1,4 @@
-#include "refcpu.h"
+#include "mycpu.h"
 
 #include <chrono>
 
@@ -7,46 +7,49 @@
 constexpr int MAX_CYCLE = 100000000;
 constexpr addr_t TEST_END_PC = 0xbfc00100;
 
-void RefCPU::print_status() {
-    auto ctx = get_ctx();
+auto MyCPU::get_writeback_pc() const -> addr_t {
+    /**
+     * TODO (Lab2) retrieve PC from verilated model :)
+     */
+    return 0x19260817;
+}
+
+auto MyCPU::get_writeback_id() const -> int {
+    /**
+     * TODO (Lab2) retrieve writeback register id from verilated model :)
+     */
+    return 0;
+}
+
+auto MyCPU::get_writeback_value() const -> addr_t {
+    /**
+     * TODO (Lab2) retrieve writeback value from verilated model :)
+     */
+    return 0xdeadbeef;
+}
+
+void MyCPU::print_status() {
     status_line(
         GREEN "[%d]" RESET " ack=%zu (%d%%), pc=%08x",
         current_cycle,
         get_text_diff().current_line(),
         get_text_diff().current_progress(),
-        ctx.pc()
+        get_writeback_pc()
     );
 }
 
-void RefCPU::print_request() {
-    auto req = get_oreq();
-    if (resetn && req.valid()) {
-        debug(
-            BLUE "[%s]" RESET " "
-            "addr=%08x, data=%08x, len=%u, size=%u, strb=%x\n",
-            req.is_write() ? "W" : "R",
-            req.addr(),
-            req.data(),
-            static_cast<word_t>(req.len()) + 1,
-            1u << static_cast<word_t>(req.size()),
-            req.strobe()
-        );
+void MyCPU::print_writeback() {
+    auto pc = get_writeback_pc();
+    auto id = get_writeback_id();
+    auto value = get_writeback_value();
+
+    if (id != 0) {
+        debug("R[%d] <- %08x\n", id, value);
+        text_dump(con->trace_enabled(), pc, id, value);
     }
 }
 
-void RefCPU::print_writeback() {
-    // print register writeback
-    auto ctx = get_new_ctx();
-    if (ctx.target_id() != RegisterID::R0) {
-        auto id = ctx.target_id();
-        auto value = ctx.r(id);
-        debug("R[%d \"%s\"] <- %08x\n",
-            id, nameof::nameof_enum(id).data(), value);
-        text_dump(con->trace_enabled(), ctx.pc(), id, value);
-    }
-}
-
-void RefCPU::reset() {
+void MyCPU::reset() {
     dev->reset();
     clk = 0;
     resetn = 0;
@@ -54,7 +57,7 @@ void RefCPU::reset() {
     ticks(10);  // 10 cycles to reset
 }
 
-void RefCPU::tick() {
+void MyCPU::tick() {
     if (test_finished)
         return;
 
@@ -64,7 +67,6 @@ void RefCPU::tick() {
     eval();
     fst_dump(+1);
 
-    // print_request();
     print_writeback();
 
     // send request to memory
@@ -81,12 +83,12 @@ void RefCPU::tick() {
     checkout_confreg();
 
     // check for the end of tests
-    if (get_ctx().pc() == TEST_END_PC + 4 ||
+    if (get_writeback_pc() == TEST_END_PC + 4 ||
         (con->has_char() && con->get_char() == 0xff))
         test_finished = true;
 }
 
-void RefCPU::run() {
+void MyCPU::run() {
     using clock = std::chrono::high_resolution_clock;
 
     reset();
