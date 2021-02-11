@@ -1,0 +1,47 @@
+#pragma once
+
+#include "model.h"
+#include "context.h"
+#include "cbus.h"
+
+#include <chrono>
+
+class RefCPU : public ModelBase {
+public:
+    RefCPU() :
+        current_cycle(0),
+        current_num(0),
+        test_finished(false) {}
+
+    void tick();
+    void run();
+
+private:
+    int current_cycle;
+    int current_num;
+    bool test_finished;
+
+    using Clock = std::chrono::high_resolution_clock;
+    Clock::time_point t_run_start;
+
+    auto get_ctx() const -> ContextWrapper {
+        return ContextWrapper(VTop, VTop->core__DOT__ctx);
+    }
+    auto get_ctx0() const -> ContextWrapper {
+        return ContextWrapper(VTop, VTop->core__DOT__ctx0);
+    }
+    auto get_new_ctx() const -> ContextWrapper {
+        return ContextWrapper(VTop, VTop->core__DOT__proxy__DOT__new_ctx);
+    }
+    auto get_oreq() const -> CBusWrapper {
+        return CBusWrapper(VTop, oreq);
+    }
+    void set_oresp(const CBusRespVType &resp) {
+        oresp = resp;
+    }
+
+    void print_status();
+    void print_request();
+    void print_writeback();
+    void check_monitor();
+};

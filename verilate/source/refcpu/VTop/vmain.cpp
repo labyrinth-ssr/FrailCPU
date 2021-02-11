@@ -1,6 +1,6 @@
-#include "thirdparty/CLI11.hpp"
+#include "refcpu.h"
 
-#include "top.h"
+#include "thirdparty/CLI11.hpp"
 
 constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
 
@@ -19,12 +19,9 @@ static struct {
 static RefCPU *top;
 
 void exit_handler() {
-    if (!args.ref_trace_path.empty())
-        top->close_reference_trace();
-    if (!args.fst_trace_path.empty())
-        top->stop_fst_trace();
-    if (!args.text_trace_path.empty())
-        top->stop_text_trace();
+    top->stop_fst_trace();
+    top->stop_text_trace();
+    top->close_text_diff();
 }
 
 void abort_handler(int) {
@@ -62,7 +59,7 @@ int vmain(int argc, char *argv[]) {
 
     top->install_memory(std::move(mem));
     if (!args.ref_trace_path.empty())
-        top->open_reference_trace(args.ref_trace_path);
+        top->open_text_diff(args.ref_trace_path);
     if (!args.fst_trace_path.empty())
         top->start_fst_trace(args.fst_trace_path);
     if (!args.text_trace_path.empty())

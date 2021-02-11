@@ -7,22 +7,15 @@
 
 class TextDiff {
 public:
-    auto is_open() -> bool;
+    auto is_open() const -> bool;
     void open(const std::string &path);
     void close();
 
     auto check_line(const std::string &line, bool report = true) -> bool;
     auto check_eof(bool report = true) -> bool;
 
-    auto current_progress() -> int {
-        if (is_open())
-            return 100 * byte_read / file_size;
-        else
-            return 100;
-    }
-    auto current_line() -> size_t {
-        return line_number + 1;
-    }
+    auto current_progress() const -> int;
+    auto current_line() const -> size_t;
 
 private:
     size_t line_number;

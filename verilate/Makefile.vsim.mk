@@ -27,6 +27,7 @@ CXX_HEADERS := \
 	$(wildcard $(VINCLUDE)/*.h) \
 	$(wildcard $(VINCLUDE)/thirdparty/*.h)
 
+CXX_MODEL_LIB = $(CXX_BUILD)/$(VSOURCE)/model.o
 CXX_TARGET_LIBS := $(addprefix $(CXX_BUILD)/, $(CXX_TARGET_FILES:%.cpp=%.o))
 CXX_LIBS := $(addprefix $(CXX_BUILD)/, $(CXX_FILES:%.cpp=%.o))
 
@@ -62,6 +63,8 @@ ifeq ($(VSIM_SANITIZE), 1)
 CXXFLAGS += -fsanitize=undefined,address
 endif
 
+# model.h/.cpp depends on verilated model.
+$(CXX_MODEL_LIB): $(SV_READY)
 $(CXX_TARGET_LIBS): $(CXX_TARGET_HEADERS) $(SV_READY)
 $(CXX_LIBS): $(CXX_BUILD)/%.o : %.cpp $(CXX_HEADERS)
 	@mkdir -p $(dir $@)

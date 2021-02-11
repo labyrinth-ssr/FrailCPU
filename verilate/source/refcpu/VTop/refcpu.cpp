@@ -1,4 +1,4 @@
-#include "top.h"
+#include "refcpu.h"
 
 #include "thirdparty/nameof.hpp"
 
@@ -7,8 +7,13 @@ constexpr addr_t TEST_END_PC = 0xbfc00100;
 
 void RefCPU::print_status() {
     auto ctx = get_ctx();
-    status_line(GREEN "[%d]" RESET " ack=%zu (%d%%), pc=%08x",
-        current_cycle, diff.current_line(), diff.current_progress(), ctx.pc());
+    status_line(
+        GREEN "[%d]" RESET " ack=%zu (%d%%), pc=%08x",
+        current_cycle,
+        get_text_diff().current_line(),
+        get_text_diff().current_progress(),
+        ctx.pc()
+    );
 }
 
 void RefCPU::print_request() {
@@ -35,7 +40,7 @@ void RefCPU::print_writeback() {
         auto value = ctx.r(id);
         debug("R[%d \"%s\"] <- %08x\n",
             id, nameof::nameof_enum(id).data(), value);
-        text_trace_dump(ctx.pc(), id, value);
+        text_dump(con->trace_enabled(), ctx.pc(), id, value);
     }
 }
 
@@ -50,7 +55,7 @@ void RefCPU::check_monitor() {
     }
 }
 
-void RefCPU::_tick() {
+void RefCPU::tick() {
     if (test_finished)
         return;
 
@@ -59,7 +64,7 @@ void RefCPU::_tick() {
     oresp = dev->eval_resp();
     eval();
 
-    fst_trace_dump(+1);
+    fst_dump(+1);
 
     // print_request();
     print_writeback();
@@ -74,9 +79,8 @@ void RefCPU::_tick() {
     dev->commit();
     eval();
 
-    fst_trace_dump(+10);
-
-    fst_trace_count++;
+    fst_advance();
+    fst_dump(+0);
 
     // check for the end of tests
     auto c = con->get_char();
@@ -96,7 +100,7 @@ void RefCPU::run() {
     clk = 0;
     resetn = 0;
     oresp = 0;
-    tick(10);  // 10 cycles to reset
+    ticks(10);  // 10 cycles to reset
 
     t_run_start = Clock::now();
 
@@ -118,7 +122,7 @@ void RefCPU::run() {
         print_status();
     }
 
-    diff.check_eof();
+    diff_eof();
     final();
 
     auto t_run_end = Clock::now();

@@ -2,8 +2,24 @@ Verilator-related files.
 
 ## Make Arguments
 
+* `SV_TARGET`: target top module name, e.g. `refcpu/VTop`, `mycpu/VCacheTop`.
 * `VSIM_ARGS`: pass arguments to the execution of `vmain`.
 * `VSIM_OPT`: set to 1 to use `-O2 -march=native` options in compiling testbench code.
+* `VSIM_SANITIZE`: set to 1 to add `-fsanitize=undefined,address` to `CXXFLAGS`.
+
+To synthesize with Verilator, run
+
+```
+make verilate
+```
+
+and the verilated model is named `VModel`.
+
+## CoreMark Test
+
+```
+make vsim -j VSIM_ARGS='--force-diff -m "./misc/nscscc/coremark.coe" -r "./misc/std/coremark.txt"'
+```
 
 ## Tricks
 

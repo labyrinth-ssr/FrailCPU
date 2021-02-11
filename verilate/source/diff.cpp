@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-auto TextDiff::is_open() -> bool {
+auto TextDiff::is_open() const -> bool {
     return fs && fs.is_open();
 }
 
@@ -59,4 +59,15 @@ auto TextDiff::check_line(const std::string &line, bool report) -> bool {
 
 auto TextDiff::check_eof(bool report) -> bool {
     return check_line("", report);
+}
+
+auto TextDiff::current_progress() const -> int {
+    if (is_open())
+        return 100 * byte_read / file_size;
+    else
+        return 100;
+}
+
+auto TextDiff::current_line() const -> size_t {
+    return line_number + 1;
 }
