@@ -1,18 +1,14 @@
-VSIM_ARGS ?=
-VSIM_OPT ?= 0
-VSIM_SANITIZE ?= 0
-
 VERILATOR_ROOT = /usr/share/verilator/include
 
 SV_READY = $(SV_MKFILE)
 
-VMAIN = build/$(TARGET)/vmain#              # build/refcpu/VTop/vmain
+VMAIN = $(BUILD_ROOT)/$(TARGET)/vmain#      # build/refcpu/VTop/vmain
 VROOT = $(TARGET)#                          # refcpu/VTop
 VLIBRARY = $(SV_BUILD)/$(SV_PREFIX)__ALL.a# # build/verilated/refcpu/VTop/VTop__ALL.a
 VINCLUDE = verilate/include
 VSOURCE = verilate/source
 
-CXX_BUILD = build/$(TARGET)/obj#            # build/refcpu/VTop/obj
+CXX_BUILD = $(BUILD_ROOT)/$(TARGET)/obj#    # build/refcpu/VTop/obj
 
 CXX_TARGET_FILES := $(wildcard $(VSOURCE)/$(VROOT)/*.cpp)
 CXX_FILES := \
