@@ -72,10 +72,10 @@ void MyCPU::tick() {
     // send request to memory
     dev->eval_req(get_oreq());
 
-    // clock posedge trigger
+    // sync with clock's posedge
     clk = 1;
-    con->update();
-    dev->commit();
+    con->sync();
+    dev->sync();
     eval();
     fst_advance();
     fst_dump(+0);

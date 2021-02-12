@@ -1,13 +1,13 @@
 SV = verilator
 
-SV_TARGET ?= refcpu/VTop
+TARGET ?= refcpu/VTop
 
 SV_PREFIX = VModel
-SV_BUILD = build/verilated/$(SV_TARGET)#  # build/refcpu/VTop
-SV_ROOT := $(shell dirname $(SV_TARGET))# # refcpu. NOTE: builtin $(dir ...) will leave the final "/".
-SV_NAME := $(notdir $(SV_TARGET))#        # VTop
-SV_MKFILE = $(SV_BUILD)/$(SV_PREFIX).mk#  # build/refcpu/VTop/VTop.mk
-SV_VTOP = source/$(SV_TARGET).sv#         # source/refcpu/VTop.sv
+SV_BUILD = build/$(TARGET)/verilated#    # build/refcpu/VTop/verilated
+SV_ROOT := $(shell dirname $(TARGET))#   # refcpu. NOTE: builtin $(dir ...) will leave the final "/".
+SV_NAME := $(notdir $(TARGET))#          # VTop
+SV_MKFILE = $(SV_BUILD)/$(SV_PREFIX).mk# # build/refcpu/VTop/verilated/VTop.mk
+SV_VTOP = source/$(TARGET).sv#           # source/refcpu/VTop.sv
 
 SV_FILES := \
 	$(wildcard source/util/*) \

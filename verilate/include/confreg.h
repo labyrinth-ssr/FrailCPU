@@ -40,8 +40,7 @@ public:
     void reset();
     auto load(addr_t addr) -> word_t;
     void store(addr_t addr, word_t data, word_t mask);
-
-    void update();
+    void sync();
 
     auto trace_enabled() const -> bool {
         return ctx0.v_open_trace;

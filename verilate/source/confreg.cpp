@@ -91,7 +91,7 @@ void Confreg::store(addr_t addr, word_t data, word_t /*mask*/) {
     }
 }
 
-void Confreg::update() {
+void Confreg::sync() {
     ctx0 = ctx;
     ctx.uart_written = false;
     mem[TIMER]++;

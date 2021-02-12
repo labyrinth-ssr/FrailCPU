@@ -77,7 +77,7 @@ public:
      */
     auto eval_resp() -> CBusRespVType;
     void eval_req(const ICBus &req);
-    void commit();
+    void sync();
 
 private:
     std::shared_ptr<IMemory> mem;
