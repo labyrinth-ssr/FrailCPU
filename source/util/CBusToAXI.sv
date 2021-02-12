@@ -67,12 +67,13 @@ module CBusToAXI(
 
     // check ongoing request
     cbus_req_t saved_req;
+    mlen_t count;
     logic is_last;
-    assign is_last = saved_req.len == 0;
+    assign is_last = count == 0;
 
     // interactions with AXI
     logic  busy;
-    busy_t handshake, remain;
+    busy_t handshake, ended, remain;
 
     assign busy = |in_issue;
     assign handshake = {
@@ -82,7 +83,8 @@ module CBusToAXI(
         in_issue[W ] && wready,
         in_issue[B ] && bvalid
     };
-    assign remain = in_issue ^ handshake;
+    assign ended = handshake & {1'b1, rlast, 1'b1, wlast, 1'b1};
+    assign remain = in_issue ^ ended;
 
     // cache bus driver
     logic ready;
@@ -129,8 +131,8 @@ module CBusToAXI(
 
         if (in_issue[W]) begin
             wvalid = 1;
-            wdata  = saved_req.data;
-            wstrb  = saved_req.strobe;
+            wdata  = creq.data;
+            wstrb  = creq.strobe;
             wlast  = is_last;
         end
 
@@ -143,7 +145,7 @@ module CBusToAXI(
     if (aresetn) begin
         if (busy) begin
             if (cresp.ready && !cresp.last)
-                saved_req.len <= mlen_t'(saved_req.len - mlen_t'(1));
+                count <= mlen_t'(count - mlen_t'(1));
 
             in_issue <= remain;
         end else begin
@@ -151,6 +153,7 @@ module CBusToAXI(
                 in_issue <= next_issue;
 
             saved_req <= creq;
+            count     <= creq.len;
         end
     end else begin
         in_issue <= 0;
@@ -158,6 +161,7 @@ module CBusToAXI(
 
     logic _unused_ok = &{
         saved_req.valid, saved_req.is_write,
+        saved_req.data, saved_req.strobe,
         rid, rresp, bid, bresp
     };
 endmodule

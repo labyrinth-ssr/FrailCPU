@@ -70,7 +70,7 @@ $(CXX_LIBS): $(CXX_BUILD)/%.o : %.cpp $(CXX_HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
-$(VLIBRARY): $(SV_READY)
+$(VLIBRARY): $(SV_READY) $(SV_FILES)
 	cd $(SV_BUILD); $(MAKE) -f $(notdir $(SV_MKFILE)) CXX=$(CXX)
 
 $(VMAIN): $(CXX_LIBS) $(VLIBRARY)

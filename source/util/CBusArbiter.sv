@@ -21,7 +21,7 @@ module CBusArbiter #(
     int index, select;
     cbus_req_t saved_req, selected_req;
 
-    assign oreq = saved_req;
+    assign oreq         = ireqs[index];
     assign selected_req = ireqs[select];
 
     // select a preferred request
@@ -62,4 +62,6 @@ module CBusArbiter #(
     end else begin
         {busy, index, saved_req} <= '0;
     end
+
+    logic _unused_ok = &{saved_req};
 endmodule

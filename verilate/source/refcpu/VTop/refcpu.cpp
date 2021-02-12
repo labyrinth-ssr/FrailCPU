@@ -40,9 +40,10 @@ void RefCPU::print_writeback() {
     if (ctx.target_id() != RegisterID::R0) {
         auto id = ctx.target_id();
         auto value = ctx.r(id);
-        debug("R[%d \"%s\"] <- %08x\n",
-            id, nameof::nameof_enum(id).data(), value);
         text_dump(con->trace_enabled(), ctx.pc(), id, value);
+
+        // debug("R[%d \"%s\"] <- %08x\n",
+        //     id, nameof::nameof_enum(id).data(), value);
     }
 }
 

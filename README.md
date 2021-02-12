@@ -17,8 +17,8 @@ Spring 2021, Fudan University.
     * [x] Refactor `top.h`
     * [x] Testbench for `MyCPU`
     * [ ] `BRAM` & `LUTRAM` module
-    * [ ] `OneLineBuffer`
-    * [ ] Reference model for `OneLineBuffer`
+    * [x] `StupidBuffer`
+    * [ ] Reference model for `StupidBuffer`
     * [ ] Unit test framework
     * [ ] Unit tests for cache
     * [ ] Unit tests for `MULT`/`DIV`

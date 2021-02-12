@@ -1,6 +1,8 @@
 `include "access.svh"
 `include "refcpu/defs.svh"
 
+// `define IM_STUPID
+
 module VTop (
     input logic clk, resetn,
 
@@ -25,8 +27,57 @@ module VTop (
     cbus_resp_t icresp, dcresp, tresp;
 
     Core core(.*);
+
+`ifdef IM_STUPID
+    StupidBuffer icvt(
+        .dreq(`IREQ_TO_DREQ(ireq)),
+        .dresp(iresp),
+        .creq(icreq),
+        .cresp(icresp),
+        .*
+    );
+
+    dbus_req_t  [1:0] mux_dreq;
+    dbus_resp_t [1:0] mux_dresp;
+    cbus_req_t  [1:0] mux_creq;
+    cbus_resp_t [1:0] mux_cresp;
+
+    always_comb begin
+        mux_dreq = 0;
+        mux_cresp = 0;
+
+        if (dreq.addr[31:29] == 3'b101) begin
+            mux_dreq[1] = dreq;
+            dresp = mux_dresp[1];
+            dcreq = mux_creq[1];
+            mux_cresp[1] = dcresp;
+        end else begin
+            mux_dreq[0] = dreq;
+            dresp = mux_dresp[0];
+            dcreq = mux_creq[0];
+            mux_cresp[0] = dcresp;
+        end
+    end
+
+    StupidBuffer dcvt0(
+        .dreq(mux_dreq[0]),
+        .dresp(mux_dresp[0]),
+        .creq(mux_creq[0]),
+        .cresp(mux_cresp[0]),
+        .*
+    );
+    DBusToCBus dcvt1(
+        .dreq(mux_dreq[1]),
+        .dresp(mux_dresp[1]),
+        .dcreq(mux_creq[1]),
+        .dcresp(mux_cresp[1]),
+        .*
+    );
+`else
     IBusToCBus icvt(.*);
     DBusToCBus dcvt(.*);
+`endif
+
     CBusArbiter arbiter(
         .ireqs({icreq, dcreq}),
         .iresps({icresp, dcresp}),
