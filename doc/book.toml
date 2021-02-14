@@ -1,0 +1,18 @@
+[book]
+authors = ["sys-ta"]
+language = "zh"
+multilingual = false
+src = "src"
+title = "Intro to NSCSCC"
+
+[build]
+create-missing = false
+
+[output.html]
+curly-quotes = true
+no-section-label = true
+
+[output.html.fold]
+enable = true
+
+[preprocessor.katex]
