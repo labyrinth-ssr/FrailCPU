@@ -46,12 +46,13 @@ We recommend you work on a Linux distribution (Ubuntu, Manjaro, ArchLinux, etc.)
     * C++17 capable compiler: GNU C++ (≥ 9.0.0) or LLVM clang (≥ 7.0.0)
     * corresponding `libstdc++` (GNU C++) or `libc++` (LLVM clang)
 * `libz-dev` (or the correct devel packege for zlib on your Linux distribution)
+* `systemd-coredump` (for `coredumpctl`)
 
 ### Ubuntu 20.04
 
 ```shell
 apt update
-apt install -y verilator gdb gtkwave build-essential libz-dev
+apt install -y verilator gdb gtkwave build-essential libz-dev systemd-coredump
 ```
 
 Run RefCPU functional test:
@@ -66,7 +67,7 @@ Because Verilator 3.x on Ubuntu 18.04 is outdated, we need to install a newer ve
 
 ```shell
 apt update
-apt install -y gdb gtkwave make clang-10 libc++-10-dev libc++abi-10-dev libz-dev
+apt install -y gdb gtkwave make clang-10 libc++-10-dev libc++abi-10-dev libz-dev systemd-coredump
 # wget -O verilator4.deb https://github.com/sifive/verilator/releases/download/4.036-0sifive2/verilator_4.036-0sifive2_amd64.deb
 dpkg -i verilator4.deb
 ln -s /usr/local/share/verilator /usr/share/
