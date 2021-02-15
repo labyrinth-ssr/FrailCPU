@@ -1,12 +1,16 @@
 # Summary
 
-[前言](./forewords.md)
+[课程安排](./schedule.md)
 
-- [实验内容](./lab/README.md)
-    - [实验 0](./lab/lab0.md)
-    - [实验 1](./lab/lab1.md)
-    - [实验 2](./lab/lab2.md)
-    - [实验 3](./lab/lab3.md)
+- [体系结构部分](./arch-lab/README.md)
+    - [实验 0](./arch-lab/lab0.md)
+    - [实验 1](./arch-lab/lab1.md)
+    - [实验 2](./arch-lab/lab2.md)
+    - [实验 3](./arch-lab/lab3.md)
+    - [实验 4](./arch-lab/lab4.md)
+    - [实验 5](./arch-lab/lab5.md)
+    - [挑战课题](./arch-lab/project.md)
+- [操作系统部分](./sys-lab/README.md)
 - [附加资料](./misc/README.md)
     - [BALABALA](./misc/balabala.md)
 

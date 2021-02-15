@@ -1,0 +1,17 @@
+:root {
+    --sidebar-width: 200px;
+    --content-max-width: 800px;
+    --menu-bar-height: 40px;
+}
+
+.menu-title {
+    color: black;
+}
+
+.blue {
+    color: rgb(0, 4, 255);
+}
+
+.red {
+    color: rgb(184, 31, 31);
+}

@@ -9,6 +9,7 @@ title = "Intro to NSCSCC"
 create-missing = false
 
 [output.html]
+additional-css = ["./asset/custom.css"]
 curly-quotes = true
 no-section-label = true
 
