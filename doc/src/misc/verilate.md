@@ -6,10 +6,11 @@
 
 Verilator 目前依然有许多不足之处。首先 Verilator 对 SystemVerilog 的语言支持还非常不完整，比如 unpacked 结构体是不支持的。此外 `interface`、`package` 这些关键字虽然支持，但是在功能上还不够完善。为了避免你的 SystemVerilog 代码不能通过 Verilator 的编译，请**尽量避免**以下事项：
 
-* 使用不可综合的语法。
-* 使用 unpacked 数组、结构体。
-* 使用 `interface`、`package`。
-* 使用模块间交叉引用。
+* 不可综合的语法。
+* unpacked 数组、结构体。
+* `interface`、`package`。
+* 跨模块引用。
+* 小端序位标号，如 `[0:31]`。
 * 锁存器。
 * `logic` 类型的 `X` 状态。
 * 异步 reset 和跨时钟域。

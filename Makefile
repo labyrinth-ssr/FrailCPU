@@ -41,3 +41,4 @@ endif
 
 include verilate/Makefile.verilate.mk
 include verilate/Makefile.vsim.mk
+include doc/Makefile.doc.mk
