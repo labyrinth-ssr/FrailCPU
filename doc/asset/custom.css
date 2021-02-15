@@ -4,6 +4,10 @@
     --menu-bar-height: 40px;
 }
 
+html {
+    font-family: "Lato", "Open Sans", "Source Han Sans CN", "Microsoft YaHei", sans-serif;
+}
+
 .menu-title {
     color: black;
 }

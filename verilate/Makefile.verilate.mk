@@ -12,7 +12,7 @@ SV_VTOP = source/$(TARGET).sv#                # source/refcpu/VTop.sv
 SV_FILES := \
 	$(wildcard source/util/*) \
 	$(wildcard source/ram/*) \
-	$(wildcard source/include/*) \
+	$(wildcard source/include/*.svh) \
 	$(shell find 'source/include/$(SV_ROOT)' -type f -name '*.svh') \
 	$(shell find 'source/$(SV_ROOT)' -type f -name '*.sv')
 
@@ -45,6 +45,7 @@ endif
 $(SV_MKFILE): $(SV_FILES)
 	@mkdir -p $(SV_BUILD)
 	$(SV) $(SV_FLAGS) $(SV_VTOP)
+	@touch $@
 
 .PHONY: verilate
 

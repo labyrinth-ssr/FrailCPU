@@ -68,6 +68,7 @@ $(CXX_LIBS): $(CXX_BUILD)/%.o : %.cpp $(CXX_HEADERS)
 
 $(VLIBRARY): $(SV_READY) $(SV_FILES)
 	cd $(SV_BUILD); $(MAKE) -f $(notdir $(SV_MKFILE)) CXX=$(CXX)
+	@touch $@
 
 $(VMAIN): $(CXX_LIBS) $(VLIBRARY)
 	$(CXX) $(CXXFLAGS) $^ $(CXX_LINKS) -o $@

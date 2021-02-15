@@ -1,0 +1,89 @@
+# Verilator 仿真
+
+在本学期的实验中，除了 Vivado 外，我们会引入 [Verilator](https://www.veripool.org/wiki/verilator) 来进行仿真。Verilator 是一个支持 Verilog/SystemVerilog 的周期精确（cycle-accurate）开源仿真器。Verilator 将用 Verilog/SystemVerilog 的 RTL 级描述的模块（module）综合为一个 C++ 模型。这个 C++ 模型一般称为 verilated model，在本学期的实验中是一个叫做 `VModel` 的 C++ class。然后再通过编写 C++ 代码来提供模型的输入，以及检查模型的输出。在开源领域，特别是与 RISC-V 相关的开源芯片项目，普遍使用 Verilator 进行整个 CPU 的仿真，例如东京大学的 [RSD](https://github.com/rsd-devel/rsd)。
+
+使用 Verilator 进行仿真有两个优点。首先，仿真速度一般比 Vivado 更快。以龙芯杯性能测试中的 CoreMark 为例，在 Vivado 上仿真一次通常需要十多分钟，而在 Verilator 上只用一分钟。如果不进行波形图的记录，最快只需要 3 秒就可以完成仿真。其次，使用 C++ 编写测试相比使用 SystemVeriog 而言更具灵活性，例如我们可以很方便的在 C++ 中模拟随机访存的效果，或者是将 VGA 模块的输出可视化。
+
+Verilator 目前依然有许多不足之处。首先 Verilator 对 SystemVerilog 的语言支持还非常不完整，比如 unpacked 结构体是不支持的。此外 `interface`、`package` 这些关键字虽然支持，但是在功能上还不够完善。为了避免你的 SystemVerilog 代码不能通过 Verilator 的编译，请**尽量避免**以下事项：
+
+* 使用不可综合的语法。
+* 使用 unpacked 数组、结构体。
+* 使用 `interface`、`package`。
+* 使用模块间交叉引用。
+* 锁存器。
+* `logic` 类型的 `X` 状态。
+* 异步 reset 和跨时钟域。
+* 尝试屏蔽全局时钟信号。
+
+更详细的内容可以参见 <https://www.veripool.org/projects/verilator/wiki/Manual-verilator#LANGUAGE-LIMITATIONS>。
+
+## 周期精确仿真
+
+所谓周期精确仿真，是在确定模块输入的情况下，计算出模块在足够长时间后的输出。因此在周期精确仿真中没有延时的概念。可以理解为每次更新都是计算模块在无穷久后处于稳态时的输出。对于 CPU 这种由一个时钟信号驱动的设计，外层代码（C++ 代码）可以通过反复变动时钟信号的值（从 `0` 变 `1`，再从 `1` 变 `0`），就能得到每个周期内 CPU 的状态。
+
+在 `VModel` 中，其核心的函数是 `eval`，它负责计算输入更新后模块的输出。如果 `VModel` 的时钟信号名为 `clk`，并且是在时钟上升沿时触发，则我们可以使用类似于下面的 C++ 代码来更新一个周期：
+
+```c++
+void tick() {
+    /**
+     * clk:
+     *     +----+    +----+
+     *     |    |    |    |
+     * ----+    +----+    +----
+     *  T1   T2   T1   T2   T1
+     */
+
+    clk = 0;
+    // 更新内存部分的反馈
+    // oresp = ...
+    eval();
+
+    // T1：此时是在时钟上升沿之前
+
+    clk = 1;
+    eval();
+
+    // T2：此时是时钟上升沿触发后
+}
+```
+
+具体的例子可以参见 `verilate/source/refcpu/VTop/refcpu.cpp` 中的 `RefCPU::tick` 函数的实现。
+
+## 仿真框架
+
+在本学期的实验中，我们已经提供了 Verilator 下 C++ 仿真的代码框架。代码位于 `verilate/source` 和 `verilate/include` 两个文件夹下面。仿真框架已经有内存部分和龙芯杯的 CONFREG 部分的仿真代码。**你只需要按照实验文档的指示提供与你的 CPU 相关的部分的交互代码即可**。仿真的命令为 `make vsim`。
+
+以 RefCPU 为例，如果想要对 `source/refcpu/VTop.sv` 进行仿真，只需要指定 `TARGET=refcpu/VTop`，即
+
+```shell
+make vsim TARGET=refcpu/VTop
+```
+
+上面的命令将会把 `verilate/source/refcpu/VTop` 下的 C++ 代码连同我们提供的仿真框架一起编译，得到一个可执行文件 `vmain`。这个可执行文件 `vmain` 是放在 `build` 文件夹下的。之后运行 `vmain` 进行正式的仿真。
+
+`make vsim` 命令有如下的参数：
+
+* `USE_CLANG`：是否使用 LLVM clang 编译？默认为 `0`，表示使用 GNU G++ 编译。使用 Ubuntu 18.04 的同学需要指定 `USE_CLANG=1`。
+* `VSIM_ARGS`：用于指定传给可执行文件 `vmain` 的参数。例如，`make vsim VSIM_ARGS='-h'` 可以查看 `vmain` 支持哪些参数。
+* `VSIM_OPT`：是否开启编译器优化？默认为 `0`。注意，`VSIM_OPT` 为 `0` 的时候，由 Verilator 生成的 C++ 代码依然会开启优化。这个参数只控制我们的仿真框架的代码。
+* `VSIM_SANITIZE`：是否开启编译器的 address sanitizer 和 undefined behavior sanitizer？默认为 `0`。
+
+为了加速 C++ 代码的编译，我们建议在 `make` 的时候加上 `-j` 选项，例如
+
+```shell
+make vsim -j TARGET=mycpu/VTop USE_CLANG=1
+```
+
+## 波形图记录
+
+当仿真出现问题时，我们可以使用输出调试和 GDB 来寻找出错的原因。但是这对于 SystemVerilog 代码的调试并不方便，此时我们可能需要波形图来方便调试。
+
+`make vsim` 在默认情况下不会记录波形图。仿真程序 `vmain` 是支持记录波形图的。可以用 `--fst-trace`/`-f` 选项来指定保存波形图文件的位置。例如
+
+```shell
+make vsim VSIM_ARGS='-f build/trace.fst'
+```
+
+将会把波形图保存到当前目录下的 `build` 文件夹中，波形图文件名为 `trace.fst`。之后我们可以使用 GTKWave 来查看 FST 格式的波形图。
+
+请注意，开启波形图记录后的仿真速度大约会慢 10 倍。
