@@ -4,11 +4,11 @@
 
 使用 Verilator 进行仿真有两个优点。首先，仿真速度一般比 Vivado 更快。以龙芯杯性能测试中的 CoreMark 为例，在 Vivado 上仿真一次通常需要十多分钟，而在 Verilator 上只用一分钟。如果不进行波形图的记录，最快只需要 3 秒就可以完成仿真。其次，使用 C++ 编写测试相比使用 SystemVeriog 而言更具灵活性，例如我们可以很方便的在 C++ 中模拟随机访存的效果，或者是将 VGA 模块的输出可视化。
 
-Verilator 目前依然有许多不足之处。首先 Verilator 对 SystemVerilog 的语言支持还非常不完整，比如 unpacked 结构体是不支持的。此外 `interface`、`package` 这些关键字虽然支持，但是在功能上还不够完善。为了避免你的 SystemVerilog 代码不能通过 Verilator 的编译，请**尽量避免**以下事项：
+Verilator 目前依然有许多不足之处。首先 Verilator 对 SystemVerilog 的语言支持还非常不完整，比如 unpacked 结构体是不支持的。此外 `interface`、`package` 这些关键字虽然支持，但是在功能上还不够完善。为了避免你的 SystemVerilog 代码不能通过 Verilator 的综合和不正确的仿真行为，请**尽量避免**以下事项：
 
 * 不可综合的语法。
 * unpacked 数组、结构体。
-* `interface`、`package`。
+* `interface`、`package`、`class`。
 * 跨模块引用。
 * 小端序位标号，如 `[0:31]`。
 * 锁存器。
@@ -16,7 +16,77 @@ Verilator 目前依然有许多不足之处。首先 Verilator 对 SystemVerilog
 * 异步 reset 和跨时钟域。
 * 尝试屏蔽全局时钟信号。
 
-更详细的内容可以参见 <https://www.veripool.org/projects/verilator/wiki/Manual-verilator#LANGUAGE-LIMITATIONS>。
+此外，我们建议每个 SystemVerilog 文件只放一个模块，并且文件名和模块名保持一致。例如，`SRLatch.sv` 里面只放模块 `SVLatch` 的定义。更详细的内容可以参见 <https://www.veripool.org/projects/verilator/wiki/Manual-verilator#LANGUAGE-LIMITATIONS>。
+
+## 综合
+
+Verilator 只负责将 RTL 代码综合为 `VModel`。我们已经提供好了 `make verilate` 来进行综合。例如， 如果要综合 RefCPU，其顶层模块为 `VTop`（定义在 `source/refcpu/VTop.sv` 中），则可以使用下面的命令：
+
+```shell
+make verilate TARGET=refcpu/VTop
+```
+
+综合后的文件会放在 `build` 文件夹下。
+
+如果在综合时出现错误或者警告，请按照错误消息进行修正。你需要确保**你的代码没有任何错误和警告**。Verilator 报告的大部分警告都是有意义的，并且 Verilator 在有警告的时候也会视为综合失败。当你发现有不太明白原因的警告时，请先查看 [Verilator 手册](https://www.veripool.org/projects/verilator/wiki/Manual-verilator)中对于该警告的描述，确认其原因。如果你确认这个警告不会有影响，可以考虑忽略这个警告。
+
+下面举一个实际的例子。例如，对于下面这个简单的 SR 锁存器的 Verilog 描述：
+
+```verilog
+module SRLatch (
+    input logic  S, R,
+    output logic Q, Qn
+);
+    assign Q  = ~(Qn | R);
+    assign Qn = ~(Q  | S);
+endmodule
+```
+
+将其保存到 `SVLatch.sv`。当我们使用 `verilator --cc SVLatch.sv` 命令来综合时，会得到类似于下面的警告：
+
+```plaintext
+%Warning-UNOPT: SRLatch.sv:3:21: Signal unoptimizable: Feedback to public clock or circular logic: 'Qn'
+    3 |     output logic Q, Qn
+      |                     ^~
+                ... Use "/* verilator lint_off UNOPT */" and lint_on around source to disable this message.
+                SRLatch.sv:3:21:      Example path: Qn
+                SRLatch.sv:5:15:      Example path: ASSIGNW
+                SRLatch.sv:3:18:      Example path: Q
+                SRLatch.sv:6:15:      Example path: ASSIGNW
+                SRLatch.sv:3:21:      Example path: Qn
+%Error: Exiting due to 1 warning(s)
+```
+
+在第一行，我们可以看到警告的类型是 `UNOPT`。在警告消息里面有一个对该警告的简短的描述。我们可以前往 <https://www.veripool.org/projects/verilator/wiki/Manual-verilator#ERRORS-AND-WARNINGS> 搜索关于 `UNOPT` 的详细描述：
+
+> UNOPT
+>
+> Warns that due to some construct, optimization of the specified signal or block is disabled. The construct should be cleaned up to improve simulation performance.
+>
+> A less obvious case of this is when a module instantiates two submodules. Inside submodule A, signal I is input and signal O is output. Likewise in submodule B, signal O is an input and I is an output. A loop exists and a UNOPT warning will result if AI & AO both come from and go to combinatorial blocks in both submodules, even if they are unrelated always blocks. This affects performance because Verilator would have to evaluate each submodule multiple times to stabilize the signals crossing between the modules.
+>
+> Ignoring this warning will only slow simulations, it will simulate correctly.
+
+事实上就是锁存器的描述中有组合回路。可以通过在代码附近加上 `/* verilator lint_off UNOPT */` 来消除 `UNOPT` 警告，即
+
+```verilog
+    /* verilator lint_off UNOPT */
+    assign Q  = ~(Qn | R);
+    assign Qn = ~(Q  | S);
+    /* verilator lint_on UNOPT */
+```
+
+这样上述两行 `assign` 就不会再报告 `UNOPT` 了。如果想要消除所有文件的 `UNOPT` 警告，需要前往 `verilate/Makefile.verilate.mk` 文件，在 `SV_WARNINGS` 变量后面添加 `-Wno-UNOPT`：
+
+```makefile
+SV_WARNINGS = \
+	-Wall -Wpedantic \
+	-Wno-IMPORTSTAR \
+    -Wno-UNOPT
+	# add warnings that you wanna ignore.
+```
+
+当然，请注意在你的 SystemVerilog 代码里面应该**避免组合回路**而不是单纯地消除这个警告！
 
 ## 周期精确仿真
 
@@ -27,11 +97,11 @@ Verilator 目前依然有许多不足之处。首先 Verilator 对 SystemVerilog
 ```c++
 void tick() {
     /**
-     * clk:
-     *     +----+    +----+
-     *     |    |    |    |
-     * ----+    +----+    +----
-     *  T1   T2   T1   T2   T1
+     *         +--B--+     +--B--+     +--B--+
+     * clk: 0  |  1  |  0  |  1  |  0  |  1  |  0
+     *    --A--+     +--A--+     +--A--+     +--A--
+     *    ---------->|---------->|---------->|---->
+     *     tick()      tick()      tick()     ...
      */
 
     clk = 0;
@@ -39,12 +109,12 @@ void tick() {
     // oresp = ...
     eval();
 
-    // T1：此时是在时钟上升沿之前
+    // A：此时是在时钟上升沿之前
 
     clk = 1;
     eval();
 
-    // T2：此时是时钟上升沿触发后
+    // B：此时是时钟上升沿触发后
 }
 ```
 
