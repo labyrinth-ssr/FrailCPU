@@ -78,8 +78,5 @@ void CBusDevice::sync() {
         tx = ntx;
     }
 
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_real_distribution<float> dist(0.0, 1.0);
-    enable = dist(gen) >= p_disable;
+    enable = randf(0.0, 1.0) >= p_disable;
 }

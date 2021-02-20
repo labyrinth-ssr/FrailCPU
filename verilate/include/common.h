@@ -2,7 +2,7 @@
 
 #include <string>
 #include <vector>
-
+#include <random>
 #include <cassert>
 #include <cstdint>
 
@@ -22,6 +22,35 @@ auto parse_memory_file(const std::string &path) -> ByteSeq;
 template <typename T>
 auto identity_fn(T x) -> T {
     return x;
+}
+
+/**
+ * pseudorandom number generators
+ */
+
+#define RANDOM_SEED 0x19260817
+
+template <typename T, typename TDistribution>
+auto _rand(T min_value, T max_value) -> T {
+#ifdef RANDOM_SEED
+    static std::mt19937 gen(RANDOM_SEED);
+#else
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+#endif
+
+    TDistribution dist(min_value, max_value);
+    return dist(gen);
+}
+
+template <typename T>
+auto randf(T min_value, T max_value) -> T {
+    return _rand<T, std::uniform_real_distribution<T>>(min_value, max_value);
+}
+
+template <typename T>
+auto randi(T min_value, T max_value) -> T {
+    return _rand<T, std::uniform_int_distribution<T>>(min_value, max_value);
 }
 
 /**
