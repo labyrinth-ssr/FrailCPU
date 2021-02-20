@@ -9,10 +9,10 @@ module top (
 );
 
     logic [1:0] led_rg0, led_rg1;
-    assign LED16_G = led_rg0 == 2'd2;
-    assign LED16_R = led_rg0 == 2'd1;
-    assign LED17_G = led_rg1 == 2'd2;
-    assign LED17_R = led_rg1 == 2'd1;
+    assign LED16_G = led_rg0 == 2'd1;
+    assign LED16_R = led_rg0 == 2'd2;
+    assign LED17_G = led_rg1 == 2'd1;
+    assign LED17_R = led_rg1 == 2'd2;
 
     logic [17:0] counter;
     always_ff @(posedge clk) begin
@@ -22,13 +22,15 @@ module top (
             counter <= counter + 1;
         end
     end
+    logic [15:0] led;
+    assign LED = ~led;
     soc_axi_lite_top soc_axi_lite_top_inst(
         .clk, .resetn,
-        .led(LED),
+        .led(led),
         .led_rg0, .led_rg1,
         // .num_csn(AN),
         // .num_a_g(A2G),
-        .switch(SW),
+        .switch(~SW),
         .btn_key_row('0),
         .btn_step('0)
     );

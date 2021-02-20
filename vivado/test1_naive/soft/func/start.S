@@ -2,7 +2,7 @@
 #include <regdef.h>
 #include <cpu_cde.h>
 
-#define TEST_NUM 89
+#define TEST_NUM 29
 
 
 ##s0, number
