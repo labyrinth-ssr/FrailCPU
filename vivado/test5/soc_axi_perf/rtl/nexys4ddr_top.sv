@@ -14,7 +14,7 @@ module top (
     assign LED17_G = led_rg1 == 2'd2;
     assign LED17_R = led_rg1 == 2'd1;
 
-    logic [10:0] counter;
+    logic [17:0] counter;
     always_ff @(posedge clk) begin
         if (~resetn) begin
             counter <= '0;
@@ -37,8 +37,8 @@ module top (
     for (genvar i = 0; i < 8; i++) begin
         seg7 seg7_inst(.in(soc_axi_lite_top_inst.u_confreg.num_data[(i*4+3):(i*4)]), .out(segs[i]));
     end
-    assign A2G = segs[counter[10:8]];
-    assign AN = ~({7'b0, resetn} << counter[10:8]);
+    assign A2G = segs[counter[17:15]];
+    assign AN = ~({7'b0, resetn} << counter[17:15]);
 endmodule
 
 module seg7 (

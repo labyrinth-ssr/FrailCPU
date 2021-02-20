@@ -7,7 +7,7 @@
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="8de8692e6f7648c084645fde77f29b66"/>
-    <Option Name="Part" Val="xc7a200tfbg676-2"/>
+    <Option Name="Part" Val="xc7a100tcsg324-1"/>
     <Option Name="CompiledLibDir" Val="$PPRDIR/../../../../../../../Modeltech_pe_edu_10.4a/xilinx_lib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
     <Option Name="CompiledLibDirModelSim" Val="$PPRDIR/../../../../../../../Modeltech_pe_edu_10.4a/xilinx_lib"/>
