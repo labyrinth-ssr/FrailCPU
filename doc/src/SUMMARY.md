@@ -13,6 +13,7 @@
 * [操作系统部分](./sys-lab/README.md)
 * [附加资料](./misc/README.md)
     * [Verilator 仿真](./misc/verilate.md)
+    * [外部资料](./misc/external.md)
 
 [常见问题](./faq.md)
 [贡献者](./contributors.md)
