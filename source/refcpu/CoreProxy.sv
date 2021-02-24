@@ -1,6 +1,8 @@
 `include "refcpu/defs.svh"
 
 module CoreProxy (
+    /* verilator tracing_off */
+
     input logic clk, resetn,
 
     input context_t  [LAST_CPU_STATE:0] out_ctx,
@@ -12,6 +14,8 @@ module CoreProxy (
     output dbus_req_t dreq,
 
     input i6 ext_int
+
+    /* verilator tracing_on */
 );
     assign ireq = out_ireq[ctx.state];
     assign dreq = out_dreq[ctx.state];

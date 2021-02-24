@@ -20,9 +20,11 @@ module Core (
     context_t ctx /* verilator public_flat_rd */;
     context_t ctx0 /* verilator public_flat_rd */;
 
+    /* verilator tracing_off */
     ibus_req_t [LAST_CPU_STATE:0] out_ireq;
     dbus_req_t [LAST_CPU_STATE:0] out_dreq;
     context_t  [LAST_CPU_STATE:0] out_ctx;
+    /* verilator tracing_on */
 
     CoreProxy proxy(.*);
 
