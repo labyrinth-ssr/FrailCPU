@@ -1,3 +1,6 @@
+
+<img src="asset/welcome.svg" width=100% alt="Welcome!" />
+
 # 课程安排
 
 计算机系统基础（下）荣誉课程。2021 年春季。

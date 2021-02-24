@@ -3,14 +3,14 @@ authors = ["sys-ta"]
 language = "zh"
 multilingual = false
 src = "src"
-title = "Intro to NSCSCC"
+title = "Introduction to NSCSCC"
 
 [build]
 create-missing = false
 
 [output.html]
 default-theme = "light"
-additional-css = ["./asset/custom.css"]
+additional-css = ["custom.css"]
 curly-quotes = true
 no-section-label = true
 
