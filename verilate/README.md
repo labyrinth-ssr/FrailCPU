@@ -1,5 +1,17 @@
 Verilator-related files.
 
+* [ ] @riteme
+    * [x] Cautions on Verilator
+    * [x] Refactor `top.h`
+    * [x] Testbench for `MyCPU`
+    * [ ] `BRAM` & `LUTRAM` module
+    * [x] `StupidBuffer`
+    * [ ] Reference model for `StupidBuffer`
+    * [ ] Unit test framework
+    * [ ] Unit tests for cache
+    * [ ] Unit tests for `MULT`/`DIV`
+    * [ ] VGA simulation
+
 ## Make Arguments
 
 * `TARGET`: target top module name, e.g. `refcpu/VTop`, `mycpu/VCacheTop`.

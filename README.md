@@ -2,28 +2,6 @@
 
 Spring 2021, Fudan University.
 
-## TODO
-
-* [ ] Lab handouts
-    * [ ] Lab 0: Preparation
-    * [ ] Lab 1: MIPS Pipeline
-    * [ ] Lab 2: Memory Bus
-    * [ ] Lab 3: Cache
-    * [ ] Lab 4: Multiplication & Division
-    * [ ] Lab 5: Exception
-    * [ ] PJ: ???
-* [ ] @riteme
-    * [ ] Cautions on Verilator
-    * [x] Refactor `top.h`
-    * [x] Testbench for `MyCPU`
-    * [ ] `BRAM` & `LUTRAM` module
-    * [x] `StupidBuffer`
-    * [ ] Reference model for `StupidBuffer`
-    * [ ] Unit test framework
-    * [ ] Unit tests for cache
-    * [ ] Unit tests for `MULT`/`DIV`
-    * [ ] VGA simulation
-
 ## File Organization
 
 * `misc/`: miscellaneous files.
