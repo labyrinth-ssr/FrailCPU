@@ -1,6 +1,6 @@
 # 外部资料
 
-这里列举了一些和本学期实验课程以及龙芯杯相关的文档。这些资料不一定都会在本学期的实验中用到。各位同学可以根据自己的需求进行翻阅。
+这里列举了一些和本学期实验课程以及龙芯杯相关的文档。这些资料不一定都会在本学期的实验中用到。各位同学可以根据自己的需求来翻阅。
 
 ## MIPS 架构
 
@@ -40,4 +40,8 @@
 
 ## 其它
 
+* <i class="fa fa-github"></i> [NonTrivial-MIPS](https://github.com/trivialmips/nontrivial-mips)
 * <i class="fa fa-file-pdf-o"></i> [NSCSCC 2019 Final Report](https://riteme.site/nscscc/doc/NSCSCC%202019%20Final%20Report.pdf)
+* <i class="fa fa-link"></i> [Compiler Explorer](https://gcc.godbolt.org/)
+* <i class="fa fa-github"></i> [“龙芯杯” 全国大学生计算机系统能力培养大赛信息汇总](https://github.com/loongson-education/nscscc-wiki)
+* <i class="fa fa-link"></i> [Verilator Manual](https://www.veripool.org/projects/verilator/wiki/Manual-verilator)

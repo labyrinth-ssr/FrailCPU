@@ -2,7 +2,7 @@
 
 Spring 2021, Fudan University.
 
-## File Organization
+## Directory Structure
 
 * `misc/`: miscellaneous files.
 * `doc/`: lab handouts.
@@ -55,6 +55,13 @@ NOTE: there's no GCC 9 officially on Ubuntu 18.04, so we installed clang instead
 
 ```shell
 make vsim -j USE_CLANG=1
+```
+
+### ArchLinux/Manjaro
+
+```
+pacman -Sy
+pacman -S verilator gdb gtkwave base-devel zlib
 ```
 
 ## NSCSCC Performance Test

@@ -1,14 +1,12 @@
 
 <img src="asset/welcome.svg" width=100% alt="Welcome!" />
 
-# 课程安排
-
 计算机系统基础（下）荣誉课程。2021 年春季。
 
 * 实验课时间：周一，15:25-17:05 p.m.
 * GitHub 仓库：<https://github.com/FDUCSLG/ICS-2021Spring-FDU>
 * 课程首页：（待定）
-* 答疑平台：<https://fducslg.slack.com>（FDUCSLG），#sig-architecture
+* 答疑平台：<https://fducslg.slack.com>，#sig-architecture
 
 体系结构部分的实验安排：
 
