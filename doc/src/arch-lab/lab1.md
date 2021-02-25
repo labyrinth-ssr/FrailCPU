@@ -155,6 +155,8 @@ end
 
 注意：本实验中，内存有1周期延迟。
 
+其行为类似于：
+
 ```verilog
 logic [127:0][31:0] memory;
 logic [6:0] addr;
@@ -163,6 +165,8 @@ always_ff @(posedge clk) begin
     data <= memory[addr];
 end
 ```
+
+可考虑把接受的数据直接接到下一流水段。
 
 ### 1.2.3 Decode
 
@@ -179,6 +183,8 @@ E 阶段主要为 ALU 。
 ### 1.2.5 Memory
 
 M 阶段向 Data Memory 提供数据地址，并接收数据。
+
+注意：本实验中，内存有1周期延迟。
 
 ### 1.2.6 Writeback
 
