@@ -78,7 +78,7 @@ git rebase origin/lab2
 
 ![“Sources” 窗口](../asset/lab0/vivado-refcpu-test1-4.png)
 
-之后在左侧的 “Flow Navigator” 里面点击 “Run Simulation” → “Run Behavioral Simulation” 启动仿真。第一次仿真前因为需要综合 IP 核，所以可能比较慢，需要等待若干分钟才能启动。之后仿真的启动速度会快很多。
+之后在左侧的 “Flow Navigator” 里面点击 “Run Simulation” → “Run Behavioral Simulation” 启动仿真。第一次仿真前因为需要综合 IP 核，所以可能比较慢，需要等待若干分钟才能启动[^generate-ip]。之后仿真的启动速度会快很多。
 
 ![启动仿真](../asset/lab0/vivado-refcpu-test1-simulation.gif)
 
@@ -190,3 +190,5 @@ coremark: Total Count(CPU count) = 0x290399
 ---
 
 [^vivado-linux]: 虽然 Xilinx 官方声明中只支持 Ubuntu，但实际上其它大多数 Linux 发行版都能正常安装和使用 Vivado。
+
+[^generate-ip]: 你也可以在 “Sources” 的 “IP Sources” 一栏里面提前生成所有的 IP 核（选中所有 IP 核，右键并点击 “Generate Output Products”）。这样可以同时综合多个 IP 核，速度更快，并且不用综合完就可以仿真。
