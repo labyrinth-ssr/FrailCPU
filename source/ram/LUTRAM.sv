@@ -38,7 +38,7 @@ module LUTRAM #(
         bundle_t lanes;
     }
 ) (
-    input logic clk,
+    input logic clk, en,
 
     input  addr_t   addr,
     input  strobe_t strobe,
@@ -58,7 +58,8 @@ if (BACKEND == "behavioral") begin: behavioral
 
     assign rdata = mem[addr];
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk)
+    if (en) begin
         for (int i = 0; i < NUM_WORDS; i++)
         for (int j = 0; j < NUM_LANES; j++) begin
             if (addr == addr_t'(i) && strobe[j])
@@ -95,13 +96,12 @@ end else begin: xilinx_xpm
         .WRITE_DATA_WIDTH_A(WORD_WIDTH),
         .WRITE_MODE_A("read_first")
     ) xpm_memory_spram_inst (
-        .clka(clk),
+        .clka(clk), .ena(en),
         .addra(addr),
         .wea(strobe),
         .dina(wdata),
         .douta(rdata),
 
-        .ena(1),
         .regcea(1),
         .rsta(0),
         .sleep(0),

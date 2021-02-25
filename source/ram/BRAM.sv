@@ -1,8 +1,11 @@
 `include "common.svh"
 
 /**
- * In verilator, use the behavioral model.
- * Otherwise XPM_MEMORY_TDPRAM will be enabled.
+ * NOTE: we strongly recommend you not using BRAMs, since almost all of
+ * BRAM resources are occupied by test data.
+ *
+ * In Verilator, use the behavioral model.
+ * Otherwise XPM_MEMORY_TDPRAM will be used.
  *
  * NOTE: the "reset" signal does not reset the entire memory,
  *       it just reset the output to `RESET_VALUE`.

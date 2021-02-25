@@ -7,6 +7,7 @@ module LUTRAMTest;
         #9  clk = 1;
     end
 
+    logic        en;
     logic [3 :0] addr;
     logic [3 :0] strobe;
     logic [31:0] wdata;
@@ -19,6 +20,7 @@ module LUTRAMTest;
     LUTRAM #(.BACKEND("xilinx_xpm")) std (.rdata(ref_rdata), .*);
 
     initial begin
+        en = 1;
         {addr, strobe, wdata} = 0;
 
     #12 strobe = 4'b1111;
@@ -46,6 +48,10 @@ module LUTRAMTest;
     #10 addr = 4'd14;
     #10 addr = 4'd13;
     #10 addr = 4'd12;
+
+    #10 en     = 0;
+        strobe = 4'b1111;
+        wdata  = 32'hacacacac;
 
     #40 $finish;
     end
