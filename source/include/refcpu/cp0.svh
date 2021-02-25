@@ -247,17 +247,20 @@ typedef union packed {
 
 // verilator lint_restore
 
-parameter cp0_t CP0_RESET = cp0_regfile_t'{
+// to make Vivado happy
+parameter cp0_regfile_t _CP0_RESET = cp0_regfile_t'{
     Status : CP0_STATUS_RESET,
     PRId   : CP0_PRID_RESET,
     Config : CP0_CONFIG_RESET,
 
     default: '0
 };
+parameter cp0_t CP0_RESET = cp0_t'(_CP0_RESET);
 
 parameter word_t CP0_FULL_MASK = 32'hffffffff;
 
-parameter cp0_t CP0_MASK = cp0_regfile_t'{
+// to make Vivado happy
+parameter cp0_regfile_t _CP0_MASK = cp0_regfile_t'{
     Count    : CP0_FULL_MASK,
     Compare  : CP0_FULL_MASK,
     Status   : CP0_STATUS_MASK,
@@ -268,5 +271,6 @@ parameter cp0_t CP0_MASK = cp0_regfile_t'{
 
     default: '0
 };
+parameter cp0_t CP0_MASK = cp0_t'(_CP0_MASK);
 
 `endif
