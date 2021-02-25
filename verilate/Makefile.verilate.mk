@@ -32,6 +32,7 @@ SV_FLAGS = \
 	--cc -sv --relative-includes \
 	--output-split 6000 \
 	--trace-fst --trace-structs \
+	--no-trace-params \
 	--Mdir $(SV_BUILD) \
 	--top-module $(SV_NAME) \
 	--prefix $(SV_PREFIX) \

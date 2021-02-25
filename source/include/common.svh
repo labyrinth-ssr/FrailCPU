@@ -23,6 +23,13 @@
 `define PACKED_UNION struct packed
 `endif
 
+/**
+ * simple compile-time assertion
+ */
+`define ASSERTS(expr, message) \
+    if (!(expr)) $error(message);
+`define ASSERT(expr) `ASSERTS(expr, "Assertion failed.");
+
 `define BITS(x) logic[(x)-1:0]
 
 typedef int unsigned uint;

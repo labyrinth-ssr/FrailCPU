@@ -231,8 +231,8 @@ typedef struct packed {
     addr_t        BadVAddr;
 } cp0_regfile_t;
 
-// verilator lint_save
-// verilator lint_off LITENDIAN
+/* verilator lint_save */
+/* verilator lint_off LITENDIAN */
 
 typedef union packed {
     cp0_regfile_t r;
@@ -245,7 +245,7 @@ typedef union packed {
     word_t [LAST_CP0_REG:0] entry;
 } cp0_t;
 
-// verilator lint_restore
+/* verilator lint_restore */
 
 // to make Vivado happy
 parameter cp0_regfile_t _CP0_RESET = cp0_regfile_t'{
