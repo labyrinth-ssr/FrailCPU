@@ -187,6 +187,10 @@ coremark: Total Count(CPU count) = 0x290399
 (info) testbench finished in 2709066 cycles (612.085 KHz).
 ```
 
+### 使用 GTKWave
+
+TODO
+
 ---
 
 [^vivado-linux]: 虽然 Xilinx 官方声明中只支持 Ubuntu，但实际上其它大多数 Linux 发行版都能正常安装和使用 Vivado。
