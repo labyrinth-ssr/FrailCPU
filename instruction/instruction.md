@@ -39,7 +39,7 @@
 | bltz        | x                |      | x    |      |      |
 | bltzal      |                  |      | x    |      |      |
 | bgezal      | x                |      | x    |      |      |
-| jalr        | x                | x    | x    |      |      |
+| jalr        | x                |      | x    |      |      |
 | div         | x                |      |      | x    |      |
 | divu        | x                |      |      | x    |      |
 | mult        | x                |      |      | x    |      |
