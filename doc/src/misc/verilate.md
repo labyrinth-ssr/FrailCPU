@@ -6,18 +6,18 @@
 
 Verilator 目前依然有许多不足之处。首先 Verilator 对 SystemVerilog 的语言支持还非常不完整，比如 unpacked 结构体是不支持的。此外 `interface`、`package` 这些关键字虽然支持，但是在功能上还不够完善。为了避免你的 SystemVerilog 代码不能通过 Verilator 的综合和不正确的仿真行为，请**尽量避免**以下事项：
 
-* 不可综合的语法。
+* 不可综合的语法，例如延时。
+* `initial` 语句。
 * unpacked 数组、结构体。
 * `interface`、`package`、`class`。
-* 跨模块引用。
 * 小端序位标号，如 `[0:31]`。
 * 锁存器。
-* `logic` 类型的 `X` 状态。
+* `logic` 类型的 `X` 状态和高阻抗 `Z` 状态。
 * 使用时钟下降沿触发。
 * 异步 reset 和跨时钟域。
 * 尝试屏蔽全局时钟信号。
 
-此外，我们建议每个 SystemVerilog 文件只放一个模块，并且文件名和模块名保持一致。例如，`SRLatch.sv` 里面只放模块 `SVLatch` 的定义。更详细的内容可以参见 <https://www.veripool.org/projects/verilator/wiki/Manual-verilator#LANGUAGE-LIMITATIONS>。
+此外，我们建议每个 SystemVerilog 文件只放一个模块，并且文件名和模块名保持一致。例如，`SRLatch.sv` 里面只放模块 `SVLatch` 的定义。更详细的内容可以参见 [Verilator 手册中的 “语言限制” 一节](https://www.veripool.org/projects/verilator/wiki/Manual-verilator#LANGUAGE-LIMITATIONS)。
 
 ## 综合
 

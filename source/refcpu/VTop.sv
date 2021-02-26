@@ -1,9 +1,9 @@
 `include "access.svh"
 `include "refcpu/defs.svh"
 
-// `define IM_STUPID
-
-module VTop (
+module VTop #(
+    parameter bit IM_STUPID = 0
+) (
     input logic clk, resetn,
 
     output cbus_req_t  oreq,
@@ -28,7 +28,7 @@ module VTop (
 
     Core core(.*);
 
-`ifdef IM_STUPID
+if (IM_STUPID) begin: use_stupid_buffer
     StupidBuffer icvt(
         .dreq(`IREQ_TO_DREQ(ireq)),
         .dresp(iresp),
@@ -73,10 +73,10 @@ module VTop (
         .dcresp(mux_cresp[1]),
         .*
     );
-`else
+end else begin: no_buffer
     IBusToCBus icvt(.*);
     DBusToCBus dcvt(.*);
-`endif
+end
 
     CBusArbiter arbiter(
         .ireqs({icreq, dcreq}),

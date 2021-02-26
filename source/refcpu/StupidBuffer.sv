@@ -25,21 +25,50 @@ module StupidBuffer (
 
     // registers
     state_t    state;
-    dbus_req_t req;
+    dbus_req_t req;  // dreq is saved once addr_ok is asserted.
     offset_t   offset;
-    view_t [15:0] buffer;
 
     // wires
-    view_t   wdata;
     offset_t start;
+    assign start = dreq.addr[5:2];
 
-    assign wdata = req.data;
-    assign start = req.addr[5:2];
+    // the RAM
+    struct packed {
+        logic    en;
+        strobe_t strobe;
+        word_t   wdata;
+    } ram;
+    word_t ram_rdata;
+
+    always_comb
+    unique case (state)
+    FETCH: begin
+        ram.en     = 1;
+        ram.strobe = 4'b1111;
+        ram.wdata  = cresp.data;
+    end
+
+    READY: begin
+        ram.en     = 1;
+        ram.strobe = req.strobe;
+        ram.wdata  = req.data;
+    end
+
+    default: ram = '0;
+    endcase
+
+    LUTRAM ram_inst(
+        .clk(clk), .en(ram.en),
+        .addr(offset),
+        .strobe(ram.strobe),
+        .wdata(ram.wdata),
+        .rdata(ram_rdata)
+    );
 
     // DBus driver
     assign dresp.addr_ok = state == IDLE;
     assign dresp.data_ok = state == READY;
-    assign dresp.data    = buffer[start];
+    assign dresp.data    = ram_rdata;
 
     // CBus driver
     assign creq.valid    = state == FETCH || state == FLUSH;
@@ -47,7 +76,7 @@ module StupidBuffer (
     assign creq.size     = MSIZE4;
     assign creq.addr     = req.addr;
     assign creq.strobe   = 4'b1111;
-    assign creq.data     = buffer[offset];
+    assign creq.data     = ram_rdata;
     assign creq.len      = MLEN16;
 
     // the FSM
@@ -57,30 +86,16 @@ module StupidBuffer (
         IDLE: if (dreq.valid) begin
             state  <= FETCH;
             req    <= dreq;
-            offset <= dreq.addr[5:2];
+            offset <= start;
         end
 
         FETCH: if (cresp.ready) begin
             state  <= cresp.last ? READY : FETCH;
             offset <= offset + 1;
-
-            // buffer[offset] <= cresp.data;
-            for (int i = 0; i < 16; i++) begin
-                if (offset_t'(i) == offset)
-                    buffer[i] <= cresp.data;
-            end
         end
 
         READY: begin
             state  <= (|req.strobe) ? FLUSH : IDLE;
-            offset <= start;  // not required
-
-            // if (strobe[j]) buffer[start][j] <= wdata[j];
-            for (int i = 0; i < 16; i++)
-            for (int j = 0; j < 4; j++) begin
-                if (offset_t'(i) == start && req.strobe[j])
-                    buffer[i].lanes[j] <= wdata.lanes[j];
-            end
         end
 
         FLUSH: if (cresp.ready) begin
@@ -91,8 +106,7 @@ module StupidBuffer (
         endcase
     end else begin
         state <= IDLE;
-
-        {req, offset, buffer} <= '0;
+        {req, offset} <= '0;
     end
 
     // for Verilator
