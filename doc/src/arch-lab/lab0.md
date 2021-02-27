@@ -4,7 +4,7 @@
 
 ## 安装 Vivado
 
-本学期的实验要求统一使用 Vivado 2019.2。
+**本学期的实验要求统一使用 Vivado 2019.2**。
 
 Vivado 可以在 Windows 环境和 Linux 环境[^vivado-linux]下安装。请参见[龙芯杯的资料](../misc/external.md#2020-年龙芯杯文档)中的 “<i class="fa fa-file-pdf-o"></i> A6 - Vivado 安装说明” 来完成 Vivado 的安装。安装完成后，启动 Vivado 后应该能看到类似于下面的窗口：
 
@@ -60,17 +60,13 @@ git rebase origin/lab2
 
 ## RefCPU
 
-在 Git 仓库的 `source/refcpu` 目录下，有我们提供的标准 CPU（RefCPU）的源代码。RefCPU 是一个多周期 CPU，其可以通过龙芯杯的所有功能测试和性能测试。我们本学期的主要测试也是来自于龙芯杯的功能测试和性能测试，因此你可以用 RefCPU 来作为你的流水线 CPU 的对照。当然，我们不能保证 RefCPU 完全没有 BUG。如果 RefCPU 有不符合 [MIPS 标准](../misc/external.md#mips-架构)的行为，请以 MIPS 标准为准，并且可以向助教反馈。
+在 Git 仓库的 `source/refcpu` 目录下，有我们提供的标准 CPU（RefCPU）的源代码。RefCPU 是一个多周期 CPU，其可以通过龙芯杯的所有功能测试和性能测试。我们本学期的测试主要是龙芯杯的功能测试和性能测试，因此你可以用 RefCPU 来作为你的流水线 CPU 的对照。当然，我们不能保证 RefCPU 完全没有 BUG。如果 RefCPU 有不符合 [MIPS 标准](../misc/external.md#mips-架构)的行为，请以 MIPS 标准为准，并且可以向助教反馈。
 
 接下来将使用 RefCPU 来运行一些测试，方便大家熟悉开发流程。
 
-### 测试 1
+### 运行测试 1
 
-在仓库的 `vivado` 目录下有来自龙芯杯的测试。以测试 1 为例，在 Vivado 中打开文件 `vivado/test1/soc_axi_func/run_vivado/mycpu_prj1/mycpu.xpr`：
-
-![打开测试 1](../asset/lab0/vivado-refcpu-test1-1.png)
-
-然后点击顶部菜单栏的 “Tools” → “Run Tcl Script...”：
+在仓库的 `vivado` 目录下有来自龙芯杯的测试。以测试 1 为例，在 Vivado 中打开文件 `vivado/test1/soc_axi_func/run_vivado/mycpu_prj1/mycpu.xpr`。然后点击顶部菜单栏的 “Tools” → “Run Tcl Script...”：
 
 ![“Run Tcl Script...”](../asset/lab0/vivado-refcpu-test1-2.png)
 
@@ -100,7 +96,11 @@ run: Time (s): cpu = 00:00:17 ; elapsed = 00:03:32 . Memory (MB): peak = 7061.15
 
 ### 测试 1 上板
 
-TODO
+想必你们在上学期已经学习过如何生成比特流文件并且将其烧录到 FPGA 开发板上了。在测试 1 的工程中直接生成比特流，然后上板运行，最终应该能看到下面的效果：
+
+![上板效果](../asset/lab0/refcpu-test1-on-board.jpg)
+
+（NOTE：这是一张老图，最新的测试 1 的数码管两侧应该显示 “1c”）
 
 ### Verilator 仿真
 
@@ -189,7 +189,7 @@ coremark: Total Count(CPU count) = 0x290399
 
 ### 使用 GTKWave
 
-TODO
+Verilator 仿真可以生成 FST 格式的波形图，需要使用一个上古开源软件 [<i class="fa fa-github"></i> GTKWave](https://github.com/gtkwave/gtkwave) 来查看。我们提供了 `misc/demo.fst` 和 `misc/demo.gtkw` 作为样例波形图文件，供大家体验 GTKWave 的使用。GTKWave 的基本操作请参阅[ “使用 GTKWave”](../misc/gtkwave.md)。
 
 ---
 

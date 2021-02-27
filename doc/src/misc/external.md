@@ -46,3 +46,4 @@
 * <i class="fa fa-github"></i> [“龙芯杯” 全国大学生计算机系统能力培养大赛信息汇总](https://github.com/loongson-education/nscscc-wiki)
 * <i class="fa fa-link"></i> [Verilator Manual](https://www.veripool.org/projects/verilator/wiki/Manual-verilator)
 * <i class="fa fa-link"></i> [Understanding FPGA Architecture](https://www.xilinx.com/html_docs/xilinx2017_4/sdaccel_doc/odz1504034293215.html)
+* <i class="fa fa-file-pdf-o"></i> [GTKWave 3.3 Wave Analyzer User's Guide](http://gtkwave.sourceforge.net/gtkwave.pdf)

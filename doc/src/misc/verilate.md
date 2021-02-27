@@ -58,7 +58,7 @@ endmodule
 %Error: Exiting due to 1 warning(s)
 ```
 
-在第一行，我们可以看到警告的类型是 `UNOPT`。在警告消息里面有一个对该警告的简短的描述。我们可以前往 <https://www.veripool.org/projects/verilator/wiki/Manual-verilator#ERRORS-AND-WARNINGS> 搜索关于 `UNOPT` 的详细描述：
+在第一行，我们可以看到警告的类型是 `UNOPT`。在警告消息里面有一个对该警告的简短的描述。我们可以前往 [Verilator 中 “警告和错误” 的文档](https://www.veripool.org/projects/verilator/wiki/Manual-verilator#ERRORS-AND-WARNINGS)搜索关于 `UNOPT` 的详细描述：
 
 > UNOPT
 >
