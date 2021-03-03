@@ -35,7 +35,9 @@ jobs:
         working-directory: ./dev/doc
         run: mdbook build
       - name: Copy output files
-        run: cp -r ./dev/doc/book ./target/docs
+        run: |
+          rm -r ./target/docs
+          mv -r ./dev/src/book ./target/docs
       - name: Commit to gh-pages
         working-directory: ./target
         run: |
