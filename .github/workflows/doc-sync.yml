@@ -39,7 +39,7 @@ jobs:
           git config --local user.email "riteme@qq.com"
           git config --local user.name "riteme"
           git add -A
-          git commit -m "Update docs."
+          git commit -m "Update docs." --allow-empty
       - name: Push to gh-pages
         uses: ad-m/github-push-action@v0.6.0
         with:
