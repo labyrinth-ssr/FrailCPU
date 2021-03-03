@@ -22,6 +22,7 @@ jobs:
         with:
           mdbook-version: '0.4.7'
       - name: Install mdbook-katex 0.2.8
+        working-directory: ./downloads
         run: |
           sudo apt install wget
           wget -O mdbook-katex.tar.gz https://github.com/lzanini/mdbook-katex/releases/download/v0.2.8/mdbook-katex-v0.2.8-x86_64-unknown-linux-gnu.tar.gz
