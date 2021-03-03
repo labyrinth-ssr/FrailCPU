@@ -37,7 +37,7 @@ jobs:
       - name: Copy output files
         run: |
           rm -rf ./target/docs
-          mv -r ./dev/src/book ./target/docs
+          mv -f ./dev/src/book ./target/docs
       - name: Commit to gh-pages
         working-directory: ./target
         run: |
