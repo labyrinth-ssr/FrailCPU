@@ -1,5 +1,8 @@
 name: document-synchronization
-on: [push]
+on:
+  push:
+    branches:
+      - master
 jobs:
   build-and-sync:
     runs-on: ubuntu-20.04
