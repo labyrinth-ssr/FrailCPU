@@ -5,7 +5,7 @@ on:
       - master
       - sync
 jobs:
-  ubuntu-20.04-functional-test:
+  ubuntu-20-functional-test:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout -dev repository
@@ -16,7 +16,7 @@ jobs:
           sudo apt install -y verilator gtkwave build-essential libz-dev
       - name: Run NSCSCC functional tests
         run: make vsim -j VSIM_ARGS='--no-status'
-  ubuntu-20.04-performance-test:
+  ubuntu-20-performance-test:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout -dev repository
@@ -27,7 +27,7 @@ jobs:
           sudo apt install -y verilator gtkwave build-essential libz-dev
       - name: Run NSCSCC performance tests
         run: make vsim -j VSIM_ARGS='--no-status --force-diff -m "./misc/nscscc/coremark.coe" -r "./misc/std/coremark.txt"'
-  ubuntu-18.04-functional-test:
+  ubuntu-18-functional-test:
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout -dev repository
@@ -41,7 +41,7 @@ jobs:
           sudo ln -s /usr/local/share/verilator /usr/share/
       - name: Run NSCSCC functional tests
         run: make vsim -j USE_CLANG=1 VSIM_ARGS='--no-status'
-  ubuntu-18.04-performance-test:
+  ubuntu-18-performance-test:
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout -dev repository
