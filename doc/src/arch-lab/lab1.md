@@ -99,7 +99,7 @@ instruction 7
 # sequence is: bne -> instruction 4 -> instruction 5
 ```
 
-本实验需要实现的指令：`lui`、`addu`、`addiu`、`beq`、`bne`、`lw`、`or`、`slt`、`slti`、`sltiu`、`sll`、`sw`、`j`、`jal`、`jr`、`addi`、`subu`、`sltu`、`and`、`andi`、`nor`、`ori`、`xor`、`xori`、`sra`、`srl`。
+本实验需要实现的指令：`lui`、`addu`、`addiu`、`beq`、`bne`、`lw`、`or`、`slt`、`slti`、`sltiu`、`sll`、`sw`、`j`、`jal`、`jr`、~~`addi`~~、`subu`、`sltu`、`and`、`andi`、`nor`、`ori`、`xor`、`xori`、`sra`、`srl`、~~`jalr`~~。
 
 ### 1.1.2 虚实地址转换
 
@@ -396,7 +396,7 @@ Tips：第一次仿真前，先点击 “IP Sources”，选中所有 IP 核源�
 
 在 `source/mycpu/` 里添加你的代码，实现五级流水线 MIPS CPU。
 
-本实验需要实现的指令：`lui`、`addu`、`addiu`、`beq`、`bne`、`lw`、`or`、`slt`、`slti`、`sltiu`、`sll`、`sw`、`j`、`jal`、`jr`、`addi`、`subu`、`sltu`、`and`、`andi`、`nor`、`ori`、`xor`、`xori`、`sra`、`srl`。
+本实验需要实现的指令：`lui`、`addu`、`addiu`、`beq`、`bne`、`lw`、`or`、`slt`、`slti`、`sltiu`、`sll`、`sw`、`j`、`jal`、`jr`、~~`addi`~~、`subu`、`sltu`、`and`、`andi`、`nor`、`ori`、`xor`、`xori`、`sra`、`srl`、~~`jalr`~~。
 
 **PC的复位值为 `32'hbfc0_0000`**。
 
