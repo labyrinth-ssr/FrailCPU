@@ -62,9 +62,17 @@ void RefCPU::print_instruction() {
         case CPUState::S_DECODE:
             PRINT_ENUM(Opcode, VTop->core__DOT__Decode_inst__DOT__opcode);
             break;
-        case CPUState::S_RTYPE:
-            PRINT_ENUM(RtypeFunct, VTop->core__DOT__RType_inst__DOT__funct0);
-            break;
+        case CPUState::S_RTYPE: {
+            auto funct = VTop->core__DOT__RType_inst__DOT__funct0;
+
+            // manually print FN_SYSCALL and FN_BREAK since they will be trapped into S_EXCEPTION.
+            if (funct == RtypeFunct::FN_SYSCALL)
+                info("FN_SYSCALL ");
+            else if (funct == RtypeFunct::FN_BREAK)
+                info("FN_BREAK ");
+            else
+                PRINT_ENUM(RtypeFunct, VTop->core__DOT__RType_inst__DOT__funct0);
+        } break;
         case CPUState::S_BRANCH_EVAL:
             if (VTop->core__DOT__BranchEval_inst__DOT__opcode0 == Opcode::OP_BTYPE)
                 PRINT_ENUM(BranchType, VTop->core__DOT__BranchEval_inst__DOT__btype);
@@ -106,7 +114,10 @@ void RefCPU::tick() {
 
     // print_request();
     print_writeback();
-    // print_instruction();
+
+#ifdef ICS_DUMP_INSTRUCTIONS
+    print_instruction();
+#endif
 
     // send request to memory
     dev->eval_req(get_oreq());
