@@ -106,7 +106,7 @@ void RefCPU::tick() {
 
     // print_request();
     print_writeback();
-    print_instruction();
+    // print_instruction();
 
     // send request to memory
     dev->eval_req(get_oreq());
