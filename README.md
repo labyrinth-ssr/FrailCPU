@@ -2,6 +2,8 @@
 
 Spring 2021, Fudan University.
 
+Course Website: <https://fducslg.github.io/ICS-2021Spring-FDU/>
+
 ## Directory Structure
 
 * `misc/`: miscellaneous files.
