@@ -58,7 +58,7 @@ CXXFLAGS += \
 	# -DVL_THREADED
 
 ifeq ($(USE_CLANG), 1)
-CXXFLAGS += -stdlib=libc++
+CXXFLAGS += -stdlib=libc++ -Wno-unknown-warning-option
 endif
 
 ifeq ($(VSIM_OPT), 1)

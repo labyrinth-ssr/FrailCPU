@@ -37,7 +37,9 @@ SV_FLAGS = \
 	$(SV_EXTRA_FLAGS)
 
 ifeq ($(USE_CLANG), 1)
-SV_FLAGS += -CFLAGS -stdlib=libc++
+SV_FLAGS += \
+	-CFLAGS -stdlib=libc++ \
+	-CFLAGS -Wno-unknown-warning-option
 endif
 
 $(SV_MKFILE): $(SV_FILES)
