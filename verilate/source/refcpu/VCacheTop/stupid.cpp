@@ -18,7 +18,7 @@ void StupidBuffer::tick() {
     // see refcpu/VTop/refcpu.cpp for the descriptions of each stage.
 
     clk = 0;
-    cresp = dev->eval_resp();
+    cresp = (CBusRespVType) dev->eval_resp();
     eval();
     fst_dump(+1);
 

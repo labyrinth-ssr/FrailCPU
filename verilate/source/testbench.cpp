@@ -28,12 +28,15 @@ void run_testbench() {
         total++;
     }
 
-    info(BLUE "(info)" RESET " %d test(s) passed.\n", total);
+    if (total == 1)
+        info(BLUE "(info)" RESET " 1 test passed.\n");
+    else
+        info(BLUE "(info)" RESET " %d test passed.\n", total);
 }
 
 void abort_testbench() {
     if (current_test)
-        notify(RED "ERR!" RESET " abort in \"%s\"\n", current_test->name);
+        notify(RED "ERR!" RESET " testbench aborted in \"%s\"\n", current_test->name);
     fflush(stdout);
     fflush(stderr);
     run_defers();

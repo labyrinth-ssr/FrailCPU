@@ -14,7 +14,4 @@ private:
     auto get_creq() const -> CBusWrapper {
         return CBusWrapper(VCacheTop, creq);
     }
-    auto set_cresp(const CBusRespVType &resp) {
-        cresp = resp;
-    }
 };

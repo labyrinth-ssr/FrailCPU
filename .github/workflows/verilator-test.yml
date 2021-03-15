@@ -13,7 +13,6 @@ jobs:
         uses: actions/checkout@v2.3.4
       - name: Install prerequisites
         run: |
-          sudo apt update
           sudo apt install -y verilator gtkwave build-essential libz-dev
       - name: Run NSCSCC functional tests
         run: make vsim -j VSIM_ARGS='--no-status'
@@ -24,7 +23,6 @@ jobs:
         uses: actions/checkout@v2.3.4
       - name: Install prerequisites
         run: |
-          sudo apt update
           sudo apt install -y verilator gtkwave build-essential libz-dev
       - name: Run NSCSCC performance tests
         run: make vsim -j VSIM_ARGS='--no-status --force-diff -m "./misc/nscscc/coremark.coe" -r "./misc/std/coremark.txt"'
@@ -35,7 +33,6 @@ jobs:
         uses: actions/checkout@v2.3.4
       - name: Install prerequisites
         run: |
-          sudo apt update
           sudo apt install -y gtkwave make clang-10 libc++-10-dev libc++abi-10-dev libz-dev
           wget -O verilator4.deb https://github.com/sifive/verilator/releases/download/4.036-0sifive2/verilator_4.036-0sifive2_amd64.deb
           sudo dpkg -i verilator4.deb
@@ -49,7 +46,6 @@ jobs:
         uses: actions/checkout@v2.3.4
       - name: Install prerequisites
         run: |
-          sudo apt update
           sudo apt install -y gtkwave make clang-10 libc++-10-dev libc++abi-10-dev libz-dev
           wget -O verilator4.deb https://github.com/sifive/verilator/releases/download/4.036-0sifive2/verilator_4.036-0sifive2_amd64.deb
           sudo dpkg -i verilator4.deb

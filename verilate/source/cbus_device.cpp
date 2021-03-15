@@ -16,9 +16,9 @@ void CBusDevice::reset() {
     _strobe = _data = 0;
 }
 
-auto CBusDevice::eval_resp() -> CBusRespVType {
+auto CBusDevice::eval_resp() -> CBusResp {
     if (!enable)
-        return 0;
+        return CBusResp();
 
     if (tx.busy) {
         // fetch data if needed
@@ -29,12 +29,12 @@ auto CBusDevice::eval_resp() -> CBusRespVType {
         }
 
         // return response
-        return CBus::make_response(true, tx.last(), data);
+        return CBusResp(true, tx.last(), data);
     } else
-        return 0;
+        return CBusResp();
 }
 
-void CBusDevice::eval_req(const CBus &req) {
+void CBusDevice::eval_req(const CBusReq &req) {
     if (!enable)
         return;
 

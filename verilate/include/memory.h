@@ -75,8 +75,8 @@ public:
      * we should guarantee that there's no combinatorial
      * logic between the request and the response.
      */
-    auto eval_resp() -> CBusRespVType;
-    void eval_req(const CBus &req);
+    auto eval_resp() -> CBusResp;
+    void eval_req(const CBusReq &req);
     void sync();
 
 private:

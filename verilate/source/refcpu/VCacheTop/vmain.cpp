@@ -1,10 +1,12 @@
 #include "runner.h"
+#include "testbench.h"
 
 #include "stupid.h"
 
 ProgramRunner<StupidBuffer> app;
 
 void on_error(int) {
+    abort_testbench();
     app.~ProgramRunner();
 }
 

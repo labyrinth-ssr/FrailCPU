@@ -15,5 +15,4 @@ using Cop0Funct = VScope::cp0_fn_t;
 using Cop0COFunct = VScope::cp0_cofn_t;
 using BranchType = VScope::btype_t;
 
-using CBusReqVType = decltype(VModel::oreq);
-using CBusWrapper = CBusWrapperGen<CBusReqVType, VTopType>;
+using CBusWrapper = CBusWrapperGen<VTopType>;

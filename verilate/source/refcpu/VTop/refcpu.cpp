@@ -108,7 +108,7 @@ void RefCPU::tick() {
 
     // update response from memory
     clk = 0;
-    oresp = dev->eval_resp();
+    oresp = (CBusRespVType) dev->eval_resp();
     eval();
     fst_dump(+1);
 

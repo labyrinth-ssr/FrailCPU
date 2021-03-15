@@ -30,9 +30,6 @@ private:
     auto get_oreq() const -> CBusWrapper {
         return CBusWrapper(VTop, oreq);
     }
-    void set_oresp(const CBusRespVType &resp) {
-        oresp = resp;
-    }
 
     void print_status();
     void print_request();
