@@ -8,6 +8,9 @@
 
 #include <signal.h>
 
+#define INIT_PRIORITY(value) \
+    __attribute__ ((init_priority(value)))
+
 using addr_t = uint32_t;
 using word_t = uint32_t;
 using handler_t = void(int);
@@ -64,8 +67,7 @@ auto randi(T min_value, T max_value) -> T {
  * status_line: write a line with clear and no '\n' to stdout.
  */
 
-// ANSI Escape sequences for colors
-// https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
+// ANSI Escape sequences for colors: https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 #define BLACK   "\033[30m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
@@ -79,13 +81,6 @@ auto randi(T min_value, T max_value) -> T {
 #define CLEAR_TO_RIGHT "\033[K"
 #define CLEAR_ALL      "\033[2K"
 #define MOVE_TO_FRONT  "\r"
-
-#define LOG { \
-    enable_logging(true); \
-    _.defer([] { \
-        enable_logging(false); \
-    }); \
-}
 
 void enable_logging(bool enable = true);
 void enable_debugging(bool enable = true);

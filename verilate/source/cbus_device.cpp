@@ -29,12 +29,12 @@ auto CBusDevice::eval_resp() -> CBusRespVType {
         }
 
         // return response
-        return ICBus::make_response(true, tx.last(), data);
+        return CBus::make_response(true, tx.last(), data);
     } else
         return 0;
 }
 
-void CBusDevice::eval_req(const ICBus &req) {
+void CBusDevice::eval_req(const CBus &req) {
     if (!enable)
         return;
 

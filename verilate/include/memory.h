@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "icbus.h"
+#include "bus.h"
 #include "axi.h"
 
 #include <cstring>
@@ -76,7 +76,7 @@ public:
      * logic between the request and the response.
      */
     auto eval_resp() -> CBusRespVType;
-    void eval_req(const ICBus &req);
+    void eval_req(const CBus &req);
     void sync();
 
 private:

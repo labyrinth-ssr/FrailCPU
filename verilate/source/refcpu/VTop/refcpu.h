@@ -1,8 +1,8 @@
 #pragma once
 
 #include "model.h"
+
 #include "context.h"
-#include "cbus.h"
 
 class RefCPU : public ModelBase {
 public:

@@ -11,12 +11,30 @@ class ProgramRunner final {
 public:
     static constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
 
+    void no_init_memory() {
+        _init_memory = false;
+    }
+
+    void no_init_text_trace() {
+        _init_text_trace = false;
+    }
+
+    void no_init_fst_trace() {
+        _init_fst_trace = false;
+    }
+
     int main(int argc, char *argv[]) {
         auto app = CLI::App();
-        app.add_option("-f,--fst-trace", args.fst_trace_path, "File path to save FST trace.");
-        app.add_option("-t,--text-trace", args.text_trace_path, "File path to save text trace.");
-        app.add_option("-r,--ref-trace", args.ref_trace_path, "File path of reference text trace.");
-        app.add_option("-m,--memfile", args.memfile_path, "File path of memory initialization file.");
+
+        if (_init_memory)
+            app.add_option("-m,--memfile", args.memfile_path, "File path of memory initialization file.");
+        if (_init_fst_trace)
+            app.add_option("-f,--fst-trace", args.fst_trace_path, "File path to save FST trace.");
+        if (_init_text_trace) {
+            app.add_option("-t,--text-trace", args.text_trace_path, "File path to save text trace.");
+            app.add_option("-r,--ref-trace", args.ref_trace_path, "File path of reference text trace.");
+        }
+
         app.add_flag("--status,!--no-status", args.status_enable, "Show status line.");
         app.add_option("--status-count", args.status_countdown, "Slow down status line update.");
         app.add_flag("--debug,!--no-debug", args.debug_enable, "Show debug messages.");
@@ -34,15 +52,17 @@ public:
         top->p_disable = args.p_disable;
         top->force_diff = args.force_diff;
 
-        auto data = parse_memory_file(args.memfile_path);
+        ByteSeq data;
+        if (_init_memory)
+            data = parse_memory_file(args.memfile_path);
         auto mem = std::make_shared<BlockMemory>(MEMORY_SIZE, data);
-
         top->install_memory(std::move(mem));
-        if (!args.ref_trace_path.empty())
+
+        if (_init_text_trace && !args.ref_trace_path.empty())
             top->open_text_diff(args.ref_trace_path);
-        if (!args.fst_trace_path.empty())
+        if (_init_fst_trace && !args.fst_trace_path.empty())
             top->start_fst_trace(args.fst_trace_path);
-        if (!args.text_trace_path.empty())
+        if (_init_text_trace && !args.text_trace_path.empty())
             top->start_text_trace(args.text_trace_path);
 
         top->run();
@@ -55,6 +75,9 @@ public:
 
 protected:
     std::unique_ptr<TModel> top = nullptr;
+    bool _init_memory = true;
+    bool _init_text_trace = true;
+    bool _init_fst_trace = true;
 
     struct {
         std::string fst_trace_path = "" /*"/tmp/trace.fst"*/;
