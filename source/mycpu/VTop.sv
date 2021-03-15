@@ -35,5 +35,5 @@ module VTop (
      * TODO (optional) add address translation for oreq.addr :)
      */
 
-    logic _unused_ok = &{ext_int};
+    `UNUSED_OK({ext_int});
 endmodule
