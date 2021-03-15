@@ -1,8 +1,6 @@
 #include "defs.h"
 #include "refcpu.h"
 
-#include <chrono>
-
 #include "thirdparty/nameof.hpp"
 
 constexpr int MAX_CYCLE = 100000000;
@@ -139,11 +137,9 @@ void RefCPU::tick() {
 }
 
 void RefCPU::run() {
-    using clock = std::chrono::high_resolution_clock;
+    SimpleTimer timer;
 
     reset();
-
-    auto t_run_start = clock::now();
 
     clk = 0;
     resetn = 1;
@@ -166,14 +162,10 @@ void RefCPU::run() {
     diff_eof();
     final();
 
-    auto t_run_end = clock::now();
-    auto span = std::chrono::duration<double>(t_run_end - t_run_start).count();
-
-    notify(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf KHz).\n",
-        current_cycle, current_cycle / span / 1000);
-
     if (get_text_diff().get_error_count() > 0) {
         warn(RED "(warn)" RESET " TextDiff: %zu error(s) suppressed.\n",
             get_text_diff().get_error_count());
     }
+
+    timer.update(current_cycle);
 }

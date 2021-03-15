@@ -244,3 +244,20 @@ void log_separator() {
     fputs("\n", stdout);
     fputs("\n", stderr);
 }
+
+SimpleTimer::SimpleTimer() {
+    t_start = clock::now();
+}
+
+SimpleTimer::~SimpleTimer() {
+    t_end = clock::now();
+    auto span = std::chrono::duration<double>(t_end - t_start).count();
+
+    notify(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf KHz).\n",
+        _cycles, _cycles / span / 1000);
+
+}
+
+void SimpleTimer::update(uint64_t cycles) {
+    _cycles = cycles;
+}

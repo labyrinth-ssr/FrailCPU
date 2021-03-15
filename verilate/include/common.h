@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <chrono>
 #include <cassert>
 #include <cstdint>
 
@@ -95,3 +96,22 @@ void notify_char(char c);
 void status_line(const char *message, ...);
 
 void log_separator();
+
+/**
+ * simple timer
+ * it displays simulation rates in KHz.
+ */
+
+class SimpleTimer {
+public:
+    SimpleTimer();
+    ~SimpleTimer();
+
+    void update(uint64_t cycles);
+
+private:
+    using clock = std::chrono::high_resolution_clock;
+
+    clock::time_point t_start, t_end;
+    uint64_t _cycles;
+};
