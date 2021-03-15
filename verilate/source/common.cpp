@@ -16,7 +16,8 @@ void hook_signal(int sig, handler_t *handler) {
     sigemptyset(&action.sa_mask);
     action.sa_flags = SA_RESTART;
 
-    assert(sigaction(sig, &action, NULL) >= 0);
+    auto result = sigaction(sig, &action, NULL);
+    assert(result >= 0);
 }
 
 /*

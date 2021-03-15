@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#include <cassert>
+
 #include <vector>
 #include <functional>
 
@@ -109,7 +111,7 @@ public:
             } \
             return Finished; \
         } \
-    } id(name) INIT_PRIORITY(65535);
+    } id INIT_PRIORITY(65535) (name);
 
 #define WITH _TESTBENCH_BEGIN(_TESTBENCH_UNIQUE_NAME(_Testbench_L))
 #define AS(name) _TESTBENCH_END(_TESTBENCH_UNIQUE_NAME(_testbench_L), name)

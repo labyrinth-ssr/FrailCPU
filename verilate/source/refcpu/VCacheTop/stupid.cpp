@@ -1,5 +1,9 @@
+#include "testbench.h"
+
 #include "defs.h"
 #include "stupid.h"
+
+extern StupidBuffer *top;
 
 void StupidBuffer::reset() {
     dev->reset();
@@ -11,9 +15,23 @@ void StupidBuffer::reset() {
 }
 
 void StupidBuffer::tick() {
+    // see refcpu/VTop/refcpu.cpp for the descriptions of each stage.
 
+    clk = 0;
+    cresp = dev->eval_resp();
+    eval();
+    fst_dump(+1);
+
+    dev->eval_req(get_creq());
+
+    clk = 1;
+    dev->sync();
+    eval();
+    fst_advance();
+    fst_dump(+0);
 }
 
 void StupidBuffer::run() {
-
+    top = this;
+    run_testbench();
 }

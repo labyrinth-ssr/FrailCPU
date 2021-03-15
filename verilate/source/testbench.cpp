@@ -1,7 +1,5 @@
 #include "testbench.h"
 
-#include <cassert>
-
 static std::vector<ITestbench *> test_list;
 static ITestbench *current_test = nullptr;
 static PretestHook pretest_hook INIT_PRIORITY(65533) = [] {};
