@@ -9,8 +9,7 @@ module VCacheTop (
     output cbus_req_t  creq,
     input  cbus_resp_t cresp
 );
-    `include "cbus_decl"
-    `include "dbus_decl"
+    `include "bus_decl"
 
     StupidBuffer top(.*);
 

@@ -31,7 +31,7 @@ void run_testbench() {
     if (total == 1)
         info(BLUE "(info)" RESET " 1 test passed.\n");
     else
-        info(BLUE "(info)" RESET " %d test passed.\n", total);
+        info(BLUE "(info)" RESET " %d tests passed.\n", total);
 }
 
 void abort_testbench() {

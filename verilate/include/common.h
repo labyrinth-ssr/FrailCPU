@@ -115,3 +115,22 @@ private:
     clock::time_point t_start, t_end;
     uint64_t _cycles;
 };
+
+/**
+ * common typedefs/definitions
+ */
+
+enum AXISize : uint32_t{
+    MSIZE1 = 0,
+    MSIZE2 = 1,
+    MSIZE4 = 2,
+    MSIZE8 = 3,
+};
+
+enum AXILength : uint32_t{
+    MLEN1  = 0b0000,
+    MLEN2  = 0b0001,
+    MLEN4  = 0b0011,
+    MLEN8  = 0b0111,
+    MLEN16 = 0b1111,
+};

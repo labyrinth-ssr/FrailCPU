@@ -4,7 +4,7 @@
 
 #include "VModel__Syms.h"
 
-using VTopType = VModel_VCacheTop;
 using VScope = VModel___024unit;
+using VModelScope = VModel_VCacheTop;
 
-using CBusWrapper = CBusWrapperGen<VTopType>;
+using CBusWrapper = CBusWrapperGen<VModelScope>;

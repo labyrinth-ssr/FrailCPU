@@ -2,21 +2,6 @@
 
 #include "common.h"
 
-enum class AXISize {
-    MSIZE1 = 0,
-    MSIZE2 = 1,
-    MSIZE4 = 2,
-    MSIZE8 = 3,
-};
-
-enum class AXILength {
-    MLEN1  = 0b0000,
-    MLEN2  = 0b0001,
-    MLEN4  = 0b0011,
-    MLEN8  = 0b0111,
-    MLEN16 = 0b1111,
-};
-
 /**
  * cache bus (CBus)
  */
@@ -24,6 +9,9 @@ enum class AXILength {
 using CBusReqVType = uint32_t[3];  // 77 bits
 using CBusRespVType = uint64_t;  // 34 bits
 
+// CBusReq is used by CBusDevice, and therefore it must be portable.
+// Therefore, we declare CBusReq as a pure virtual class, effectively
+// an interface.
 struct CBusReq {
     virtual ~CBusReq() = default;
 
@@ -61,10 +49,10 @@ struct CBusResp {
 };
 
 // a helper class/generator for CBusWrapper
-template <typename VTopType>
+template <typename VModelScope>
 class CBusWrapperGen : public CBusReq {
 public:
-    CBusWrapperGen(VTopType *_top, const CBusReqVType &_req)
+    CBusWrapperGen(VModelScope *_top, const CBusReqVType &_req)
         : top(_top), req(_req) {}
 
     auto valid() const -> bool {
@@ -90,6 +78,110 @@ public:
     }
 
 private:
-    VTopType *top;
+    VModelScope *top;
     const CBusReqVType &req;
+};
+
+/**
+ * data bus (DBus)
+ */
+
+using DBusReqVType = uint32_t[3];  // 72 bits
+using DBusRespVType = uint64_t;  // 33 bits
+
+struct DBusPorts {
+    DBusPorts(DBusReqVType &_req, DBusRespVType &_resp)
+        : req(_req), resp(_resp) {}
+
+    DBusReqVType &req;
+    DBusRespVType &resp;
+};
+
+template <typename VModel, typename VModelScope>
+class DBusGen {
+public:
+    DBusGen(VModel *_top, VModelScope *_scope, const DBusPorts &_ports)
+        : top(_top), scope(_scope), ports(_ports) {}
+
+    /**
+     * DBus request interface
+     */
+
+    auto valid() const -> bool {
+        return scope->dbus_req_t_valid(ports.req);
+    }
+    auto size() const -> AXISize {
+        return static_cast<AXISize>(scope->dbus_req_t_size(ports.req));
+    }
+    auto addr() const -> addr_t {
+        return scope->dbus_req_t_addr(ports.req);
+    }
+    auto strobe() const -> word_t {
+        return scope->dbus_req_t_strobe(ports.req);
+    }
+    auto wdata() const -> word_t {  // req.data
+        return scope->dbus_req_t_data(ports.req);
+    }
+
+    /**
+     * DBus response interface
+     */
+
+    auto addr_ok() const -> bool {
+        return scope->dbus_resp_t_addr_ok(ports.resp);
+    }
+    auto data_ok() const -> bool {
+        return scope->dbus_resp_t_data_ok(ports.resp);
+    }
+    auto rdata() const -> word_t {  // resp.data
+        return scope->dbus_resp_t_data(ports.resp);
+    }
+
+    /**
+     * some helper functions
+     */
+
+    void issue(bool valid, addr_t addr, AXISize size, word_t strobe, word_t data) {
+        scope->dbus_update(valid, addr, size, strobe, data, ports.req);
+        top->eval();
+    }
+    void load(addr_t addr, AXISize size) {
+        scope->dbus_issue_load(addr, size, ports.req);
+        top->eval();
+    }
+    void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
+        scope->dbus_issue_store(addr, size, strobe, data, ports.req);
+        top->eval();
+    }
+    void clear() {
+        scope->dbus_reset_valid(ports.req);
+        top->eval();
+    }
+
+    // return before the last handshake
+    template <bool WaitDataOk = true, bool WaitAddrOk = true>
+    void wait(uint64_t max_count = UINT64_MAX) {
+        uint32_t remain = 0;
+        if (WaitDataOk)
+            remain |= 1 << 1;
+        if (WaitAddrOk)
+            remain |= 1 << 0;
+
+        top->eval();
+        for (uint64_t i = 0; i < max_count; i++) {
+            remain ^= scope->dbus_handshake(ports.resp, remain);
+            if (remain == 0)
+                break;
+            top->tick();
+        }
+    }
+
+private:
+    VModel *top;
+    VModelScope *scope;
+    DBusPorts ports;
+};
+
+class DBusPipeline {
+    // TODO
 };

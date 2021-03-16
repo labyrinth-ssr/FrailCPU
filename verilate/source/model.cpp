@@ -65,7 +65,7 @@ void ModelBase::fst_advance(size_t incr) {
 
 void ModelBase::fst_dump(size_t offset) {
     if (_fst_avail())
-        _fst_tfp->dump(fst_time() + offset);
+        _fst_tfp->dump(static_cast<vluint64_t>(fst_time() + offset));
 }
 
 void ModelBase::start_text_trace(const std::string &path) {

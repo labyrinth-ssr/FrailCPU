@@ -9,6 +9,7 @@ SV_SOURCE_FOLDERS := $(shell find 'source/${SV_ROOT}' -type d)
 SV_FILES := \
 	$(wildcard source/util/*) \
 	$(wildcard source/ram/*) \
+	source/include/bus_decl \
 	$(wildcard source/include/*.svh) \
 	$(shell find 'source/include/$(SV_ROOT)' -type f -name '*.svh') \
 	$(shell find 'source/$(SV_ROOT)' -type f -name '*.sv')
