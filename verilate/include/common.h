@@ -113,7 +113,7 @@ private:
     using clock = std::chrono::high_resolution_clock;
 
     clock::time_point t_start, t_end;
-    uint64_t _cycles;
+    uint64_t _cycles = 0;
 };
 
 /**
