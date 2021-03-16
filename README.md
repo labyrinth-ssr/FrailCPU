@@ -15,7 +15,7 @@ Course Website: <https://fducslg.github.io/ICS-2021Spring-FDU/>
 
 ## Commands
 
-```shell
+```plaintext
 $ make help
 Available commands:
   make verilate: synthesize/compile your RTL code with Verilator.
