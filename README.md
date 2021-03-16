@@ -13,6 +13,32 @@ Course Website: <https://fducslg.github.io/ICS-2021Spring-FDU/>
 * `verilate/`: C++ source files for verilated simulation.
 * `build/`: temporary build files.
 
+## Commands
+
+```shell
+$ make help
+Available commands:
+  make verilate: synthesize/compile your RTL code with Verilator.
+  make vbuild: compile Verilator simulation sources into executable file "vmain".
+  make vsim: "make vbuild" first and then execute "vmain".
+  make vsim-gdb: run "vmain" with GDB.
+  make doc-build: build documents into "doc/book", i.e., run "mdbook build".
+  make doc-serve: run "mdbook serve".
+  make doc-sync: upload webpages onto "riteme.site" (requires authentication).
+  make misc-sync: upload "misc/doc" onto "riteme.site" (requires authentication).
+  make system-info: print information about installed system packages.
+  make dump-instructions: dump all instructions during simulation (RefCPU only).
+
+Available parameters:
+  TARGET: e.g. refcpu/VTop, mycpu/VCacheTop.
+  USE_CLANG: use LLVM clang and libc++.
+  VSIM_ARGS: pass command line arguments to "vmain".
+  VSIM_OPT: set to 1 to enable compiler optimization. ("-O2 -march=native -flto")
+  VSIM_SANITIZE: set to 1 to enable address sanitizer and undefined behavior sanitizer.
+  SV_EXTRA_FLAGS: extra synthesis flags passed to Verilator.
+  CXX_EXTRA_FLAGS: extra compiler flags passed to C++ compiler.
+```
+
 ## Prerequisites
 
 We recommend you work on a Linux distribution (Ubuntu, Manjaro, ArchLinux, etc.) or WSL2 if you stick to Microsoft Windows. We at least guarantee that all stuffs will function correctly on Ubuntu 20.04. If you find something that doesn't work, please feel free to contact TAs or consider running a virtual machine.
