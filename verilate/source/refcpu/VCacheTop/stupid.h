@@ -62,7 +62,7 @@ namespace _testbench {
 
 class DBusPipeline {
 public:
-    enum class StoreOp {
+    enum class LoadOp {
         SIZE1_SHT0,
         SIZE1_SHT8,
         SIZE1_SHT16,
@@ -108,14 +108,14 @@ public:
             ongoing.pop();
 
             debug(
-                "pipeline: %s \"%0x08x\" @0x%x → got \"%08x\" (msize=%d, strobe=0x%x)\n",
+                "pipeline: %s \"%08x\" @0x%x → got \"%08x\" (msize=%d, strobe=0x%x)\n",
                 u.is_load() ? (u.dest ? "load" : "expect") : "store",
                 u.data, u.addr, data,
                 u.size, u.strobe
             );
 
             if (u.dest)  // it must be a load
-                u.apply_store();
+                u.apply_load(data);
             else if (u.is_load())  // since u.dest is NULL, it must be an assertion
                 u.apply_assert(data);
         }
@@ -130,15 +130,15 @@ public:
      * raw load/strore interface
      */
 
-    void load(addr_t addr, AXISize size, void *dest, StoreOp op = StoreOp::SIZE4_SHT0) {
+    void load(addr_t addr, AXISize size, void *dest, LoadOp op = LoadOp::SIZE4_SHT0) {
         assert(dest);
-        submit({.addr = addr, .size = size, .dest = dest, .store_op = op});
+        submit({.addr = addr, .size = size, .dest = dest, .load_op = op});
     }
     void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
         submit({.addr = addr, .size = size, .data = data, .strobe = strobe});
     }
-    void expect(addr_t addr, AXISize size, word_t data, StoreOp op = StoreOp::SIZE4_SHT0) {
-        submit({.addr = addr, .size = size, .data = data, .store_op = op});
+    void expect(addr_t addr, AXISize size, word_t data, LoadOp op = LoadOp::SIZE4_SHT0) {
+        submit({.addr = addr, .size = size, .data = data, .load_op = op});
     }
 
     /**
@@ -147,7 +147,7 @@ public:
 
     void loadw(addr_t addr, void *dest) {
         assert((addr & 0x3) == 0);
-        load(addr, MSIZE4, dest, StoreOp::SIZE4_SHT0);
+        load(addr, MSIZE4, dest, LoadOp::SIZE4_SHT0);
     }
     void loadh(addr_t addr, void *dest) {
         assert((addr & 0x1) == 0);
@@ -175,7 +175,7 @@ public:
 
     void expectw(addr_t addr, word_t data) {
         assert((addr & 0x3) == 0);
-        expect(addr, MSIZE4, data, StoreOp::SIZE4_SHT0);
+        expect(addr, MSIZE4, data, LoadOp::SIZE4_SHT0);
     }
     void expecth(addr_t addr, word_t data) {
         assert((addr & 0x1) == 0);
@@ -190,6 +190,8 @@ public:
     }
 
     void fence(uint64_t max_count = UINT64_MAX) {
+        if (empty())
+            return;
         uint64_t count = 0;
         while (!empty() && count < max_count) {
             tick();
@@ -205,7 +207,7 @@ private:
         word_t data = 0;
         word_t strobe = 0;
         void *dest = nullptr;
-        StoreOp store_op = StoreOp::SIZE4_SHT0;
+        LoadOp load_op = LoadOp::SIZE4_SHT0;
 
         bool is_load() const {
             return !strobe;
@@ -213,40 +215,39 @@ private:
 
         void apply_assert(word_t value) {
             word_t mask;
-            switch (store_op) {
-                case StoreOp::SIZE4_SHT0:  mask = 0xffffffff; break;
-                case StoreOp::SIZE2_SHT16: mask = 0xffff0000; break;
-                case StoreOp::SIZE2_SHT0:  mask = 0x0000ffff; break;
-                case StoreOp::SIZE1_SHT24: mask = 0xff000000; break;
-                case StoreOp::SIZE1_SHT16: mask = 0x00ff0000; break;
-                case StoreOp::SIZE1_SHT8:  mask = 0x0000ff00; break;
-                case StoreOp::SIZE1_SHT0:  mask = 0x000000ff; break;
+            switch (load_op) {
+                case LoadOp::SIZE4_SHT0:  mask = 0xffffffff; break;
+                case LoadOp::SIZE2_SHT16: mask = 0xffff0000; break;
+                case LoadOp::SIZE2_SHT0:  mask = 0x0000ffff; break;
+                case LoadOp::SIZE1_SHT24: mask = 0xff000000; break;
+                case LoadOp::SIZE1_SHT16: mask = 0x00ff0000; break;
+                case LoadOp::SIZE1_SHT8:  mask = 0x0000ff00; break;
+                case LoadOp::SIZE1_SHT0:  mask = 0x000000ff; break;
             }
             assert(((data ^ value) & mask) == 0);
         }
 
-        void apply_store() {
-            word_t value = data;
-            switch (store_op) {
-                case StoreOp::SIZE4_SHT0:
+        void apply_load(word_t value) {
+            switch (load_op) {
+                case LoadOp::SIZE4_SHT0:
                     *static_cast<uint32_t *>(dest) = value;
                     break;
 
-                case StoreOp::SIZE2_SHT16:
+                case LoadOp::SIZE2_SHT16:
                     value >>= 16;
-                case StoreOp::SIZE2_SHT0:
+                case LoadOp::SIZE2_SHT0:
                     *static_cast<uint16_t *>(dest) = value;
                     break;
 
-                case StoreOp::SIZE1_SHT24:
+                case LoadOp::SIZE1_SHT24:
                     *static_cast<uint8_t *>(dest) = value >> 24;
                     break;
-                case StoreOp::SIZE1_SHT16:
+                case LoadOp::SIZE1_SHT16:
                     *static_cast<uint8_t *>(dest) = value >> 16;
                     break;
-                case StoreOp::SIZE1_SHT8:
+                case LoadOp::SIZE1_SHT8:
                     value >>= 8;
-                case StoreOp::SIZE1_SHT0:
+                case LoadOp::SIZE1_SHT0:
                     *static_cast<uint8_t *>(dest) = value;
                     break;
             }
@@ -279,20 +280,20 @@ private:
     }
 
     template <int Width>
-    static auto parse_op(addr_t addr) -> StoreOp {
+    static auto parse_op(addr_t addr) -> LoadOp {
         static_assert(Width == 1 || Width == 2 || Width == 4);
 
         if (Width == 4)
-            return StoreOp::SIZE4_SHT0;
+            return LoadOp::SIZE4_SHT0;
         if (Width == 2)
-            return addr & 0x2 ? StoreOp::SIZE2_SHT16 : StoreOp::SIZE2_SHT0;
+            return addr & 0x2 ? LoadOp::SIZE2_SHT16 : LoadOp::SIZE2_SHT0;
         if (Width == 1) {
             switch (addr & 0x3) {
                 default:
-                case 0b00: return StoreOp::SIZE1_SHT0;
-                case 0b01: return StoreOp::SIZE1_SHT8;
-                case 0b10: return StoreOp::SIZE1_SHT16;
-                case 0b11: return StoreOp::SIZE1_SHT24;
+                case 0b00: return LoadOp::SIZE1_SHT0;
+                case 0b01: return LoadOp::SIZE1_SHT8;
+                case 0b10: return LoadOp::SIZE1_SHT16;
+                case 0b11: return LoadOp::SIZE1_SHT24;
             }
         }
     }
