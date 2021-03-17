@@ -79,4 +79,4 @@ jobs:
           sudo dpkg -i verilator4.deb
           sudo ln -s /usr/local/share/verilator /usr/share/
       - name: Run cache tests
-        run: make vsim -j TARGET=refcpu/VCacheTop
+        run: make vsim -j TARGET=refcpu/VCacheTop USE_CLANG=1
