@@ -132,13 +132,13 @@ public:
 
     void load(addr_t addr, AXISize size, void *dest, LoadOp op = LoadOp::SIZE4_SHT0) {
         assert(dest);
-        submit(Task{.addr = addr, .size = size, .dest = dest, .load_op = op});
+        submit(Task(addr, size, dest, op));
     }
     void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
-        submit(Task{.addr = addr, .size = size, .data = data, .strobe = strobe});
+        submit(Task(addr, size, strobe, data));
     }
     void expect(addr_t addr, AXISize size, word_t data, LoadOp op = LoadOp::SIZE4_SHT0) {
-        submit(Task{.addr = addr, .size = size, .data = data, .load_op = op});
+        submit(Task(addr, size, data, op));
     }
 
     /**
@@ -202,12 +202,22 @@ public:
 
 private:
     struct Task {
+        Task(addr_t _addr, AXISize _size, void *_dest, LoadOp _op)
+            : addr(_addr), size(_size), data(0), strobe(0),
+              dest(_dest), load_op(_op) {}
+        Task(addr_t _addr, AXISize _size, word_t _strobe, word_t _data)
+            : addr(_addr), size(_size), data(_data), strobe(_strobe),
+              dest(nullptr), load_op(LoadOp::SIZE4_SHT0) {}
+        Task(addr_t _addr, AXISize _size, word_t _data, LoadOp _op)
+            : addr(_addr), size(_size), data(_data), strobe(0),
+              dest(nullptr), load_op(_op) {}
+
         addr_t addr;
         AXISize size;
-        word_t data = 0;
-        word_t strobe = 0;
-        void *dest = nullptr;
-        LoadOp load_op = LoadOp::SIZE4_SHT0;
+        word_t data;
+        word_t strobe;
+        void *dest;
+        LoadOp load_op;
 
         bool is_load() const {
             return !strobe;
