@@ -181,7 +181,3 @@ private:
     VModelScope *scope;
     DBusPorts ports;
 };
-
-class DBusPipeline {
-    // TODO
-};
