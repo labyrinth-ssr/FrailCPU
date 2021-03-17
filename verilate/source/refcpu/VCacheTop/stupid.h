@@ -132,13 +132,13 @@ public:
 
     void load(addr_t addr, AXISize size, void *dest, LoadOp op = LoadOp::SIZE4_SHT0) {
         assert(dest);
-        submit({.addr = addr, .size = size, .dest = dest, .load_op = op});
+        submit(Task{.addr = addr, .size = size, .dest = dest, .load_op = op});
     }
     void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
-        submit({.addr = addr, .size = size, .data = data, .strobe = strobe});
+        submit(Task{.addr = addr, .size = size, .data = data, .strobe = strobe});
     }
     void expect(addr_t addr, AXISize size, word_t data, LoadOp op = LoadOp::SIZE4_SHT0) {
-        submit({.addr = addr, .size = size, .data = data, .load_op = op});
+        submit(Task{.addr = addr, .size = size, .data = data, .load_op = op});
     }
 
     /**
