@@ -33,6 +33,9 @@ void StupidBuffer::run() {
     _testbench::scope = VCacheTop;
     _testbench::dbus = &dbus;
 
+    // default to disable FST tracing
+    enable_fst_trace(false);
+
     run_testbench();
 
     timer.update(tickcount);

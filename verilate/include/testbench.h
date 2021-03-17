@@ -120,19 +120,24 @@ public:
  * basic plugins
  */
 
+#define TOP_RESET { top->reset(); }
+
 #ifdef TESTBENCH_RUN_ALL
 #define SKIP /* no effect */
 #else
 #define SKIP { return Skipped; }
 #endif
 
-#define ENABLE(controller) { \
+#define ENABLE_WITH_FN(controller, fn) { \
     controller(true); \
+    fn(); \
     _.defer([] { \
         controller(false); \
     }); \
 }
+#define ENABLE(controller) ENABLE_WITH_FN(controller, [] {})
 
 #define LOG ENABLE(enable_logging)
 #define DEBUG ENABLE(enable_debugging)
 #define STATUS ENABLE(enable_status_line)
+#define TRACE ENABLE_WITH_FN(top->enable_fst_trace, top->reset)

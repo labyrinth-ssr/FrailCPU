@@ -25,7 +25,7 @@ WITH {
 
 // this is an example of DBusPipeline
 // add DEBUG to see all memory & pipeline operations
-WITH /*DEBUG*/ {
+WITH TRACE /*DEBUG*/ {
     auto p = DBusPipeline(top, dbus);
 
     {
