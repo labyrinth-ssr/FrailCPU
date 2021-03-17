@@ -63,6 +63,7 @@ namespace _testbench {
 class DBusPipeline {
 public:
     enum class LoadOp {
+        DISCARD,
         SIZE1_SHT0,
         SIZE1_SHT8,
         SIZE1_SHT16,
@@ -128,10 +129,12 @@ public:
 
     /**
      * raw load/strore interface
+     * we don't recommend you use these functions.
      */
 
     void load(addr_t addr, AXISize size, void *dest, LoadOp op = LoadOp::SIZE4_SHT0) {
-        assert(dest);
+        if (!dest)
+            op = LoadOp::DISCARD;
         submit(Task(addr, size, dest, op));
     }
     void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
@@ -233,6 +236,7 @@ private:
                 case LoadOp::SIZE1_SHT16: mask = 0x00ff0000; break;
                 case LoadOp::SIZE1_SHT8:  mask = 0x0000ff00; break;
                 case LoadOp::SIZE1_SHT0:  mask = 0x000000ff; break;
+                case LoadOp::DISCARD:     mask = 0x00000000; break;
             }
             assert(((data ^ value) & mask) == 0);
         }
@@ -260,6 +264,8 @@ private:
                 case LoadOp::SIZE1_SHT0:
                     *static_cast<uint8_t *>(dest) = value;
                     break;
+
+                case LoadOp::DISCARD: break;
             }
         }
     };
