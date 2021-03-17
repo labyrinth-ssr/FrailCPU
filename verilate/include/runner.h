@@ -23,6 +23,10 @@ public:
         _init_fst_trace = false;
     }
 
+    void no_soc() {
+        _init_soc = false;
+    }
+
     int main(int argc, char *argv[]) {
         auto app = CLI::App();
 
@@ -56,7 +60,11 @@ public:
         if (_init_memory)
             data = parse_memory_file(args.memfile_path);
         auto mem = std::make_shared<BlockMemory>(MEMORY_SIZE, data);
-        top->install_memory(std::move(mem));
+
+        if (_init_soc)
+            top->install_soc(std::move(mem));
+        else
+            top->install_memory(std::move(mem));
 
         if (_init_text_trace && !args.ref_trace_path.empty())
             top->open_text_diff(args.ref_trace_path);
@@ -78,6 +86,7 @@ protected:
     bool _init_memory = true;
     bool _init_text_trace = true;
     bool _init_fst_trace = true;
+    bool _init_soc = true;
 
     struct {
         std::string fst_trace_path = "" /*"/tmp/trace.fst"*/;

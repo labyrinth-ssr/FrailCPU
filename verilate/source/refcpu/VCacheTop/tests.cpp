@@ -23,4 +23,10 @@ WITH {
     assert(dbus->rdata() == 0);
 } AS("reset");
 
+WITH {
+    auto p = DBusPipeline(top, dbus);
+    p.expectw(0x00000000, 0x2408ffff);
+    p.fence(100);
+} AS("ad hoc");
+
 }

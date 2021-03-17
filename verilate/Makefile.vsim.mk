@@ -38,7 +38,8 @@ CXX_WARNINGS = \
 	-Wall -Wextra \
 	-Wno-aligned-new \
 	-Wno-sign-compare \
-	-Wno-unused-const-variable
+	-Wno-unused-const-variable \
+	-Wno-implicit-fallthrough
 
 CXX_LINKS = -lz
 

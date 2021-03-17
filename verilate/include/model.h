@@ -42,6 +42,7 @@ public:
     bool force_diff;
     float p_disable;
 
+    void install_soc(const std::shared_ptr<BlockMemory> &mem);
     void install_memory(const std::shared_ptr<BlockMemory> &mem);
     void remove_memory();
 

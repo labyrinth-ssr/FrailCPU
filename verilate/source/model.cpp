@@ -9,7 +9,7 @@ ModelBase::~ModelBase() {
         close_text_diff();
 }
 
-void ModelBase::install_memory(const std::shared_ptr<BlockMemory> &mem) {
+void ModelBase::install_soc(const std::shared_ptr<BlockMemory> &mem) {
     assert(!_memory_installed);
 
     con = std::make_shared<Confreg>();
@@ -20,6 +20,14 @@ void ModelBase::install_memory(const std::shared_ptr<BlockMemory> &mem) {
     };
     auto router = std::make_shared<MemoryRouter>(layout);
     dev = std::make_shared<CBusDevice>(router, p_disable);
+
+    _memory_installed = true;
+}
+
+void ModelBase::install_memory(const std::shared_ptr<BlockMemory> &mem) {
+    assert(!_memory_installed);
+
+    dev = std::make_shared<CBusDevice>(mem, p_disable);
 
     _memory_installed = true;
 }
