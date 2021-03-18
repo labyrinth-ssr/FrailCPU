@@ -192,15 +192,16 @@ public:
         expect(addr, MSIZE1, value, parse_op<1>(addr));
     }
 
+    // wait for all pending and ongoing requests to finish.
+    // max_count is the maximum number of ticks
     void fence(uint64_t max_count = UINT64_MAX) {
-        if (empty())
-            return;
         uint64_t count = 0;
         while (!empty() && count < max_count) {
             tick();
             count++;
         }
-        assert(count != max_count);
+
+        assert(empty());
     }
 
 private:
@@ -276,9 +277,9 @@ private:
 
     void issue(const Task &t) {
         if (t.is_load())
-            dbus->load(t.addr, t.size);
+            dbus->async_load(t.addr, t.size);
         else
-            dbus->store(t.addr, t.size, t.strobe, t.data);
+            dbus->async_store(t.addr, t.size, t.strobe, t.data);
     }
 
     void submit(const Task &t) {

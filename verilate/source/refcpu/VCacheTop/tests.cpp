@@ -12,7 +12,7 @@ PRETEST_HOOK [] {
 };
 
 WITH {
-    dbus->load(0xc, MSIZE4);
+    dbus->async_load(0xc, MSIZE4);
     top->tick();
     // assert(top->dresp == 0);
 } AS("void");
@@ -22,6 +22,11 @@ WITH {
     assert(dbus->data_ok() == false);
     assert(dbus->rdata() == 0);
 } AS("reset");
+
+WITH {
+    dbus->store(0, MSIZE4, 0b1111, 0x2048ffff);
+    assert(dbus->load(0, MSIZE4) == 0x2048ffff);
+} AS("synchronized");
 
 // this is an example of DBusPipeline
 // add DEBUG to see all memory & pipeline operations

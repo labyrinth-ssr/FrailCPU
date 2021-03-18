@@ -141,16 +141,9 @@ public:
      * some helper functions
      */
 
+    // NOTE: it is asynchronous
     void issue(bool valid, addr_t addr, AXISize size, word_t strobe, word_t data) {
         scope->dbus_update(valid, addr, size, strobe, data, ports.req);
-        top->eval();
-    }
-    void load(addr_t addr, AXISize size) {
-        scope->dbus_issue_load(addr, size, ports.req);
-        top->eval();
-    }
-    void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
-        scope->dbus_issue_store(addr, size, strobe, data, ports.req);
         top->eval();
     }
     void clear() {
@@ -158,22 +151,51 @@ public:
         top->eval();
     }
 
-    // return before the last handshake
-    template <bool WaitDataOk = true, bool WaitAddrOk = true>
-    void wait(uint64_t max_count = UINT64_MAX) {
+    void async_load(addr_t addr, AXISize size) {
+        scope->dbus_issue_load(addr, size, ports.req);
+        top->eval();
+    }
+    auto load(addr_t addr, AXISize size) -> word_t {
+        async_load(addr, size);
+        return await<true, true, false>();
+    }
+    void async_store(addr_t addr, AXISize size, word_t strobe, word_t data) {
+        scope->dbus_issue_store(addr, size, strobe, data, ports.req);
+        top->eval();
+    }
+    void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
+        async_store(addr, size, strobe, data);
+        await<true, true, false>();
+    }
+
+    // return the data at the last handshake
+    // max_count is the maximum number of ticks
+    template <bool WaitDataOk = true, bool WaitAddrOk = true, bool EvalFirst = true>
+    auto await(uint64_t max_count = UINT64_MAX) -> word_t {
         uint32_t remain = 0;
         if (WaitDataOk)
             remain |= 1 << 1;
         if (WaitAddrOk)
             remain |= 1 << 0;
 
-        top->eval();
-        for (uint64_t i = 0; i < max_count; i++) {
+        if (EvalFirst)
+            top->eval();
+
+        uint64_t count = 0;
+        while (true) {
+            word_t data = rdata();
             remain ^= scope->dbus_handshake(ports.resp, remain);
             if (remain == 0)
+                return data;
+
+            count++;
+            if (count <= max_count)
+                top->tick();
+            else
                 break;
-            top->tick();
         }
+
+        assert(false);
     }
 
 private:
