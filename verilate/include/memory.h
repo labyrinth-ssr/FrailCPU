@@ -24,7 +24,7 @@ public:
     virtual void store(addr_t addr, word_t data, word_t mask) = 0;
 };
 
-class MemoryRouter : public IMemory {
+class MemoryRouter final : public IMemory {
 public:
     using TranslateFn = std::function<addr_t(addr_t)>;
 
@@ -48,7 +48,7 @@ private:
     auto search(addr_t addr) -> Entry*;
 };
 
-class BlockMemory : public IMemory {
+class BlockMemory final : public IMemory {
 public:
     BlockMemory(size_t _size, addr_t _offset = 0);
     BlockMemory(const ByteSeq &data, addr_t _offset = 0);

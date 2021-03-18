@@ -50,7 +50,7 @@ struct CBusResp {
 
 // a helper class/generator for CBusWrapper
 template <typename VModelScope>
-class CBusWrapperGen : public CBusReq {
+class CBusWrapperGen final : public CBusReq {
 public:
     CBusWrapperGen(VModelScope *_top, const CBusReqVType &_req)
         : top(_top), req(_req) {}

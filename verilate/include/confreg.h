@@ -8,7 +8,7 @@
  * simulate the "confreg.v" from NSCSCC
  */
 
-class Confreg : public IMemory {
+class Confreg final : public IMemory {
 public:
     static constexpr addr_t ADDR_MASK = 0xffff;
 

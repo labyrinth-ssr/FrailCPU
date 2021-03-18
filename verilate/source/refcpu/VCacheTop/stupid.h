@@ -4,7 +4,7 @@
 
 #include "defs.h"
 
-class StupidBuffer : public ModelBase {
+class StupidBuffer final : public ModelBase {
 public:
     void reset();
     void tick();

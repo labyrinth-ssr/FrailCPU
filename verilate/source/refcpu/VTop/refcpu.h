@@ -4,7 +4,7 @@
 
 #include "context.h"
 
-class RefCPU : public ModelBase {
+class RefCPU final : public ModelBase {
 public:
     RefCPU() :
         current_cycle(0),

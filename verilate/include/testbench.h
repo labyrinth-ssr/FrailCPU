@@ -96,7 +96,7 @@ public:
 #define _TESTBENCH_UNIQUE_NAME(x) _TESTBENCH_CAT(x, __LINE__)
 
 #define _TESTBENCH_BEGIN(id) \
-    static class id : public ITestbench { \
+    static class id final : public ITestbench { \
         using ITestbench::ITestbench; \
         auto _run( \
             const PretestHook &pre_fn, const PosttestHook &post_fn \
