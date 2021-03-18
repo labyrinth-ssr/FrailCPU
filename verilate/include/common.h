@@ -9,10 +9,14 @@
 
 #include <signal.h>
 
-constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
-
+// to control initialization order of global variables
 #define INIT_PRIORITY(value) \
     __attribute__ ((init_priority(value)))
+
+
+/**
+ * typedefs
+ */
 
 using addr_t = uint32_t;
 using word_t = uint32_t;
@@ -20,6 +24,23 @@ using handler_t = void(int);
 using uchar = unsigned char;
 
 using ByteSeq = std::vector<uint8_t>;
+
+/**
+ * basic constexprs
+ */
+
+constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
+
+constexpr word_t STROBE_TO_MASK[] = {
+    0x00000000, 0x000000ff, 0x0000ff00, 0x0000ffff,
+    0x00ff0000, 0x00ff00ff, 0x00ffff00, 0x00ffffff,
+    0xff000000, 0xff0000ff, 0xff00ff00, 0xff00ffff,
+    0xffff0000, 0xffff00ff, 0xffffff00, 0xffffffff,
+};
+
+/**
+ * utility functions
+ */
 
 void hook_signal(int sig, handler_t *handler);
 auto trim(const std::string &text) -> std::string;
