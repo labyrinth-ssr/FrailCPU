@@ -72,6 +72,15 @@ void BlockMemory::map(addr_t addr, const ByteSeq &data) {
     }
 }
 
+auto BlockMemory::dump(addr_t addr, size_t size) -> std::vector<word_t> {
+    assert((addr & 0x3) == 0);
+    assert((size & 0x3) == 0);
+    addr >>= 2;
+    size >>= 2;
+    assert(addr + size <= mem.size());
+    return std::vector<word_t>(mem.begin() + addr, mem.begin() + addr + size);
+}
+
 auto BlockMemory::load(addr_t addr) -> word_t {
     addr_t caddr = addr;
     addr -= offset;

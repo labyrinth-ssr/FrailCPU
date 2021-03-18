@@ -59,6 +59,7 @@ public:
     void store(addr_t addr, word_t data, word_t mask);
 
     void map(addr_t addr, const ByteSeq &data);
+    auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> std::vector<word_t>;
 
 private:
     size_t size;

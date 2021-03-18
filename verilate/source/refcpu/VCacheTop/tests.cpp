@@ -23,13 +23,16 @@ WITH {
     assert(dbus->rdata() == 0);
 } AS("reset");
 
+// both dbus->store and dbus->load wait for your model to complete
 WITH {
     dbus->store(0, MSIZE4, 0b1111, 0x2048ffff);
     assert(dbus->load(0, MSIZE4) == 0x2048ffff);
 } AS("synchronized");
 
-// this is an example of DBusPipeline
-// add DEBUG to see all memory & pipeline operations
+// this is an example of DBusPipeline.
+// all operations performed by pipeline are asynchronous, unless
+// p.fence() is called.
+// add DEBUG to see all memory & pipeline operations.
 WITH TRACE /*DEBUG*/ {
     auto p = DBusPipeline(top, dbus);
 
@@ -79,7 +82,7 @@ WITH TRACE /*DEBUG*/ {
     {
         // NOTE: the default memory size is 1 MiB
         //       which is specified in common.h: "MEMORY_SIZE".
-        //       Therefore, the maximum address if 0xfffff.
+        //       Therefore, the maximum address is 0xfffff.
 
         word_t value;
         p.storew(0xff000, 0x2048ffff);
@@ -95,5 +98,12 @@ WITH TRACE /*DEBUG*/ {
 
     p.fence(0);
 } AS("ad hoc");
+
+// this test is explicitly marked with "SKIP".
+WITH SKIP {
+    // you should not fail here since it's skipped.
+    bool one = 1, three = 3;
+    assert(one + one == three);  // trust me, it must fail
+} AS("akarin!");
 
 }
