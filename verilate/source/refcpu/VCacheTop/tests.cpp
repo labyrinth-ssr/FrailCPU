@@ -78,7 +78,7 @@ WITH TRACE /*DEBUG*/ {
 
     {
         // NOTE: the default memory size is 1 MiB
-        //       which is specified in verilate/include/runner.h "MEMORY_SIZE".
+        //       which is specified in common.h: "MEMORY_SIZE".
         //       Therefore, the maximum address if 0xfffff.
 
         word_t value;

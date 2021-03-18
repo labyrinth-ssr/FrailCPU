@@ -9,6 +9,8 @@
 
 #include <signal.h>
 
+constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
+
 #define INIT_PRIORITY(value) \
     __attribute__ ((init_priority(value)))
 

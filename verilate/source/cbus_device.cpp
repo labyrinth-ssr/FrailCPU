@@ -80,3 +80,19 @@ void CBusDevice::sync() {
 
     enable = randf(0.0, 1.0) >= p_disable;
 }
+
+auto CBusDevice::dump(addr_t addr, size_t size) -> std::vector<word_t> {
+    assert((addr & 0x3) == 0);
+    assert((size & 0x3) == 0);
+    addr >>= 2;
+    size >>= 2;
+
+    std::vector<word_t> buffer;
+    buffer.resize(size);
+    for (size_t i = 0; i < size; i++) {
+        addr_t index = addr + i;
+        buffer[i] = mem->load(index);
+    }
+
+    return buffer;
+}

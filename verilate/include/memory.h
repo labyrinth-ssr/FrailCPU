@@ -15,6 +15,11 @@ public:
     virtual ~IMemory() = default;
 
     virtual void reset() = 0;
+
+    /**
+     * addr is indexed by bytes.
+     */
+
     virtual auto load(addr_t addr) -> word_t = 0;
     virtual void store(addr_t addr, word_t data, word_t mask) = 0;
 };
@@ -78,6 +83,9 @@ public:
     auto eval_resp() -> CBusResp;
     void eval_req(const CBusReq &req);
     void sync();
+
+    // for model comparing
+    auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> std::vector<word_t>;
 
 private:
     std::shared_ptr<IMemory> mem;

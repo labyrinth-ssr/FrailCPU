@@ -9,8 +9,6 @@
 template <typename TModel>
 class ProgramRunner final {
 public:
-    static constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
-
     void no_init_memory() {
         _init_memory = false;
     }
