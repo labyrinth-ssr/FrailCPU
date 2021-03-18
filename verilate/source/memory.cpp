@@ -35,6 +35,16 @@ void MemoryRouter::store(addr_t addr, word_t data, word_t mask) {
     e->mem->store(paddr, data, mask);
 }
 
+auto MemoryRouter::dump(addr_t addr, size_t size) -> MemoryDump {
+    // NOTE: does not support cross module memory dump.
+
+    auto e = search(addr);
+    assert(e);
+
+    auto paddr = e->translate(addr);
+    return e->mem->dump(paddr, size);
+}
+
 BlockMemory::BlockMemory(size_t _size, addr_t _offset)
     : size(_size), offset(_offset) {
     assert(size % 4 == 0);
@@ -72,13 +82,13 @@ void BlockMemory::map(addr_t addr, const ByteSeq &data) {
     }
 }
 
-auto BlockMemory::dump(addr_t addr, size_t size) -> std::vector<word_t> {
+auto BlockMemory::dump(addr_t addr, size_t size) -> MemoryDump {
     assert((addr & 0x3) == 0);
     assert((size & 0x3) == 0);
     addr >>= 2;
     size >>= 2;
     assert(addr + size <= mem.size());
-    return std::vector<word_t>(mem.begin() + addr, mem.begin() + addr + size);
+    return MemoryDump(mem.begin() + addr, mem.begin() + addr + size);
 }
 
 auto BlockMemory::load(addr_t addr) -> word_t {
@@ -89,7 +99,7 @@ auto BlockMemory::load(addr_t addr) -> word_t {
     size_t index = addr / 4;  // align to 4 bytes
     word_t value = mem[index];
 
-    debug("mem[%08x] -> %08x\n", caddr, value);
+    debug("mem[%08x] => %08x\n", caddr, value);
 
     return value;
 }

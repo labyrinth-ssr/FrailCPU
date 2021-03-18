@@ -6,6 +6,7 @@ namespace _testbench {
 StupidBuffer *top;
 VModelScope *scope;
 DBus *dbus;
+CacheRefModel *ref;
 
 PRETEST_HOOK [] {
     top->reset();
@@ -105,5 +106,10 @@ WITH SKIP {
     bool one = 1, three = 3;
     assert(one + one == three);  // trust me, it must fail
 } AS("akarin!");
+
+WITH DEBUG CMP_TO(ref) {
+    dbus->load(0, MSIZE4);
+    dbus->store(0, MSIZE4, 0b1111, 0x19260817);
+} AS("compare");
 
 }

@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <functional>
+#include <type_traits>
 
 enum TestbenchStatus {
     Finished,
@@ -141,3 +142,47 @@ public:
 #define DEBUG ENABLE(enable_debugging)
 #define STATUS ENABLE(enable_status_line)
 #define TRACE ENABLE_WITH_FN(top->enable_fst_trace, top->reset)
+
+// hacks DBus::load and DBus::store to compare the results with
+// reference implementation.
+template <typename TRefModel, typename DBus>
+class _TestbenchDBusWrapperGen : public DBus {
+public:
+    using RefModel = typename std::remove_pointer<TRefModel>::type;
+
+    _TestbenchDBusWrapperGen(DBus *_dbus, RefModel *_ref)
+        : DBus(*_dbus), ref(_ref) {
+        ref->reset();
+    }
+    _TestbenchDBusWrapperGen(DBus *_dbus, RefModel &_ref)
+        : _TestbenchDBusWrapperGen(_dbus, &_ref) {}
+
+    auto load(addr_t addr, AXISize size) -> word_t {
+        auto got = DBus::load(addr, size);
+        auto expected = ref->load(addr, size);
+        assert(got == expected);
+        assert(ref->check_internal());
+        return got;
+    }
+
+    void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
+        DBus::store(addr, size, strobe, data);
+        ref->store(addr, size, strobe, data);
+        assert(ref->check_internal());
+    }
+
+    // check_memory seems to be expensive, so we only check at the end of test.
+    void _testbench_final() {
+        assert(ref->check_memory());
+    }
+
+private:
+    RefModel *ref;
+};
+
+// NOTE: macro CMP_TO will shadow global variable dbus in order to hack in
+#define CMP_TO(reference) \
+    using _TestbenchDBusWrapper = _TestbenchDBusWrapperGen<decltype(reference), DBus>; \
+    _TestbenchDBusWrapper _testbench_dbus_wrapper(dbus, ref); \
+    auto dbus = &_testbench_dbus_wrapper; \
+    _.defer(std::bind(&_TestbenchDBusWrapper::_testbench_final, dbus));

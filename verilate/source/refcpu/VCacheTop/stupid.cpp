@@ -32,6 +32,7 @@ void StupidBuffer::run() {
     _testbench::top = this;
     _testbench::scope = VCacheTop;
     _testbench::dbus = &dbus;
+    _testbench::ref = &ref;
 
     // default to disable FST tracing
     enable_fst_trace(false);
@@ -39,4 +40,8 @@ void StupidBuffer::run() {
     run_testbench();
 
     timer.update(tickcount);
+}
+
+auto StupidBuffer::dump() -> MemoryDump {
+    return dev->dump(0, MEMORY_SIZE);
 }

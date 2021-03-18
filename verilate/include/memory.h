@@ -10,6 +10,8 @@
 #include <memory>
 #include <functional>
 
+using MemoryDump = std::vector<word_t>;
+
 class IMemory {
 public:
     virtual ~IMemory() = default;
@@ -18,10 +20,13 @@ public:
 
     /**
      * addr is indexed by bytes.
+     * mask is 32 bits, which is different to 4 bit strobe.
      */
 
     virtual auto load(addr_t addr) -> word_t = 0;
     virtual void store(addr_t addr, word_t data, word_t mask) = 0;
+
+    virtual auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> MemoryDump = 0;
 };
 
 class MemoryRouter final : public IMemory {
@@ -42,6 +47,8 @@ public:
     auto load(addr_t addr) -> word_t;
     void store(addr_t addr, word_t data, word_t mask);
 
+    auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> MemoryDump;
+
 private:
     std::vector<Entry> entries;
 
@@ -59,12 +66,12 @@ public:
     void store(addr_t addr, word_t data, word_t mask);
 
     void map(addr_t addr, const ByteSeq &data);
-    auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> std::vector<word_t>;
+    auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> MemoryDump;
 
 private:
     size_t size;
     addr_t offset;
-    std::vector<word_t> mem, saved_mem;
+    MemoryDump mem, saved_mem;
 };
 
 /**
@@ -86,7 +93,7 @@ public:
     void sync();
 
     // for model comparing
-    auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> std::vector<word_t>;
+    auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> MemoryDump;
 
 private:
     std::shared_ptr<IMemory> mem;
