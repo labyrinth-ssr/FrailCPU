@@ -157,23 +157,23 @@ public:
     _TestbenchDBusWrapperGen(DBus *_dbus, RefModel &_ref)
         : _TestbenchDBusWrapperGen(_dbus, &_ref) {}
 
+    // check_memory seems to be expensive, so we only check at the end of test.
+    ~_TestbenchDBusWrapperGen() {
+        ref->check_memory();
+    }
+
     auto load(addr_t addr, AXISize size) -> word_t {
         auto got = DBus::load(addr, size);
         auto expected = ref->load(addr, size);
         assert(got == expected);
-        assert(ref->check_internal());
+        ref->check_internal();
         return got;
     }
 
     void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
         DBus::store(addr, size, strobe, data);
         ref->store(addr, size, strobe, data);
-        assert(ref->check_internal());
-    }
-
-    // check_memory seems to be expensive, so we only check at the end of test.
-    void _testbench_final() {
-        assert(ref->check_memory());
+        ref->check_internal();
     }
 
 private:
@@ -184,5 +184,4 @@ private:
 #define CMP_TO(reference) \
     using _TestbenchDBusWrapper = _TestbenchDBusWrapperGen<decltype(reference), DBus>; \
     _TestbenchDBusWrapper _testbench_dbus_wrapper(dbus, ref); \
-    auto dbus = &_testbench_dbus_wrapper; \
-    _.defer(std::bind(&_TestbenchDBusWrapper::_testbench_final, dbus));
+    auto dbus = &_testbench_dbus_wrapper;

@@ -10,6 +10,8 @@ public:
     virtual void reset() = 0;
     virtual auto load(addr_t addr, AXISize size) -> word_t = 0;
     virtual void store(addr_t addr, AXISize size, word_t strobe, word_t data) = 0;
-    virtual bool check_internal() = 0;
-    virtual bool check_memory() = 0;
+
+    // check_* should use assertions.
+    virtual void check_internal() = 0;
+    virtual void check_memory() = 0;
 };

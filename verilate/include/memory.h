@@ -61,6 +61,12 @@ public:
     BlockMemory(const ByteSeq &data, addr_t _offset = 0);
     BlockMemory(size_t _size, const ByteSeq &data, addr_t _offset = 0);
 
+    auto size() const -> size_t;
+    auto offset() const -> addr_t;
+
+    // set the name to show in DEBUG mode
+    void set_name(const char *new_name);
+
     void reset();
     auto load(addr_t addr) -> word_t;
     void store(addr_t addr, word_t data, word_t mask);
@@ -69,9 +75,10 @@ public:
     auto dump(addr_t addr, size_t size = MEMORY_SIZE) -> MemoryDump;
 
 private:
-    size_t size;
-    addr_t offset;
+    size_t _size;
+    addr_t _offset;
     MemoryDump mem, saved_mem;
+    const char *name;
 };
 
 /**

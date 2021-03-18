@@ -46,22 +46,34 @@ auto MemoryRouter::dump(addr_t addr, size_t size) -> MemoryDump {
 }
 
 BlockMemory::BlockMemory(size_t _size, addr_t _offset)
-    : size(_size), offset(_offset) {
-    assert(size % 4 == 0);
-    mem.resize(size / 4);
+    : _size(_size), _offset(_offset), name("mem") {
+    assert(_size % 4 == 0);
+    mem.resize(_size / 4);
     saved_mem = mem;
 }
 
 BlockMemory::BlockMemory(const ByteSeq &data, addr_t _offset)
     : BlockMemory(data.size(), _offset) {
-    map(offset, data);
+    map(_offset, data);
     saved_mem = mem;
 }
 
 BlockMemory::BlockMemory(size_t _size, const ByteSeq &data, addr_t _offset)
     : BlockMemory(_size, _offset) {
-    map(offset, data);
+    map(_offset, data);
     saved_mem = mem;
+}
+
+auto BlockMemory::size() const -> size_t {
+    return _size;
+}
+
+auto BlockMemory::offset() const -> addr_t {
+    return _offset;
+}
+
+void BlockMemory::set_name(const char *new_name) {
+    name = new_name;
 }
 
 void BlockMemory::reset() {
@@ -69,8 +81,8 @@ void BlockMemory::reset() {
 }
 
 void BlockMemory::map(addr_t addr, const ByteSeq &data) {
-    addr -= offset;
-    assert(addr + data.size() <= size);
+    addr -= _offset;
+    assert(addr + data.size() <= _size);
 
     for (size_t i = 0; i < data.size(); i++) {
         size_t index = (addr + i) / 4;
@@ -93,25 +105,25 @@ auto BlockMemory::dump(addr_t addr, size_t size) -> MemoryDump {
 
 auto BlockMemory::load(addr_t addr) -> word_t {
     addr_t caddr = addr;
-    addr -= offset;
-    assert(addr < size);
+    addr -= _offset;
+    assert(addr < _size);
 
     size_t index = addr / 4;  // align to 4 bytes
     word_t value = mem[index];
 
-    debug("mem[%08x] => %08x\n", caddr, value);
+    debug("%s[%08x] => %08x\n", name, caddr, value);
 
     return value;
 }
 
 void BlockMemory::store(addr_t addr, word_t data, word_t mask) {
     addr_t caddr = addr;
-    addr -= offset;
-    assert(addr < size);
+    addr -= _offset;
+    assert(addr < _size);
 
     size_t index = addr / 4;  // align to 4 bytes
     word_t &value = mem[index];
     value = (value & ~mask) | (data & mask);
 
-    debug("mem[%08x] <- %08x\n", caddr, value);
+    debug("%s[%08x] <- %08x\n", name, caddr, value);
 }

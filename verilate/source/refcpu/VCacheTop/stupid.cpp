@@ -3,6 +3,9 @@
 #include "defs.h"
 #include "stupid.h"
 
+StupidBuffer::StupidBuffer()
+    : ref(this, MEMORY_SIZE) {}
+
 void StupidBuffer::reset() {
     clk = 0;
     resetn = 0;

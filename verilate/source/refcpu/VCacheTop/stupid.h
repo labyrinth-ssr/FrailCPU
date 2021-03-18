@@ -7,6 +7,8 @@
 
 class StupidBuffer final : public ModelBase {
 public:
+    StupidBuffer();
+
     void reset();
     void tick();
     void run();

@@ -108,8 +108,10 @@ WITH SKIP {
 } AS("akarin!");
 
 WITH DEBUG CMP_TO(ref) {
-    dbus->load(0, MSIZE4);
-    dbus->store(0, MSIZE4, 0b1111, 0x19260817);
+    for (int i = 0; i < 32; i++) {
+        dbus->store(4 * i, MSIZE4, 0b1111, 0x19260817);
+        dbus->load(4 * i, MSIZE4);
+    }
 } AS("compare");
 
 }

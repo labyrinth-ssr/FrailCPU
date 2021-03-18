@@ -185,17 +185,15 @@ public:
             top->eval();
 
         uint64_t count = 0;
-        while (true) {
+        while (count < max_count) {
             word_t data = rdata();
             remain ^= scope->dbus_handshake(ports.resp, remain);
-            if (remain == 0)
-                return data;
 
             count++;
-            if (count <= max_count)
-                top->tick();
-            else
-                break;
+            top->tick();
+
+            if (remain == 0)
+                return data;
         }
 
         assert(false);

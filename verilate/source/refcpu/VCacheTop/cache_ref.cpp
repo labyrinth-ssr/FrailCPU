@@ -1,24 +1,49 @@
+#include "stupid.h"
 #include "cache_ref.h"
+
+CacheRefModel::CacheRefModel(StupidBuffer *_top, size_t memory_size)
+    : top(_top), scope(top->VCacheTop), mem(memory_size) {
+    mem.set_name("ref");
+}
 
 void CacheRefModel::reset() {
     debug("ref: reset()\n");
+
+    mem.reset();
+}
+
+void CacheRefModel::fetch(addr_t addr) {
+    addr_t start = addr / 64 * 64;
+    for (int i = 0; i < 16; i++) {
+        buffer[i] = mem.load(start + 4 * i);
+    }
 }
 
 auto CacheRefModel::load(addr_t addr, AXISize size) -> word_t {
     debug("ref: load(0x%x, %d)\n", addr, 1 << size);
-    return 0;
+
+    fetch(addr);
+    return buffer[addr % 64 / 4];
 }
 
 void CacheRefModel::store(addr_t addr, AXISize size, word_t strobe, word_t data) {
     debug("ref: store(0x%x, %d, %x, \"%08x\")\n", addr, 1 << size, strobe, data);
+
+    fetch(addr);
+    buffer[addr % 64 / 4] = data;
+    mem.store(addr, data, STROBE_TO_MASK[strobe]);
 }
 
-bool CacheRefModel::check_internal() {
+void CacheRefModel::check_internal() {
     debug("ref: check_internal()\n");
-    return true;
+
+    for (int i = 0; i < 16; i++) {
+        assert(buffer[i] == scope->mem[i]);
+    }
 }
 
-bool CacheRefModel::check_memory() {
+void CacheRefModel::check_memory() {
     debug("ref: check_memory()\n");
-    return true;
+
+    assert(mem.dump(0, mem.size()) == top->dump());
 }
