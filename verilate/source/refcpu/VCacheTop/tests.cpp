@@ -1,5 +1,6 @@
 #include "common.h"
 #include "testbench.h"
+#include "cell.h"
 
 #include "stupid.h"
 
@@ -60,9 +61,18 @@ WITH {
 WITH {
     dbus->store(0, MSIZE4, 0b1111, 0x2048ffff);
     assert(dbus->load(0, MSIZE4) == 0x2048ffff);
-} AS("synchronized");
+} AS("naïve");
 
-WITH {
+// this test is explicitly marked with "SKIP".
+WITH SKIP {
+    bool one = 1, three = 3;
+    assert(one + one == three);  // trust me, it must fail
+    // but you should not fail here since it's skipped.
+} AS("akarin!");
+
+// if your cache does not support partial writes, you can simply skip
+// this test "strobe".
+WITH /*SKIP*/ {
     // S iterates over 0b0000 to 0b1111.
     std::vector<word_t> a;  // to store the correct value
     a.resize(16);
@@ -79,6 +89,72 @@ WITH {
     }
 } AS("strobe");
 
+// this is a more detailed example of DBus.
+// add DEBUG to see all memory operations.
+WITH TRACE /*DEBUG*/ {
+    {
+        dbus->store(0xc, MSIZE4, 0b1111, 0x12345678);
+        assert(dbus->load(0xc, MSIZE4) == 0x12345678);
+    }
+
+    {
+        uint8_t a[4];
+        uint16_t b[2];
+        uint32_t c;
+
+        dbus->storew(0x108, 0xdeadbeef);
+        dbus->storeh(0x100, 0x0817);
+        dbus->storeh(0x102, 0x1926);
+        dbus->storeb(0x104, 0xdd);
+        dbus->storeb(0x105, 0xcc);
+        dbus->storeb(0x106, 0xbb);
+        dbus->storeb(0x107, 0xaa);
+
+        a[0] = dbus->loadb(0x108);
+        a[1] = dbus->loadb(0x109);
+        a[2] = dbus->loadb(0x10a);
+        a[3] = dbus->loadb(0x10b);
+        b[0] = dbus->loadh(0x104);
+        b[1] = dbus->loadh(0x106);
+        c = dbus->loadw(0x100);
+
+        assert(a[0] == 0xef && a[1] == 0xbe && a[2] == 0xad && a[3] == 0xde);
+        assert(b[0] == 0xccdd && b[1] == 0xaabb);
+        assert(c == 0x19260817);
+
+        a[0] = dbus->loadb(0x100);
+        a[1] = dbus->loadb(0x101);
+        a[2] = dbus->loadb(0x102);
+        a[3] = dbus->loadb(0x103);
+        b[0] = dbus->loadh(0x108);
+        b[1] = dbus->loadh(0x10a);
+        c = dbus->loadw(0x104);
+
+        assert(a[0] == 0x17 && a[1] == 0x08 && a[2] == 0x26 && a[3] == 0x19);
+        assert(b[0] == 0xbeef && b[1] == 0xdead);
+        assert(c == 0xaabbccdd);
+    }
+
+    {
+        // NOTE: the default memory size is 1 MiB
+        //       which is specified in common.h: "MEMORY_SIZE".
+        //       Therefore, the maximum address is 0xfffff.
+
+        // asynchronous operations do not wait for cache to complete,
+        // so you have to manually tick the cache or use dbus->await.
+
+        dbus->async_storew(0xffffc, 0x2048ffff);
+
+        for (int i = 0; i < 128; i++) {
+            top->tick();
+        }
+
+        dbus->async_loadw(0xffffc);
+        word_t value = dbus->await(128);  // it waits for async_loadw to complete.
+        assert(value == 0x2048ffff);
+    }
+} AS("ad hoc");
+
 // this is an example of DBusPipeline.
 // all operations performed by pipeline are asynchronous, unless
 // p.fence() is called.
@@ -91,7 +167,7 @@ WITH TRACE /*DEBUG*/ {
         p.store(0xc, MSIZE4, 0b1111, 0x12345678);
         p.load(0xc, MSIZE4, &value);
         p.expect(0xc, MSIZE4, 0x12345678);
-        p.fence(128);
+        p.fence(128);  // above three operations should complete in 128 ticks
         assert(value == 0x12345678);
     }
 
@@ -99,6 +175,7 @@ WITH TRACE /*DEBUG*/ {
         uint8_t a[4];
         uint16_t b[2];
         uint32_t c;
+
         p.storew(0x108, 0xdeadbeef);
         p.storeh(0x100, 0x0817);
         p.storeh(0x102, 0x1926);
@@ -106,6 +183,7 @@ WITH TRACE /*DEBUG*/ {
         p.storeb(0x105, 0xcc);
         p.storeb(0x106, 0xbb);
         p.storeb(0x107, 0xaa);
+
         p.loadb(0x108, a + 0);
         p.loadb(0x109, a + 1);
         p.loadb(0x10a, a + 2);
@@ -113,6 +191,7 @@ WITH TRACE /*DEBUG*/ {
         p.loadh(0x104, b + 0);
         p.loadh(0x106, b + 1);
         p.loadw(0x100, &c);
+
         p.expectb(0x100, 0x17);
         p.expectb(0x101, 0x08);
         p.expectb(0x102, 0x26);
@@ -120,23 +199,21 @@ WITH TRACE /*DEBUG*/ {
         p.expecth(0x108, 0xbeef);
         p.expecth(0x10a, 0xdead);
         p.expectw(0x104, 0xaabbccdd);
+
         p.fence(2048);
+
         assert(a[0] == 0xef && a[1] == 0xbe && a[2] == 0xad && a[3] == 0xde);
         assert(b[0] == 0xccdd && b[1] == 0xaabb);
         assert(c == 0x19260817);
     }
 
-    p.fence(0);  // assert that pipeline is empty now
+    p.fence(0);  // assert that pipeline is empty
     p.fence();  // must not block
 
     {
-        // NOTE: the default memory size is 1 MiB
-        //       which is specified in common.h: "MEMORY_SIZE".
-        //       Therefore, the maximum address is 0xfffff.
-
         word_t value;
-        p.storew(0xff000, 0x2048ffff);
-        p.loadw(0xff000, &value);
+        p.storew(0xffffc, 0x2048ffff);
+        p.loadw(0xffffc, &value);
 
         // manually update the pipeline
         for (int i = 0; i < 128; i++) {
@@ -148,14 +225,29 @@ WITH TRACE /*DEBUG*/ {
 
     // NOTE: a p.fence() will be called implicitly when p is being
     //       destructed.
-} AS("ad hoc");
+} AS("pipelined");
 
-// this test is explicitly marked with "SKIP".
-WITH SKIP {
-    // you should not fail here since it's skipped.
-    bool one = 1, three = 3;
-    assert(one + one == three);  // trust me, it must fail
-} AS("akarin!");
+WITH {
+    auto p = DBusPipeline(top, dbus);
+    auto factory = MemoryCellFactory(&p);
+
+    auto a = factory.take<word_t>(0);
+    auto b = factory.take<uint16_t>(4);
+    auto c = factory.take<uint16_t>(2);
+
+    a.set(0x19260817);
+    b = 0xbeef;
+    assert(a.get() == 0x19260817);
+    assert(b.get() == 0x0000beef);
+
+    a = b;
+    assert(b.get() == 0x0000beef);
+
+    c = 0xdead;
+    assert(a.get() == 0xdeadbeef);
+    assert(c.get() == 0x0000dead);
+    assert((a + c) == 0xdeae9d9c);
+} AS("memory cell");
 
 /**
  * model comparing
@@ -256,7 +348,7 @@ WITH {
     for (int i = MEMORY_SIZE - 1; i >= 0; i--) {
         p.storeb(i, 0xcc);
     }
-    for (int i = 0; i < MEMORY_SIZE; i += 4) {
+    for (size_t i = 0; i < MEMORY_SIZE; i += 4) {
         p.expectw(i, 0xcccccccc);
     }
 } AS("backward memset");
@@ -269,7 +361,7 @@ WITH {
         p.expectb(i, 0xad);
         p.expectb(i + 1, 0xde);
     }
-    for (int i = 0; i < MEMORY_SIZE; i += 4) {
+    for (size_t i = 0; i < MEMORY_SIZE; i += 4) {
         p.expectw(i, 0xdeaddead);
     }
 } AS("backward load/store");

@@ -6,6 +6,175 @@
 #include <tuple>
 
 /**
+ * facilitate handling data placement on bus
+ */
+
+// NOTE: this is deprecated. Use LoadOp::strobe and LoadOp::place instead.
+//
+// shift data according to addr's last two bits and generate corresponding strobe.
+// returns a tuple (strobe, value).
+template <word_t Strobe>
+[[deprecated]] constexpr auto parse_addr(addr_t addr, word_t data) -> std::tuple<word_t, word_t> {
+    int shamt = addr & 0x3;
+    word_t strobe = Strobe << shamt;
+    word_t value = data << (shamt << 3);
+    return std::make_tuple(strobe, value);
+}
+
+// an enum with member functions?
+class LoadOp {
+public:
+    enum Value {
+        DISCARD,
+        SIZE1_SHT0,
+        SIZE1_SHT8,
+        SIZE1_SHT16,
+        SIZE1_SHT24,
+        SIZE2_SHT0,
+        SIZE2_SHT16,
+        SIZE4_SHT0,
+    };
+
+    constexpr LoadOp() : value(DISCARD) {}
+    constexpr LoadOp(Value v) : value(v) {}
+    constexpr LoadOp(const LoadOp &rhs) : value(rhs.value) {}
+    constexpr LoadOp(LoadOp &&rhs) : value(rhs.value) {}
+    constexpr auto operator=(const LoadOp &rhs) {
+        value = rhs.value;
+        return *this;
+    }
+    constexpr auto operator=(LoadOp &&rhs) {
+        value = rhs.value;
+        return *this;
+    }
+    constexpr operator Value() {
+        return value;
+    }
+
+    // generate load op from addr's last two bits.
+    template <int Width>
+    static constexpr auto parse(addr_t addr) -> LoadOp {
+        static_assert(Width == 1 || Width == 2 || Width == 4);
+
+        if (Width == 4)
+            return SIZE4_SHT0;
+        if (Width == 2)
+            return addr & 0x2 ? SIZE2_SHT16 : SIZE2_SHT0;
+        if (Width == 1) {
+            switch (addr & 0x3) {
+                default:
+                case 0b00: return SIZE1_SHT0;
+                case 0b01: return SIZE1_SHT8;
+                case 0b10: return SIZE1_SHT16;
+                case 0b11: return SIZE1_SHT24;
+            }
+        }
+    }
+
+    // generate 4-bit strobe.
+    constexpr auto strobe() -> word_t {
+        switch (value) {
+            case SIZE4_SHT0:  return 0b1111;
+            case SIZE2_SHT16: return 0b1100;
+            case SIZE2_SHT0:  return 0b0011;
+            case SIZE1_SHT24: return 0b1000;
+            case SIZE1_SHT16: return 0b0100;
+            case SIZE1_SHT8:  return 0b0010;
+            case SIZE1_SHT0:  return 0b0001;
+
+            default:
+            case DISCARD:     return 0b0000;
+        }
+    }
+
+    // generate 32-bit mask.
+    constexpr auto mask() -> word_t {
+        switch (value) {
+            case SIZE4_SHT0:  return 0xffffffff;
+            case SIZE2_SHT16: return 0xffff0000;
+            case SIZE2_SHT0:  return 0x0000ffff;
+            case SIZE1_SHT24: return 0xff000000;
+            case SIZE1_SHT16: return 0x00ff0000;
+            case SIZE1_SHT8:  return 0x0000ff00;
+            case SIZE1_SHT0:  return 0x000000ff;
+
+            default:
+            case DISCARD:     return 0x00000000;
+        }
+    }
+
+    // apply reverse transformation to data (i.e. place on the data bus)
+    constexpr auto place(word_t data) -> word_t {
+        switch (value) {
+            default:
+            case SIZE4_SHT0:
+            case SIZE2_SHT0:
+            case SIZE1_SHT0:
+            case DISCARD:
+                return data;
+
+            case SIZE1_SHT24:
+                return data << 24;
+
+            case SIZE2_SHT16:
+            case SIZE1_SHT16:
+                return data << 16;
+
+            case SIZE1_SHT8:
+                return data << 8;
+        }
+    }
+
+    // apply transformation to data
+    constexpr auto apply(word_t data) -> word_t {
+        switch (value) {
+            case SIZE4_SHT0:
+            case SIZE2_SHT0:
+            case SIZE1_SHT0:
+                return data;
+
+            case SIZE1_SHT24:
+                return data >> 24;
+
+            case SIZE2_SHT16:
+            case SIZE1_SHT16:
+                return data >> 16;
+
+            case SIZE1_SHT8:
+                return data >> 8;
+
+            default:
+            case DISCARD:
+                return 0;
+        }
+    }
+
+    // apply transformation to data and then save to *dest.
+    constexpr void apply(word_t data, void *dest) {
+        data = apply(data);
+        switch (value) {
+            case SIZE4_SHT0:
+                *static_cast<uint32_t *>(dest) = data;
+
+            case SIZE2_SHT16:
+            case SIZE2_SHT0:
+                *static_cast<uint16_t *>(dest) = data;
+
+            case SIZE1_SHT24:
+            case SIZE1_SHT16:
+            case SIZE1_SHT8:
+            case SIZE1_SHT0:
+                *static_cast<uint8_t *>(dest) = data;
+
+            case DISCARD: /* do nothing */ break;
+        }
+    }
+
+private:
+    Value value;
+};
+
+/**
  * cache bus (CBus)
  */
 
@@ -194,10 +363,10 @@ public:
         return load(addr, MSIZE4);
     }
     auto loadh(addr_t addr) -> word_t {
-        return (load(addr, MSIZE2) >> ((addr & 0x3) << 3)) & 0xffff;
+        return LoadOp::parse<2>(addr).apply(load(addr, MSIZE2)) & 0xffff;
     }
     auto loadb(addr_t addr) -> word_t {
-        return (load(addr, MSIZE1) >> ((addr & 0x3) << 3)) & 0x00ff;
+        return LoadOp::parse<1>(addr).apply(load(addr, MSIZE1)) & 0xff;
     }
 
     void async_store(addr_t addr, AXISize size, word_t strobe, word_t data) {
@@ -209,12 +378,12 @@ public:
         async_store(addr, MSIZE4, 0xf, data);
     }
     void async_storeh(addr_t addr, word_t data) {
-        int shamt = addr & 0x3;
-        async_store(addr, MSIZE2, (0x3 << shamt) & 0xf, data << (shamt << 3));
+        auto op = LoadOp::parse<2>(addr);
+        async_store(addr, MSIZE2, op.strobe(), op.place(data));
     }
     void async_storeb(addr_t addr, word_t data) {
-        int shamt = addr & 0x3;
-        async_store(addr, MSIZE1, (0x1 << shamt) & 0xf, data << (shamt << 3));
+        auto op = LoadOp::parse<1>(addr);
+        async_store(addr, MSIZE1, op.strobe(), op.place(data));
     }
 
     // make store a virtual function, so it can be hacked by testbench framework.
@@ -227,12 +396,12 @@ public:
         store(addr, MSIZE4, 0xf, data);
     }
     void storeh(addr_t addr, word_t data) {
-        int shamt = addr & 0x3;
-        store(addr, MSIZE2, (0x3 << shamt) & 0xf, data << (shamt << 3));
+        auto op = LoadOp::parse<2>(addr);
+        store(addr, MSIZE2, op.strobe(), op.place(data));
     }
     void storeb(addr_t addr, word_t data) {
-        int shamt = addr & 0x3;
-        store(addr, MSIZE1, (0x1 << shamt) & 0xf, data << (shamt << 3));
+        auto op = LoadOp::parse<1>(addr);
+        store(addr, MSIZE1, op.strobe(), op.place(data));
     }
 
     /**
@@ -278,17 +447,6 @@ private:
 template <typename VModel, typename DBus>
 class DBusPipelineGen {
 public:
-    enum class LoadOp {
-        DISCARD,
-        SIZE1_SHT0,
-        SIZE1_SHT8,
-        SIZE1_SHT16,
-        SIZE1_SHT24,
-        SIZE2_SHT0,
-        SIZE2_SHT16,
-        SIZE4_SHT0
-    };
-
     DBusPipelineGen(VModel *_top, DBus *_dbus)
         : top(_top), dbus(_dbus) {
         assert(!busy());
@@ -375,10 +533,10 @@ public:
     }
     void loadh(addr_t addr, void *dest) {
         assert((addr & 0x1) == 0);
-        load(addr, MSIZE2, dest, parse_op<2>(addr));
+        load(addr, MSIZE2, dest, LoadOp::parse<2>(addr));
     }
     void loadb(addr_t addr, void *dest) {
-        load(addr, MSIZE1, dest, parse_op<1>(addr));
+        load(addr, MSIZE1, dest, LoadOp::parse<1>(addr));
     }
 
     void storew(addr_t addr, word_t data) {
@@ -387,14 +545,12 @@ public:
     }
     void storeh(addr_t addr, word_t data) {
         assert((addr & 0x1) == 0);
-        word_t strobe, value;
-        std::tie(strobe, value) = parse_addr<0b0011u>(addr, data);
-        store(addr, MSIZE2, strobe, value);
+        auto op = LoadOp::parse<2>(addr);
+        store(addr, MSIZE2, op.strobe(), op.place(data));
     }
     void storeb(addr_t addr, word_t data) {
-        word_t strobe, value;
-        std::tie(strobe, value) = parse_addr<0b0001u>(addr, data);
-        store(addr, MSIZE1, strobe, value);
+        auto op = LoadOp::parse<1>(addr);
+        store(addr, MSIZE1, op.strobe(), op.place(data));
     }
 
     void expectw(addr_t addr, word_t data) {
@@ -403,14 +559,12 @@ public:
     }
     void expecth(addr_t addr, word_t data) {
         assert((addr & 0x1) == 0);
-        word_t _, value;
-        std::tie(_, value) = parse_addr<0b0011u>(addr, data);
-        expect(addr, MSIZE2, value, parse_op<2>(addr));
+        auto op = LoadOp::parse<2>(addr);
+        expect(addr, MSIZE2, op.place(data), op);
     }
     void expectb(addr_t addr, word_t data) {
-        word_t _, value;
-        std::tie(_, value) = parse_addr<0b0001u>(addr, data);
-        expect(addr, MSIZE1, value, parse_op<1>(addr));
+        auto op = LoadOp::parse<1>(addr);
+        expect(addr, MSIZE1, op.place(data), op);
     }
 
     // wait for all pending and ongoing requests to finish.
@@ -449,46 +603,11 @@ private:
         }
 
         void apply_assert(word_t value) {
-            word_t mask;
-            switch (load_op) {
-                case LoadOp::SIZE4_SHT0:  mask = 0xffffffff; break;
-                case LoadOp::SIZE2_SHT16: mask = 0xffff0000; break;
-                case LoadOp::SIZE2_SHT0:  mask = 0x0000ffff; break;
-                case LoadOp::SIZE1_SHT24: mask = 0xff000000; break;
-                case LoadOp::SIZE1_SHT16: mask = 0x00ff0000; break;
-                case LoadOp::SIZE1_SHT8:  mask = 0x0000ff00; break;
-                case LoadOp::SIZE1_SHT0:  mask = 0x000000ff; break;
-                case LoadOp::DISCARD:     mask = 0x00000000; break;
-            }
-            assert(((data ^ value) & mask) == 0);
+            assert(((data ^ value) & load_op.mask()) == 0);
         }
 
         void apply_load(word_t value) {
-            switch (load_op) {
-                case LoadOp::SIZE4_SHT0:
-                    *static_cast<uint32_t *>(dest) = value;
-                    break;
-
-                case LoadOp::SIZE2_SHT16:
-                    value >>= 16;
-                case LoadOp::SIZE2_SHT0:
-                    *static_cast<uint16_t *>(dest) = value;
-                    break;
-
-                case LoadOp::SIZE1_SHT24:
-                    *static_cast<uint8_t *>(dest) = value >> 24;
-                    break;
-                case LoadOp::SIZE1_SHT16:
-                    *static_cast<uint8_t *>(dest) = value >> 16;
-                    break;
-                case LoadOp::SIZE1_SHT8:
-                    value >>= 8;
-                case LoadOp::SIZE1_SHT0:
-                    *static_cast<uint8_t *>(dest) = value;
-                    break;
-
-                case LoadOp::DISCARD: break;
-            }
+            load_op.apply(value, dest);
         }
     };
 
@@ -507,32 +626,5 @@ private:
         pending.push(t);
         if (!busy())
             issue(t);
-    }
-
-    template <word_t Strobe>
-    static auto parse_addr(addr_t addr, word_t data) -> std::tuple<word_t, word_t> {
-        int shamt = addr & 0x3;
-        word_t strobe = Strobe << shamt;
-        word_t value = data << (shamt << 3);
-        return std::make_tuple(strobe, value);
-    }
-
-    template <int Width>
-    static auto parse_op(addr_t addr) -> LoadOp {
-        static_assert(Width == 1 || Width == 2 || Width == 4);
-
-        if (Width == 4)
-            return LoadOp::SIZE4_SHT0;
-        if (Width == 2)
-            return addr & 0x2 ? LoadOp::SIZE2_SHT16 : LoadOp::SIZE2_SHT0;
-        if (Width == 1) {
-            switch (addr & 0x3) {
-                default:
-                case 0b00: return LoadOp::SIZE1_SHT0;
-                case 0b01: return LoadOp::SIZE1_SHT8;
-                case 0b10: return LoadOp::SIZE1_SHT16;
-                case 0b11: return LoadOp::SIZE1_SHT24;
-            }
-        }
     }
 };
