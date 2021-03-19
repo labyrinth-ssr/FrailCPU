@@ -31,6 +31,8 @@ Available commands:
 
 Available parameters:
   TARGET: e.g. refcpu/VTop, mycpu/VCacheTop.
+  TEST: which test under misc/nscscc to simulate. Default to empty string.
+  FST: where to save FST trace file.
   USE_CLANG: use LLVM clang and libc++.
   VSIM_ARGS: pass command line arguments to "vmain".
   VSIM_OPT: set to 1 to enable compiler optimization. ("-O2 -march=native -flto")
