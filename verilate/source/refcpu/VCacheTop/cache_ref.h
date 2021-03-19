@@ -22,5 +22,6 @@ private:
     VModelScope *scope;
     BlockMemory mem;
 
+    // fetch the cache line containing addr into buffer.
     void fetch(addr_t addr);
 };

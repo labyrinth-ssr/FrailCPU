@@ -184,7 +184,8 @@ public:
         async_load(addr, MSIZE1);
     }
 
-    auto load(addr_t addr, AXISize size) -> word_t {
+    // make load a virtual function, so it can be hacked by testbench framework.
+    virtual auto load(addr_t addr, AXISize size) -> word_t {
         async_load(addr, size);
         return await<true, true, false>();
     }
@@ -216,22 +217,22 @@ public:
         async_store(addr, MSIZE1, (0x1 << shamt) & 0xf, data << (shamt << 3));
     }
 
-    void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
+    // make store a virtual function, so it can be hacked by testbench framework.
+    virtual void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
         async_store(addr, size, strobe, data);
         await<true, true, false>();
     }
 
     void storew(addr_t addr, word_t data) {
-        async_storew(addr, data);
-        await<true, true, false>();
+        store(addr, MSIZE4, 0xf, data);
     }
     void storeh(addr_t addr, word_t data) {
-        async_storeh(addr, data);
-        await<true, true, false>();
+        int shamt = addr & 0x3;
+        store(addr, MSIZE2, (0x3 << shamt) & 0xf, data << (shamt << 3));
     }
     void storeb(addr_t addr, word_t data) {
-        async_storeb(addr, data);
-        await<true, true, false>();
+        int shamt = addr & 0x3;
+        store(addr, MSIZE1, (0x1 << shamt) & 0xf, data << (shamt << 3));
     }
 
     /**

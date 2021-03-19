@@ -22,16 +22,21 @@ static void run_defers() {
 }
 
 void run_testbench() {
-    int total = 0;
+    int count = 0;
+    int total = test_list.size();
     for (auto t : test_list) {
+        status_line("(%d/%d) running...", count, total);
+
         t->run();
-        total++;
+        count++;
+
+        status_line("(%d/%d) running...", count, total);
     }
 
-    if (total == 1)
+    if (count == 1)
         info(BLUE "(info)" RESET " 1 test passed.\n");
     else
-        info(BLUE "(info)" RESET " %d tests passed.\n", total);
+        info(BLUE "(info)" RESET " %d tests passed.\n", count);
 }
 
 void abort_testbench() {
@@ -48,9 +53,14 @@ ITestbench::ITestbench(const char *_name) : name(_name) {
 
 void ITestbench::run() {
     current_test = this;
+
     auto result = _run(pretest_hook, posttest_hook);
-    notify(GREEN "[OK]" RESET " %s", name);
-    notify(result == Skipped ? " (skipped)\n" : "\n");
+
+    if (result == Skipped)
+        notify(YELLOW "[--]" RESET " %s (skipped)\n", name);
+    else
+        notify(GREEN "[OK]" RESET " %s\n", name);
+
     current_test = nullptr;
 }
 

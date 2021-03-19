@@ -184,4 +184,5 @@ private:
 #define CMP_TO(reference) \
     using _TestbenchDBusWrapper = _TestbenchDBusWrapperGen<decltype(reference), DBus>; \
     _TestbenchDBusWrapper _testbench_dbus_wrapper(dbus, ref); \
-    auto dbus = &_testbench_dbus_wrapper;
+    auto dbus = &_testbench_dbus_wrapper; \
+    (void) dbus;  // to suppress "unused variable" warning

@@ -80,6 +80,11 @@ auto randi(T min_value, T max_value) -> T {
     return _rand<T, std::uniform_int_distribution<T>>(min_value, max_value);
 }
 
+template <typename T = word_t>
+auto randi() -> T {
+    return randi(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+}
+
 /**
  * basic logging
  *

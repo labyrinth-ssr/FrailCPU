@@ -30,8 +30,11 @@ void CacheRefModel::store(addr_t addr, AXISize size, word_t strobe, word_t data)
     debug("ref: store(0x%x, %d, %x, \"%08x\")\n", addr, 1 << size, strobe, data);
 
     fetch(addr);
-    buffer[addr % 64 / 4] = data;
-    mem.store(addr, data, STROBE_TO_MASK[strobe]);
+
+    auto mask = STROBE_TO_MASK[strobe];
+    auto &value = buffer[addr % 64 / 4];
+    value = (data & mask) | (value & ~mask);
+    mem.store(addr, data, mask);
 }
 
 void CacheRefModel::check_internal() {

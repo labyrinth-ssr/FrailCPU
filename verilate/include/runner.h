@@ -9,6 +9,18 @@
 template <typename TModel>
 class ProgramRunner final {
 public:
+    struct {
+        std::string fst_trace_path = "" /*"/tmp/trace.fst"*/;
+        std::string text_trace_path = "" /*"/tmp/trace.txt"*/;
+        std::string ref_trace_path = "./misc/nscscc/func_test.txt";
+        std::string memfile_path = "./misc/nscscc/func_test.coe";
+        int status_countdown = 10000;
+        bool status_enable = true;
+        bool debug_enable = false;
+        float p_disable = 0.0f;
+        bool force_diff = false;
+    } args;
+
     void no_init_memory() {
         _init_memory = false;
     }
@@ -85,16 +97,4 @@ protected:
     bool _init_text_trace = true;
     bool _init_fst_trace = true;
     bool _init_soc = true;
-
-    struct {
-        std::string fst_trace_path = "" /*"/tmp/trace.fst"*/;
-        std::string text_trace_path = "" /*"/tmp/trace.txt"*/;
-        std::string ref_trace_path = "./misc/nscscc/func_test.txt";
-        std::string memfile_path = "./misc/nscscc/func_test.coe";
-        int status_countdown = 10000;
-        bool status_enable = true;
-        bool debug_enable = false;
-        float p_disable = 0.0f;
-        bool force_diff = false;
-    } args;
 };

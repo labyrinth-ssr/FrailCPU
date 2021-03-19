@@ -1,5 +1,7 @@
-#include "stupid.h"
+#include "common.h"
 #include "testbench.h"
+
+#include "stupid.h"
 
 namespace _testbench {
 
@@ -11,6 +13,10 @@ CacheRefModel *ref;
 PRETEST_HOOK [] {
     top->reset();
 };
+
+/**
+ * basic tests
+ */
 
 WITH {
     dbus->async_load(0xc, MSIZE4);
@@ -29,6 +35,23 @@ WITH {
     dbus->store(0, MSIZE4, 0b1111, 0x2048ffff);
     assert(dbus->load(0, MSIZE4) == 0x2048ffff);
 } AS("synchronized");
+
+WITH {
+    // S iterates over 0b0000 to 0b1111.
+    std::vector<word_t> a;  // to store the correct value
+    a.resize(16);
+
+    for (int S = 0; S < 16; S++) {
+        auto value = randi();  // equivalent to randi<word_t>, returns a 32 bit random unsigned integer.
+        dbus->store(0x100 + 4 * S, MSIZE4, S, value);
+        a[S] = value & STROBE_TO_MASK[S];  // STROBE_TO_MASK is defined in common.h
+    }
+
+    for (int i = 0; i < 16; i++) {
+        auto got = dbus->load(0x100 + 4 * i, MSIZE4);
+        assert(got == a[i]);
+    }
+} AS("strobe");
 
 // this is an example of DBusPipeline.
 // all operations performed by pipeline are asynchronous, unless
@@ -107,11 +130,50 @@ WITH SKIP {
     assert(one + one == three);  // trust me, it must fail
 } AS("akarin!");
 
-WITH DEBUG CMP_TO(ref) {
-    for (int i = 0; i < 32; i++) {
-        dbus->store(4 * i, MSIZE4, 0b1111, 0x19260817);
-        dbus->load(4 * i, MSIZE4);
+/**
+ * model comparing
+ *
+ * you can use synchronous load/store functions in dbus.
+ * we have hacked these functions to check the results with your
+ * reference model during invocation.
+ */
+
+constexpr size_t CMP_SCAN_SIZE = 32 * 1024;  // 32 KiB
+
+WITH CMP_TO(ref) {
+    for (size_t i = 0; i < CMP_SCAN_SIZE / 4; i++) {
+        dbus->storew(4 * i, randi<uint32_t>());
+        dbus->loadw(4 * i);
     }
-} AS("compare");
+} AS("cmp: word");
+
+WITH CMP_TO(ref) {
+    for (size_t i = 0; i < CMP_SCAN_SIZE / 2; i++) {
+        dbus->storeh(2 * i, randi<uint16_t>());
+        dbus->loadh(2 * i);
+    }
+} AS("cmp: halfword");
+
+WITH CMP_TO(ref) {
+    for (size_t i = 0; i < CMP_SCAN_SIZE; i++) {
+        dbus->storeb(i, randi<uint8_t>());
+        dbus->loadh(i);
+    }
+} AS("cmp: byte");
+
+WITH CMP_TO(ref) {
+    constexpr int T = 65536;
+    for (int i = 0; i < T; i++) {
+        addr_t addr = randi<addr_t>(0, MEMORY_SIZE / 8) * 4;  // random address within 512 KiB region
+        dbus->storew(addr, randi());
+        dbus->loadw(addr);
+    }
+} AS("cmp: random");
+
+/**
+ * pressure tests or benchmarks
+ */
+
+// TODO
 
 }
