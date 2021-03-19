@@ -275,6 +275,31 @@ WITH {
 } AS("backward load/store");
 
 WITH {
+    constexpr int T = 1000000;
+    constexpr int SIZE = 1024;
+
+    std::vector<word_t> ref;
+    ref.resize(SIZE);
+
+    int i = 0;
+    auto p = DBusPipeline(top, dbus);
+    for (int _ = 0; _ < T; _++) {
+        int op = randi(0, 1);
+
+        if (op == 0) {
+            // store
+            auto value = randi();
+            ref[i] = value;
+            p.storew(4 * i, value);
+        } else {
+            p.expectw(4 * i, ref[i]);
+        }
+
+        i = (i + randi(0, 64)) % SIZE;
+    }
+} AS("random step");
+
+WITH {
     std::vector<uint8_t> ref;
     ref.resize(MEMORY_SIZE);
 
