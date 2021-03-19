@@ -247,8 +247,15 @@ SimpleTimer::~SimpleTimer() {
     t_end = clock::now();
     auto span = std::chrono::duration<double>(t_end - t_start).count();
 
-    notify(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf KHz).\n",
-        _cycles, _cycles / span / 1000);
+    bool use_mhz = false;
+    auto rate = _cycles / span / 1e3;
+    if (rate >= 1e3 - 1) {
+        use_mhz = true;
+        rate /= 1e3;
+    }
+
+    notify(BLUE "(info)" RESET " testbench finished in %d cycles (%.3lf %s).\n",
+        _cycles, rate, use_mhz ? "MHz" : "KHz");
 
 }
 

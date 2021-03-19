@@ -294,6 +294,11 @@ public:
         assert(!busy());
     }
 
+    // implicit tail fence
+    ~DBusPipelineGen() {
+        fence();
+    }
+
     bool busy() const {
         return dbus->valid();
     }

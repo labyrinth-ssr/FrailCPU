@@ -111,6 +111,10 @@ endif
 
 endif
 
+ifneq ($(FST),)
+override VSIM_ARGS += -f $(FST)
+endif
+
 .PHONY: vbuild vsim vsim-gdb
 
 vbuild: $(VMAIN)

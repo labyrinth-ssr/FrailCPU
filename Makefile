@@ -19,6 +19,7 @@ help:
 	@echo 'Available parameters:'
 	@echo '  TARGET: e.g. refcpu/VTop, mycpu/VCacheTop.'
 	@echo '  TEST: which test under misc/nscscc to simulate. Default to empty string.'
+	@echo '  FST: where to save FST trace file.'
 	@echo '  USE_CLANG: use LLVM clang and libc++.'
 	@echo '  VSIM_ARGS: pass command line arguments to "vmain".'
 	@echo '  VSIM_OPT: set to 1 to enable compiler optimization. ("-O2 -march=native -flto")'
@@ -33,6 +34,7 @@ clean:
 # make arguments
 TARGET ?= refcpu/VTop
 TEST ?=
+FST ?=
 USE_CLANG ?= 0
 VSIM_ARGS ?=
 VSIM_OPT ?= 0

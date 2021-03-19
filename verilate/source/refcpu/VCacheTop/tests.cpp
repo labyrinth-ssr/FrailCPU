@@ -146,7 +146,8 @@ WITH TRACE /*DEBUG*/ {
         assert(value == 0x2048ffff);
     }
 
-    p.fence(0);
+    // NOTE: a p.fence() will be called implicitly when p is being
+    //       destructed.
 } AS("ad hoc");
 
 // this test is explicitly marked with "SKIP".
@@ -209,7 +210,165 @@ WITH {
     for (addr_t i = 0; i < MEMORY_SIZE / 4; i++) {
         p.expectw(4 * i, 0xcccccccc);
     }
-    p.fence();
 } AS("memset");
+
+WITH {
+    auto p = DBusPipeline(top, dbus);
+
+    addr_t MID = MEMORY_SIZE / 2;
+    for (addr_t i = MID; i < MEMORY_SIZE; i += 4) {
+        p.storew(i, randi());
+    }
+
+    word_t buffer[32];
+    for (addr_t i = 0; i < MID; i += sizeof(buffer)) {
+        for (addr_t j = 0; j < 32; j++) {
+            p.loadw(MID + i + 4 * j, buffer + j);
+        }
+
+        p.fence();
+
+        for (addr_t j = 0; j < 32; j++) {
+            p.storew(i + 4 * j, buffer[j]);
+        }
+    }
+
+    for (addr_t i = 0; i < MID; i += 4) {
+        word_t expected;
+        p.loadw(MID + i, &expected);
+        p.fence();
+        p.expectw(i, expected);
+    }
+} AS("memcpy");
+
+WITH {
+    auto p = DBusPipeline(top, dbus);
+    for (addr_t i = 0; i < MEMORY_SIZE; i += 4) {
+        auto value = randi();
+        p.storew(i, value);
+        p.expectw(i, value);
+    }
+} AS("load/store repeat");
+
+WITH {
+    auto p = DBusPipeline(top, dbus);
+
+    for (int i = MEMORY_SIZE - 1; i >= 0; i--) {
+        p.storeb(i, 0xcc);
+    }
+    for (int i = 0; i < MEMORY_SIZE; i += 4) {
+        p.expectw(i, 0xcccccccc);
+    }
+} AS("backward memset");
+
+WITH {
+    auto p = DBusPipeline(top, dbus);
+
+    for (int i = MEMORY_SIZE - 2; i >= 0; i -= 2) {
+        p.storeh(i, 0xdead);
+        p.expectb(i, 0xad);
+        p.expectb(i + 1, 0xde);
+    }
+    for (int i = 0; i < MEMORY_SIZE; i += 4) {
+        p.expectw(i, 0xdeaddead);
+    }
+} AS("backward load/store");
+
+WITH {
+    std::vector<uint8_t> ref;
+    ref.resize(MEMORY_SIZE);
+
+    constexpr int T = 1000000;
+
+    auto p = DBusPipeline(top, dbus);
+    for (int _ = 0; _ < T; _++) {
+        int size = 1 << randi(0, 2);
+        int op = randi(0, 1);
+        addr_t addr = randi(0ul, MEMORY_SIZE / size - 1) * size;
+
+        debug(
+            "random: %s @addr=0x%x, size=%d\n",
+            op ? "load" : "store", addr, size
+        );
+
+        if (op == 0) {
+            // store
+            switch (size) {
+                case 1: {
+                    auto value = randi<uint8_t>();
+                    ref[addr] = value;
+                    p.storeb(addr, value);
+                } break;
+
+                case 2: {
+                    auto value = randi<uint16_t>();
+                    ref[addr + 0] = (value >> 0) & 0xff;
+                    ref[addr + 1] = (value >> 8) & 0xff;
+                    p.storeh(addr, value);
+                } break;
+
+                case 4: {
+                    auto value = randi<uint32_t>();
+                    for (int i = 0; i < 4; i++) {
+                        ref[addr + i] = (value >> (8 * i)) & 0xff;
+                    }
+                    p.storew(addr, value);
+                } break;
+            }
+        } else {
+            // load
+            switch (size) {
+                case 1: {
+                    p.expectb(addr, ref[addr]);
+                } break;
+
+                case 2: {
+                    p.expecth(addr, ref[addr] | (ref[addr + 1] << 8));
+                } break;
+
+                case 3: {
+                    word_t value = 0;
+                    for (int i = 0; i < 4; i++) {
+                        value |= ref[addr + i] << (8 * i);
+                    }
+                    p.expectw(addr, value);
+                } break;
+            }
+        }
+    }
+} AS("random load/store");
+
+WITH {
+    std::vector<uint8_t> ref;
+    ref.resize(MEMORY_SIZE);
+
+    constexpr int T = 100000;
+
+    auto p = DBusPipeline(top, dbus);
+    for (int _ = 0; _ < T; _++) {
+        int n = randi(1, 128);
+        int s = randi(0ul, MEMORY_SIZE - n);
+        int t = randi(0, 1);
+
+        debug(
+            "block: %s @start=0x%x, n=%d\n",
+            t ? "load" : "store", s, n
+        );
+
+        if (t == 0) {
+            // store
+            for (int i = 0; i < n; i++) {
+                auto value = randi<uint8_t>();
+                ref[s + i] = value;
+                p.storeb(s + i, value);
+            }
+        } else {
+            // load
+            for (int i = 0; i < n; i++) {
+                p.expectb(s + i, ref[s + i]);
+            }
+        }
+    }
+} AS("random block load/store");
 
 }

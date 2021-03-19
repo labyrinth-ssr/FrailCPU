@@ -26,13 +26,12 @@ void run_testbench() {
     int total = test_list.size();
 
     for (auto t : test_list) {
+        count++;
         auto _ = StatusReporter(1000, [count, total, t] {
             status_line("(%d/%d) running \"%s\"...", count, total, t->name);
         });
 
         t->run();
-
-        count++;
     }
 
     if (count == 1)

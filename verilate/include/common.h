@@ -128,7 +128,7 @@ void log_separator();
 
 /**
  * simple timer
- * it displays simulation rates in KHz.
+ * it displays simulation rates in KHz/MHz.
  */
 
 class SimpleTimer {
