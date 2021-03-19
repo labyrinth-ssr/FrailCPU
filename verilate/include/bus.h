@@ -154,25 +154,92 @@ public:
         top->eval();
     }
 
+    /**
+     * asynchronous/synchronous load/store interface
+     *
+     * asynchronous version only issue the corresponding request to dbus
+     * and does not handle data placement when the data is ready.
+     *
+     * synchronous version will handle data placement by shifting right
+     * when return to the caller.
+     *
+     * both versions DO NOT check address alignment.
+     * as a result, you can issue unaligned memory access as long as your
+     * RTL memory system support this.
+     * if you want to ensure address alignment, please use DBusPipeline.
+     */
+
     void async_load(addr_t addr, AXISize size) {
         scope->dbus_issue_load(addr, size, ports.req);
         top->eval();
     }
+
+    void async_loadw(addr_t addr) {
+        async_load(addr, MSIZE4);
+    }
+    void async_loadh(addr_t addr) {
+        async_load(addr, MSIZE2);
+    }
+    void async_loadb(addr_t addr) {
+        async_load(addr, MSIZE1);
+    }
+
     auto load(addr_t addr, AXISize size) -> word_t {
         async_load(addr, size);
         return await<true, true, false>();
     }
+
+    auto loadw(addr_t addr) -> word_t {
+        return load(addr, MSIZE4);
+    }
+    auto loadh(addr_t addr) -> word_t {
+        return (load(addr, MSIZE2) >> ((addr & 0x3) << 3)) & 0xffff;
+    }
+    auto loadb(addr_t addr) -> word_t {
+        return (load(addr, MSIZE1) >> ((addr & 0x3) << 3)) & 0x00ff;
+    }
+
     void async_store(addr_t addr, AXISize size, word_t strobe, word_t data) {
         scope->dbus_issue_store(addr, size, strobe, data, ports.req);
         top->eval();
     }
+
+    void async_storew(addr_t addr, word_t data) {
+        async_store(addr, MSIZE4, 0xf, data);
+    }
+    void async_storeh(addr_t addr, word_t data) {
+        int shamt = addr & 0x3;
+        async_store(addr, MSIZE2, (0x3 << shamt) & 0xf, data << (shamt << 3));
+    }
+    void async_storeb(addr_t addr, word_t data) {
+        int shamt = addr & 0x3;
+        async_store(addr, MSIZE1, (0x1 << shamt) & 0xf, data << (shamt << 3));
+    }
+
     void store(addr_t addr, AXISize size, word_t strobe, word_t data) {
         async_store(addr, size, strobe, data);
         await<true, true, false>();
     }
 
-    // return the data at the last handshake
-    // max_count is the maximum number of ticks
+    void storew(addr_t addr, word_t data) {
+        async_storew(addr, data);
+        await<true, true, false>();
+    }
+    void storeh(addr_t addr, word_t data) {
+        async_storeh(addr, data);
+        await<true, true, false>();
+    }
+    void storeb(addr_t addr, word_t data) {
+        async_storeb(addr, data);
+        await<true, true, false>();
+    }
+
+    /**
+     * return the data at the last handshake
+     * max_count is the maximum number of ticks
+     * await doesn't know type of request you have issued, so you
+     * have to handle data placement on yourself.
+     */
     template <bool WaitDataOk = true, bool WaitAddrOk = true, bool EvalFirst = true>
     auto await(uint64_t max_count = UINT64_MAX) -> word_t {
         uint32_t remain = 0;
