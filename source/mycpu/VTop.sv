@@ -9,7 +9,7 @@ module VTop (
 
     input i6 ext_int
 );
-    `include "cbus_decl"
+    `include "bus_decl"
 
     ibus_req_t  ireq;
     ibus_resp_t iresp;

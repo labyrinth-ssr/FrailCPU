@@ -1,4 +1,3 @@
-#include "defs.h"
 #include "refcpu.h"
 
 #include "thirdparty/nameof.hpp"
@@ -144,7 +143,6 @@ void RefCPU::run() {
     clk = 0;
     resetn = 1;
     eval();
-    print_status();
 
     auto worker = StatusReporter(100, [this] {
         print_status();
@@ -163,7 +161,7 @@ void RefCPU::run() {
     }
 
     worker.stop();
-
+    assert(current_cycle <= MAX_CYCLE);
     diff_eof();
     final();
 
