@@ -4,6 +4,9 @@
 #include <vector>
 #include <random>
 #include <chrono>
+#include <thread>
+#include <functional>
+
 #include <cassert>
 #include <cstdint>
 
@@ -12,7 +15,6 @@
 // to control initialization order of global variables
 #define INIT_PRIORITY(value) \
     __attribute__ ((init_priority(value)))
-
 
 /**
  * typedefs
@@ -114,7 +116,6 @@ auto randi() -> T {
 void enable_logging(bool enable = true);
 void enable_debugging(bool enable = true);
 void enable_status_line(bool enable = true);
-void set_status_countdown(int countdown);
 
 void debug(const char *message, ...);
 void info(const char *message, ...);
@@ -142,6 +143,25 @@ private:
 
     clock::time_point t_start, t_end;
     uint64_t _cycles = 0;
+};
+
+/**
+ * report status in a separate thread.
+ */
+
+class StatusReporter {
+public:
+    using WorkerFn = std::function<void(void)>;
+
+    StatusReporter(uint64_t _interval_in_ms, const WorkerFn &fn);
+    ~StatusReporter();
+
+    void stop();
+
+private:
+    bool stopped;
+    volatile bool *flag;
+    std::thread worker;
 };
 
 /**

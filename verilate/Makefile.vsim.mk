@@ -41,7 +41,7 @@ CXX_WARNINGS = \
 	-Wno-unused-const-variable \
 	-Wno-implicit-fallthrough
 
-CXX_LINKS = -lz
+CXX_LINKS = -lz -lpthread
 
 # link to filesystem library to make legacy compilers happy.
 ifeq ($(USE_CLANG), 1)

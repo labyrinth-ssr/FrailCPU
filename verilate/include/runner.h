@@ -14,7 +14,6 @@ public:
         std::string text_trace_path = "" /*"/tmp/trace.txt"*/;
         std::string ref_trace_path = "./misc/nscscc/func_test.txt";
         std::string memfile_path = "./misc/nscscc/func_test.coe";
-        int status_countdown = 10000;
         bool status_enable = true;
         bool debug_enable = false;
         float p_disable = 0.0f;
@@ -50,7 +49,6 @@ public:
         }
 
         app.add_flag("--status,!--no-status", args.status_enable, "Show status line.");
-        app.add_option("--status-count", args.status_countdown, "Slow down status line update.");
         app.add_flag("--debug,!--no-debug", args.debug_enable, "Show debug messages.");
         app.add_option("-p,--p-disable", args.p_disable, "Probability that CBusDevice pause in a cycle. Set to 0 to disable random delay.");
         app.add_flag("--force-diff,!--no-force-diff", args.force_diff, "Ignore OPEN_TRACE bit from Confreg.");
@@ -60,7 +58,6 @@ public:
         enable_logging();
         enable_status_line(args.status_enable);
         enable_debugging(args.debug_enable);
-        set_status_countdown(args.status_countdown);
 
         top = std::make_unique<TModel>();
         top->p_disable = args.p_disable;

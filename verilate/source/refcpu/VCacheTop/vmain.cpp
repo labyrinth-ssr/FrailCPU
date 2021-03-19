@@ -18,7 +18,6 @@ int vmain(int argc, char *argv[]) {
     hook_signal(SIGABRT, on_abort);
     hook_signal(SIGINT, on_error);
 
-    app.args.status_countdown = 1;
     app.no_init_memory();
     app.no_init_text_trace();
     app.no_soc();

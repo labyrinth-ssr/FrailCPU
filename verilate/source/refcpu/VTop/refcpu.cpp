@@ -146,6 +146,10 @@ void RefCPU::run() {
     eval();
     print_status();
 
+    auto worker = StatusReporter(100, [this] {
+        print_status();
+    });
+
     for (
         current_cycle = 1;
 
@@ -156,8 +160,9 @@ void RefCPU::run() {
         current_cycle++
     ) {
         tick();
-        print_status();
     }
+
+    worker.stop();
 
     diff_eof();
     final();

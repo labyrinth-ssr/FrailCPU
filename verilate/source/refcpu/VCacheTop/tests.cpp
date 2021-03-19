@@ -30,6 +30,32 @@ WITH {
     assert(dbus->rdata() == 0);
 } AS("reset");
 
+WITH {
+    for (int i = 0; i < 4096; i++) {
+        dbus->async_loadw(4 * i);
+        dbus->clear();
+        top->eval();
+
+        for (int j = 0; j < 256; j++) {
+            assert(!dbus->valid());
+            top->tick();
+        }
+    }
+} AS("fake load");
+
+WITH {
+    for (int i = 0; i < 4096; i++) {
+        dbus->async_storew(4 * i, 0xdeadbeef);
+        dbus->clear();
+        top->eval();
+
+        for (int j = 0; j < 256; j++) {
+            assert(!dbus->valid());
+            top->tick();
+        }
+    }
+} AS("fake store");
+
 // both dbus->store and dbus->load wait for your model to complete
 WITH {
     dbus->store(0, MSIZE4, 0b1111, 0x2048ffff);
@@ -174,6 +200,16 @@ WITH CMP_TO(ref) {
  * pressure tests or benchmarks
  */
 
-// TODO
+WITH {
+    auto p = DBusPipeline(top, dbus);
+
+    for (addr_t i = 0; i < MEMORY_SIZE / 4; i++) {
+        p.storew(4 * i, 0xcccccccc);
+    }
+    for (addr_t i = 0; i < MEMORY_SIZE / 4; i++) {
+        p.expectw(4 * i, 0xcccccccc);
+    }
+    p.fence();
+} AS("memset");
 
 }

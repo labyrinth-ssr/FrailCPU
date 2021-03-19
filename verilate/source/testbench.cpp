@@ -24,13 +24,15 @@ static void run_defers() {
 void run_testbench() {
     int count = 0;
     int total = test_list.size();
+
     for (auto t : test_list) {
-        status_line("(%d/%d) running...", count, total);
+        auto _ = StatusReporter(1000, [count, total, t] {
+            status_line("(%d/%d) running \"%s\"...", count, total, t->name);
+        });
 
         t->run();
-        count++;
 
-        status_line("(%d/%d) running...", count, total);
+        count++;
     }
 
     if (count == 1)

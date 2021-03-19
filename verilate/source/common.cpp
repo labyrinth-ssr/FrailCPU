@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include <mutex>
 #include <cstdio>
 #include <cassert>
 #include <cstdarg>
@@ -142,12 +143,11 @@ auto parse_memory_file(const std::string &path) -> ByteSeq {
  */
 
 static struct {
+    std::mutex lock;
     bool debug_enabled;
     bool log_enabled;
     bool status_enabled;
     bool in_status_line;
-    int status_count;
-    int status_count_max;
     std::string char_buffer;
 } _ctx;
 
@@ -171,12 +171,8 @@ void enable_status_line(bool enable) {
     _ctx.status_enabled = enable;
 }
 
-void set_status_countdown(int countdown) {
-    assert(countdown >= 0);
-    _ctx.status_count_max = countdown;
-}
-
 #define VPRINT(fp) { \
+    std::lock_guard<std::mutex> guard(_ctx.lock); \
     check_status_line(); \
     va_list args; \
     va_start(args, message); \
@@ -205,6 +201,8 @@ void notify(const char *message, ...) {
 }
 
 void notify_char(char c) {
+    std::lock_guard<std::mutex> guard(_ctx.lock);
+
     if (_ctx.status_enabled) {
         auto &buf = _ctx.char_buffer;
         buf.push_back(c);
@@ -220,13 +218,9 @@ void notify_char(char c) {
 }
 
 void status_line(const char *message, ...) {
-    if (_ctx.status_count > 0) {
-        _ctx.status_count--;
-        return;
-    } else
-        _ctx.status_count = _ctx.status_count_max;
-
     if (_ctx.status_enabled) {
+        std::lock_guard<std::mutex> guard(_ctx.lock);
+
         va_list args;
         va_start(args, message);
 
@@ -260,4 +254,29 @@ SimpleTimer::~SimpleTimer() {
 
 void SimpleTimer::update(uint64_t cycles) {
     _cycles = cycles;
+}
+
+StatusReporter::StatusReporter(uint64_t interval_in_ms, const WorkerFn &fn)
+    : stopped(false),
+      flag(new bool(false)) {
+    auto ptr = flag;
+    worker = std::thread([interval_in_ms, ptr, fn] {
+        while (!(*ptr)) {
+            fn();
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval_in_ms));
+        }
+
+        delete ptr;
+    });
+    worker.detach();
+}
+
+StatusReporter::~StatusReporter() {
+    if (!stopped)
+        stop();
+}
+
+void StatusReporter::stop() {
+    stopped = true;
+    *flag = true;
 }
