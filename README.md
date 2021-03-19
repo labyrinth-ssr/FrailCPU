@@ -114,10 +114,10 @@ If you need more recent version of Verilator, please refer to <https://www.verip
 
 ## NSCSCC Performance Test
 
-By default, `make vsim` will simulate RefCPU with NSCSCC functional test. We provide memory initialization files (`.coe`) of performance tests from NSCSCC. For example, if you want to run CoreMark on verilated models, you can specify the `--memfile`/`-m` and set `--ref-trace`/`-r` to empty string to disable text trace diff.
+By default, `make vsim` will simulate RefCPU with NSCSCC functional test. We provide memory initialization files (`.coe`) of performance tests from NSCSCC. For example, if you want to run CoreMark on verilated models, you can specify the `--memfile`/`-m` and set `--ref-trace`/`-r` to empty string to disable text trace diff. Moreover, you can set `TEST` make argument to specify which `.coe` file (under directory `misc/nscscc`) to simulate.
 
 ```shell
-make vsim -j VSIM_ARGS='--no-status -m ./misc/nscscc/coremark.coe -r ""'
+make vsim -j TEST=coremark VSIM_ARGS="--no-status"
 ```
 
-See `make vsim VSIM_ARGS='-h'` for more details.
+See `make help` and `make vsim VSIM_ARGS='-h'` for more details.
