@@ -1,5 +1,27 @@
 # 实验 2：总线仲裁与延时
 
+## 仲裁
+
+多个独立运行的实体同时访问共享资源时，往往需要通过仲裁决定访问的先后顺序。
+
+在实验 1 中，CPU 有两套访存接口：一个用于取指，另一个用于读写数据。`test1_naive` 将指令内存和数据内存分开了，从而能够同时支持两边的访问。现实生活中的计算机架构一般遵循 von Neumann 架构，即指令和数据放在同一个内存中。此时需要内存有两个读写端口。
+
+但是多端口的存储单元往往非常消耗资源（例如，6 端口寄存器文件）。现代的 CPU 的核心数量越来越多，提供多端口的存储单元非常不现实。此外，如果有两个或者更多的端口同时写入同一个位置时，我们需要规定谁的写入是有效的，此时发生了写入冲突。
+
+解决这一问题的一种方法是仲裁，即当有多个实体同时访问同一个对象时，允许其中一个进行访问，要求其它的实体等待。这个过程类似于加锁互斥。
+
+`test1` 到 `test4` 的内存都只有一个端口，因此需要进行仲裁。
+
+## 延时
+
+仲裁会导致等待，因此我们不能再期望数据会在固定的时间内返回。此外，现代 CPU 的主频和内存频率往往不同，并且 CPU 为了降低功耗通常会动态调频，因此增加了访存需要的周期数的不确定性。下表是 Intel 的 Skylake 架构中 cache 的各项参数，来自 “Intel 64 and IA-32 Architectures Optimization Reference Manual”：
+
+![Skylake 的 cache 参数](../asset/lab2/skylake-cache.png)
+
+可以看到各级缓存的访问所需要的周期数都是不一样的，并且都不是固定的。
+
+## DBus
+
 TODO
 
 ## 实验内容
@@ -146,7 +168,7 @@ make vsim TARGET=mycpu/VTop TEST=test1 -j
 (info) testbench finished in 337516 cycles (601.973 KHz).
 ```
 
-### *记录波形图
+### 记录波形图
 
 如果你不幸没有通过 `vmain` 的测试，看到了类似于下面的报错：
 
@@ -218,10 +240,10 @@ gtkwave build/trace.fst
 
 **2021 年 4 月 4 日 23:59:59**
 
-## 拓展内容
+## *拓展内容
 
-* 阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，了解并总结 AXI 总线的工作方式。
-* 龙芯杯的测试框架中有一个叫做 CONFREG 的模块，用来控制 FPGA 上的各种硬件资源，例如 LED 数码管、按钮。CONFREG 是一个 memory-mapped 设备。其中地址 `0xbfaffff0` 是一个简化的 UART 打印接口，往这个地址写入 ASCII 码就可在仿真中输出文字。特别的，如果写入的值是 `0xff`，就会立即停止仿真。
+* 张三在 `source/util/CBusMultiplexer.sv` 中实现了自己的仲裁器，然而过不了仿真。请指出 `CBusMultiplexer` 存在的问题。
+* 龙芯杯的测试框架中有一个叫做 CONFREG 的模块[^confreg]，用来控制 FPGA 上的各种硬件资源，例如 LED 数码管、按钮。CONFREG 是一个 memory-mapped 设备。其中地址 `0xbfaffff0` 是一个简化的 UART 打印接口，往这个地址写入 ASCII 码就可在仿真中输出文字。特别的，如果写入的值是 `0xff`，就会立即停止仿真。
 
   `misc/hello` 目录下有一个示例汇编程序 `hello.s`，它会打印 “Hello, world!”。请尝试将这段汇编代码编译成 `.coe` 文件，然后使用
 
@@ -237,10 +259,13 @@ gtkwave build/trace.fst
   (info) testbench finished in 652 cycles (515.101 KHz).
   ```
 
-  至此，你可以在你的 CPU 上运行更加复杂的程序了。
+  至此，你可以尝试在你的 CPU 上运行更加复杂的程序了。
+* 阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，了解并总结 AXI 总线的工作方式。
 
 ---
 
 [^vtop]: `VTop` 用的是将在实验 3 中介绍的 CBus（cache bus），是 AXI 总线的简化。Verilator 仿真的顶层模块和 Vivado 中不同的原因之一就是 CBus 模拟起来简单一些 `:)`
 
 [^pc-type]: 类型是 32 位的 `uint32_t`。
+
+[^confreg]: 我们猜测这是 “configuration registers” 的缩写。
