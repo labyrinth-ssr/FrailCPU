@@ -148,7 +148,7 @@ make vsim TARGET=mycpu/VTop TEST=test1 -j
 
 ### *记录波形图
 
-如果你不幸没有通过 Verilator 的测试，看到了类似于下面的报错：
+如果你不幸没有通过 `vmain` 的测试，看到了类似于下面的报错：
 
 ```plaintext
 TextDiff: on line 18:
@@ -220,7 +220,24 @@ gtkwave build/trace.fst
 
 ## 拓展内容
 
-阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，了解并总结 AXI 总线的工作方式。
+* 阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，了解并总结 AXI 总线的工作方式。
+* 龙芯杯的测试框架中有一个叫做 CONFREG 的模块，用来控制 FPGA 上的各种硬件资源，例如 LED 数码管、按钮。CONFREG 是一个 memory-mapped 设备。其中地址 `0xbfaffff0` 是一个简化的 UART 打印接口，往这个地址写入 ASCII 码就可在仿真中输出文字。特别的，如果写入的值是 `0xff`，就会立即停止仿真。
+
+  `misc/hello` 目录下有一个示例汇编程序 `hello.s`，它会打印 “Hello, world!”。请尝试将这段汇编代码编译成 `.coe` 文件，然后使用
+
+  ```shell
+  make vsim -j TARGET=mycpu/VTop VSIM_ARGS="-m [.coe 文件路径]"
+  ```
+
+  在你的 CPU 上运行这个程序。如果没有出错，`vmain` 最后会输出：
+
+  ```plaintext
+  ./build/gcc/mycpu/VTop/vmain -m misc/hello/hello.coe
+  Hello, world!
+  (info) testbench finished in 652 cycles (515.101 KHz).
+  ```
+
+  至此，你可以在你的 CPU 上运行更加复杂的程序了。
 
 ---
 
