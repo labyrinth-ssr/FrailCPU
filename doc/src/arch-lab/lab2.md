@@ -10,7 +10,7 @@
 
 解决这一问题的一种方法是仲裁，即当有多个实体同时访问同一个对象时，允许其中一个进行访问，要求其它的实体等待。这个过程类似于加锁互斥。
 
-`test1` 到 `test4` 的内存都只有一个端口，因此需要进行仲裁。
+`test1`~`test4` 的内存都只有一个端口，因此需要进行仲裁。
 
 ## 延时
 
@@ -21,6 +21,35 @@
 可以看到各级缓存的访问所需要的周期数都是不一样的，并且都不是固定的。
 
 ## DBus
+
+DBus 是一个单向握手协议，其定义在 `common.svh` 中：
+
+```verilog
+typedef struct packed {
+    logic    valid;   // in request?
+    addr_t   addr;    // target address
+    msize_t  size;    // number of bytes
+    strobe_t strobe;  // which bytes are enabled? set to zeros for read request
+    word_t   data;    // the data to write
+} dbus_req_t;
+
+typedef struct packed {
+    logic  addr_ok;  // is the address accepted by cache?
+    logic  data_ok;  // is the field "data" valid?
+    word_t data;     // the data read from cache
+} dbus_resp_t;
+```
+
+### 总线握手
+
+DBus 的逻辑是：由 CPU 主动发出请求（`dbus_req_t`），等待内存给出反馈（`dbus_resp_t`）。DBus 的反馈分为两个阶段，一是内存已经得知并且缓存了 CPU 的请求，此时内存会将 `addr_ok` 拉起；二是内存已经完成了 CPU 的请求，此时将 `data_ok` 拉起。这两个过程就是所谓的 “握手”。握手是一个时序逻辑。每当时钟周期上升沿触发时，如果 `addr_ok` 为 `1`，表明握手成功。`data_ok` 同理。例如，CPU 想写入内存，内存也支持单周期写入，此时内存会把 `addr_ok` 和 `data_ok` 同时设为 `1`。等到时钟上升沿到达时，内存就会触发写入，同时 CPU 此时也知道内存已经完成这个写入了。
+
+### Data Lanes
+
+
+### IBus
+
+IBus 是 DBus 的子集，仅保留了读取 4 字节（`word_t`）的接口。
 
 TODO
 
@@ -260,7 +289,7 @@ gtkwave build/trace.fst
   ```
 
   至此，你可以尝试在你的 CPU 上运行更加复杂的程序了。
-* 阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，了解并总结 AXI 总线的工作方式。
+* AXI 总线协议是一个双向握手协议。阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，了解并总结 AXI 总线的工作方式。
 
 ---
 
