@@ -54,23 +54,35 @@ DBus 的逻辑是：由 CPU 主动发出请求（拉起 `valid` 信号），等�
 
 ![写缓冲区优化](../asset/lab2/store-buffer.svg)
 
-访存也可以切分流水线。CPU 的 fetch 阶段可以分为多个周期完成，此时需要 cache 也按照流水线的方式工作。这样即便单次访存的延时很高，cache 提供的吞吐率却不低。
+访存也可以切分流水线。CPU 的 fetch 阶段和 memory 阶段可以分为多个周期完成，此时需要 cache 也按照流水线的方式工作。这样即便单次访存的延时很高，cache 提供的吞吐率却不低。
 
 ![流水线化访存](../asset/lab2/pipelined.svg)
 
-需要注意，CPU 收到 `addr_ok` 后，如果没有其它请求，必须把 `valid` 撤下。
+注意：CPU 收到 `addr_ok` 后，如果没有其它请求，必须把 `valid` 撤下。
 
-### Data Lanes
+### `size` 信号
 
+`size` 是一个枚举。DBus 支持 `MSIZE1`（单字节）、`MSIZE2`（双字节）和 `MSIZE4`（四字节）三种模式。
 
+### Byte Lanes
+
+DBus 是 32 位的总线，每周期至多传输 4 个字节。`data` 的四个字节可以视作四个独立的通道 `lane[3:0]`，`lane[0]` 对应地址最后两位为 `2'b00` 的那个字节，`lane[1]` 对应最后两位为 `2'b01` 的字节，依次类推。因此，无论我们给出的地址是否与 4 字节对齐，`data` 中的数据依然会按照 4 字节对齐的方式摆放。DBus 提供一个 4 位的写使能 `strobe[3:0]`，`strobe[0]` 表示 `lane[0]` 是否启用，`strobe[3..1]` 类似。通过这种方式，DBus 允许写入比 4 字节窄的数据。
+
+例如，我们向地址 `0xbfc001f2` 写入单个字节的数据 `0xcd` 时，由于地址的最低两位为 `0x2`（`2'b10`），所以我们应该：
+
+* 地址 `addr` 依然是 `32'hbfc001f2`。
+* 将 `data` 设置为 `32'h00cd0000`。
+* 将 `strobe` 设置为 `4'b0100`。
+
+这么做可能比较反直觉。DBus 的 byte lanes 来源于 AXI 总线协议，其意图在于兼容只能 4 字节对齐寻址的设备（一般的内存都是这么做的），同时不要求 `addr` 必须与 4 字节对齐是因为可能会和只能字节寻址的设备交互（例如字符打印）。
+
+下面展示了从地址 `0xbfc01fc2` 开始连续写入 15 个字节 `0x11`~`0xff` 的过程：
+
+![DBus 连续写入示例](../asset/lab2/byte-lanes.svg)
 
 ### IBus
 
 IBus 是 DBus 的子集，仅保留了读取 4 字节（`word_t`）的接口。
-
-## 在流水线中处理延时
-
-TODO
 
 ## 实验内容
 
@@ -99,9 +111,9 @@ module mycpu_top (
 
 这里只修改了 `mycpu_top` 的接口，`MyCore` 依然使用 DBus/IBus。你不需要关心 AXI 接口是如何操作的。如果你感兴趣，可以自行阅读 `util` 文件夹下的 `CBusToAXI.sv`。
 
-你需要修改流水线寄存器的阻塞逻辑。一条 `lw` 指令在 Memory 阶段发出访存请求，在数据返回前，显然需要阻塞流水线。
+你需要修改流水线寄存器的阻塞逻辑。一条 `lw` 指令在 memory 阶段发出访存请求，在数据返回前，显然需要阻塞流水线。
 
-一个简单的改动如下。注意：这个处理的性能未必好，内存的写请求不一定需要进行 data_ok 的握手。
+一个简单的改动如下：
 
 ```verilog
 assign stallF = ~i_data_ok | ~d_data_ok;
@@ -111,6 +123,8 @@ assign stallM = ~d_data_ok;
 assign flushE = ~i_data_ok;
 assign flushW = ~d_data_ok;
 ```
+
+注意：这个处理的性能未必好，内存的写请求不一定需要进行 `data_ok` 的握手。
 
 完成后，你应该能够通过 `vivado/test1` 的测试。
 
@@ -139,9 +153,10 @@ assign flushW = ~d_data_ok;
 
 `test2` 中需要额外实现的指令，主要有以下三类：
 
-* 更多种类的分支跳转
-* 引入了以半字（16位）和字节（8位）为粒度的内存读写：注意调整总线请求的 size 部分，以及处理读写的数据
-* 移位的偏移量为寄存器数据
+* 更多种类的分支跳转。
+* 引入了以半字（16 位）和字节（8 位）为粒度的内存读写。
+    * 注意调整总线请求的 `size` 部分，以及处理读写的数据。
+* 移位的偏移量为寄存器数据。
 
 ### 接入 Verilator
 
@@ -182,7 +197,7 @@ module Writeback;
 endmodule
 ```
 
-`/* verilator public_flat_rd */` 是一条 metacomment。其中 `public` 表示信号对外可访问，`flat` 表示信号名会被去层次化（flatten），`rd` 表示只读（read-only）。去层次化意思是 `core.wb.pc` 这个信号在翻译后的 C++ 代码中会以一个普通变量的方式呈现给 verilated 模型。C/C++ 的变量名里面不能有 “`.`”，因此 Verilator 会把 `core.wb.pc` 转换成 `core__DOT__wb__DOT__pc`。之后你需要修改 `verilate/source/mycpu/VTop/` 中的 `mycpu.cpp`：
+`/* verilator public_flat_rd */` 是一条 metacomment。其中 `public` 表示信号对外可访问，`flat` 表示信号名会被去层次化（flatten），`rd` 表示只读（read-only）。去层次化意思是 `core.wb.pc` 这个信号在翻译后的 C++ 代码中会以一个普通变量的方式呈现给 verilated 模型。C/C++ 的变量名里面不能有 “`.`”，因此 Verilator 会把 `core.wb.pc` 转换成 `core__DOT__wb__DOT__pc`。之后你需要修改 `verilate/source/mycpu/VTop` 文件夹中的 `mycpu.cpp`：
 
 ```c++
 auto MyCPU::get_writeback_pc() const -> addr_t {
@@ -312,7 +327,7 @@ gtkwave build/trace.fst
 * 张三在 `source/util/CBusMultiplexer.sv` 中实现了自己的仲裁器，然而过不了仿真。请指出 `CBusMultiplexer` 存在的问题。
 * 龙芯杯的测试框架中有一个叫做 CONFREG 的模块[^confreg]，用来控制 FPGA 上的各种硬件资源，例如 LED 数码管、按钮。CONFREG 是一个 memory-mapped 设备。其中地址 `0xbfaffff0` 是一个简化的 UART 打印接口，往这个地址写入 ASCII 码就可在仿真中输出文字。特别的，如果写入的值是 `0xff`，就会立即停止仿真。
 
-  `misc/hello` 目录下有一个示例汇编程序 `hello.s`，它会打印 “Hello, world!”。请尝试将这段汇编代码编译成 `.coe` 文件，然后使用
+  李四写了一段汇编程序 `hello.s`，放在 `misc/hello` 目录下，它会打印 “Hello, world!”。但是李四买不起 CPU。请尝试将这段汇编代码编译成 `.coe` 文件，然后使用
 
   ```shell
   make vsim -j TARGET=mycpu/VTop VSIM_ARGS="-m [.coe 文件路径]"
@@ -326,8 +341,8 @@ gtkwave build/trace.fst
   (info) testbench finished in 652 cycles (515.101 KHz).
   ```
 
-  至此，你可以尝试在你的 CPU 上运行更加复杂的程序了。
-* AXI 总线协议是一个双向握手协议。阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，了解并总结 AXI 总线的工作方式。
+  至此，你<del>李四</del>可以尝试在你的 CPU 上运行更加复杂的程序了。
+* 王五最近学习了 AXI 总线协议。AXI 是一个双向握手协议。王五推荐你阅读 [“<i class="fa fa-file-pdf-o"></i> AMBA AXI Protocol Specification v1.0”](../misc/external.md#soc-部分)，希望你能了解并总结 AXI 总线的工作方式。
 
 ---
 
