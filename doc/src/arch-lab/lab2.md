@@ -42,14 +42,33 @@ typedef struct packed {
 
 ### 总线握手
 
-DBus 的逻辑是：由 CPU 主动发出请求（`dbus_req_t`），等待内存给出反馈（`dbus_resp_t`）。DBus 的反馈分为两个阶段，一是内存已经得知并且缓存了 CPU 的请求，此时内存会将 `addr_ok` 拉起；二是内存已经完成了 CPU 的请求，此时将 `data_ok` 拉起。这两个过程就是所谓的 “握手”。握手是一个时序逻辑。每当时钟周期上升沿触发时，如果 `addr_ok` 为 `1`，表明握手成功。`data_ok` 同理。例如，CPU 想写入内存，内存也支持单周期写入，此时内存会把 `addr_ok` 和 `data_ok` 同时设为 `1`。等到时钟上升沿到达时，内存就会触发写入，同时 CPU 此时也知道内存已经完成这个写入了。
+DBus 的逻辑是：由 CPU 主动发出请求（拉起 `valid` 信号），等待内存给出反馈（`addr_ok` 和 `data_ok`）。DBus 的反馈分为两个阶段，一是内存已经得知并且缓存了 CPU 的请求，此时内存会将 `addr_ok` 拉起；二是内存已经完成了 CPU 的请求，此时将 `data_ok` 拉起。这两个过程就是所谓的 “握手”。握手是一个时序逻辑。每当时钟周期上升沿触发时，如果 `addr_ok` 为 `1`，表明握手成功。`data_ok` 同理。例如，CPU 想写入内存，内存也支持单周期写入，此时内存会把 `addr_ok` 和 `data_ok` 同时设为 `1`。等到时钟上升沿到达时，内存就会触发写入，同时 CPU 也知道内存已经完成这个写入了。
+
+![单周期访存](../asset/lab2/single-cycle.svg)
+
+如果内存需要多个周期才能完成一次访存，CPU 需要一直拉起 `valid` 信号，直到内存的 `addr_ok` 响应。
+
+![多周期访存](../asset/lab2/multi-cycle.svg)
+
+访存有一个常见的优化是写缓冲区（store buffer）。写缓冲会保存收到的请求，发出 `addr_ok`，然后再进行真正的写内存操作。CPU 一般不用关心写操作是否真的完成了，因此流水线在收到 `addr_ok` 的时候就可以继续推进。这样可以明显减少写内存带来的流水线阻塞。
+
+![写缓冲区优化](../asset/lab2/store-buffer.svg)
+
+访存也可以切分流水线。CPU 的 fetch 阶段可以分为多个周期完成，此时需要 cache 也按照流水线的方式工作。这样即便单次访存的延时很高，cache 提供的吞吐率却不低。
+
+![流水线化访存](../asset/lab2/pipelined.svg)
+
+需要注意，CPU 收到 `addr_ok` 后，如果没有其它请求，必须把 `valid` 撤下。
 
 ### Data Lanes
+
 
 
 ### IBus
 
 IBus 是 DBus 的子集，仅保留了读取 4 字节（`word_t`）的接口。
+
+## 在流水线中处理延时
 
 TODO
 
@@ -112,7 +131,7 @@ assign flushW = ~d_data_ok;
 
 `CBusArbiter` 有一个缺点，它需要花费一个时钟周期来确定谁有总线的访问权，无论是有多个请求还是只有一个请求。换句话说，`CBusArbiter` 会把所有的访存增加至少一个周期的延时。实际上这一个时钟周期可以被优化掉，只是这么做是要付出代价的。因为这种优化需要添加新的组合逻辑，有可能会增加关键路径的延时，导致 CPU 频率降低。
 
-如果你想优化 `CBusArbiter`，请在 `source/mycpu/MyArbiter.sv` 中实现新的仲裁器，然后将 `VTop` 的 `CBusArbiter mux` 换成 `MyArbiter mux`。
+如果你想优化 `CBusArbiter`，请在 `source/mycpu/MyArbiter.sv` 中实现新的仲裁器，然后将 `VTop` 的 `CBusArbiter mux` 换成 `MyArbiter mux`。你可以选择实现优先级仲裁，或者是 round-robin 式仲裁。
 
 ### 实现新的指令
 
