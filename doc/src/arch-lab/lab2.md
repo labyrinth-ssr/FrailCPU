@@ -80,6 +80,19 @@ module mycpu_top (
 
 这里只修改了 `mycpu_top` 的接口，`MyCore` 依然使用 DBus/IBus。你不需要关心 AXI 接口是如何操作的。如果你感兴趣，可以自行阅读 `util` 文件夹下的 `CBusToAXI.sv`。
 
+你需要修改流水线寄存器的阻塞逻辑。一条 `lw` 指令在 Memory 阶段发出访存请求，在数据返回前，显然需要阻塞流水线。
+
+一个简单的改动如下。注意：这个处理的性能未必好，内存的写请求不一定需要进行 data_ok 的握手。
+
+```verilog
+assign stallF = ~i_data_ok | ~d_data_ok;
+assign stallD = ~i_data_ok | ~d_data_ok;
+assign stallE = ~d_data_ok;
+assign stallM = ~d_data_ok;
+assign flushE = ~i_data_ok;
+assign flushW = ~d_data_ok;
+```
+
 完成后，你应该能够通过 `vivado/test1` 的测试。
 
 ### *实现仲裁器
@@ -104,6 +117,12 @@ module mycpu_top (
 ### 实现新的指令
 
 [“指令列表”](../misc/instruction.md) 中有一张表，记录了 `test1` 到 `test4` 和所有性能测试会用到的指令。请据此确定 `test2` 需要添加的指令并实现。
+
+`test2` 中需要额外实现的指令，主要有以下三类：
+
+* 更多种类的分支跳转
+* 引入了以半字（16位）和字节（8位）为粒度的内存读写：注意调整总线请求的 size 部分，以及处理读写的数据
+* 移位的偏移量为寄存器数据
 
 ### 接入 Verilator
 
