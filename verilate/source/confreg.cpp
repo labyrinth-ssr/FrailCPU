@@ -136,25 +136,32 @@ void Confreg::uart_open_pty(const std::string &path) {
     uart.ipty = fopen(path.data(), "r");
     uart.opty = fopen(path.data(), "w");
 
-    // fetch UART input in the background
-    uart.worker = ThreadWorker::loop([this] {
-        auto c = fgetc(uart.ipty);  // fgetc will block util there's a new char.
-        if (c != EOF) {
-            std::lock_guard guard(uart.lock);
-            uart.ififo.push_back(c);
-        }
-    }, [] {}, [this] {
-        if (uart.ipty)
-            fclose(uart.ipty);
-    });
+    if (uart.ipty && uart.opty) {
+        notify("CONFREG: connected to pty \"%s\".\n", path.data());
+
+        // fetch UART input in the background
+        uart.worker = ThreadWorker::loop([this] {
+            auto c = fgetc(uart.ipty);  // fgetc will block util there's a new char.
+            if (c != EOF) {
+                std::lock_guard guard(uart.lock);
+                uart.ififo.push_back(c);
+            }
+        }, [] {}, [this] {
+            if (uart.ipty) {
+                fclose(uart.ipty);
+                uart.ipty = nullptr;
+            }
+        });
+    }
 }
 
 void Confreg::_uart_close_pty() {
-    assert(uart.ipty);
-    assert(uart.opty);
-
     uart.worker.stop();
-    fclose(uart.opty);
+
+    if (uart.opty) {
+        fclose(uart.opty);
+        uart.opty = nullptr;
+    }
 
     // workers's fgetc will also block fclose...
     // we have to let the worker itself to close ipty...
