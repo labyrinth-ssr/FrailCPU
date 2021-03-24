@@ -2,7 +2,8 @@
 
 Spring 2021, Fudan University.
 
-Course Website: <https://fducslg.github.io/ICS-2021Spring-FDU/>
+* Course Website: <https://fducslg.github.io/ICS-2021Spring-FDU/>
+* Dev Repository: <https://github.com/FDUCSLG/ICS-2021Spring-dev>
 
 ## Directory Structure
 
