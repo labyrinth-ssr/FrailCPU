@@ -6,6 +6,84 @@
 
 **本实验和实验 2a 一起提交。**
 
+## 基本实现
+
+两个32位数相乘的结果是64位，相除的结果包括32位商和32位余数。
+
+MIPS 引入两个新的32位寄存器：`HI` 和 `LO` 来存储这64位结果。
+
+这两个的寄存器写法和通用寄存器类似：
+
+```verilog
+module hilo (
+    input logic clk,
+	output i32 hi, lo,
+    input i1 hi_write, lo_write,
+    input i32 hi_data, lo_data
+);
+    i32 hi_new, lo_new;
+    always_comb begin
+        {hi_new, lo_new} = {hi, lo};
+        if (hi_write) begin
+            hi_new = hi_data;
+        end
+        if (lo_write) begin
+            lo_new = lo_data;
+        end
+    end
+    always_ff @(posedge clk) begin
+        {hi, lo} <= {hi_new, lo_new};
+    end
+endmodule
+```
+
+以下是单周期乘除法器的一个参考写法：
+
+```verilog
+module mult (
+    input i32 a, b,
+    input decoded_op_t op,
+    output i32 hi, lo
+);
+    i64 ans;
+    always_comb begin
+        case (op)
+            MULTU: begin
+                ans = {32'b0, a} * {32'b0, b};
+                hi = ans[63:32]; lo = ans[31:0];
+            end
+            MULT: begin
+                ans = signed'({{32{a[31]}}, a}) * signed'({{32{b[31]}}, b});
+                hi = ans[63:32]; lo = ans[31:0];
+            end
+            DIVU: begin
+                ans = '0;
+                lo = {1'b0, a} / {1'b0, b};
+                hi = {1'b0, a} % {1'b0, b};
+            end
+            DIV: begin
+                ans = '0;
+                lo = signed'(a) / signed'(b);
+                hi = signed'(a) % signed'(b);
+            end
+            default: begin
+                {hi, lo, ans} = '0;
+            end
+        endcase
+    end
+endmodule
+```
+
+## * 进阶：多周期乘除法器
+
+32位乘除法器的逻辑十分复杂，其单周期的实现延迟极高。
+
+
+
+![div_path](../asset/lab2b/div_path.png)
+
+
+
 ### 截止时间
 
 **2021 年 4 月 11 日 23:59:59**
