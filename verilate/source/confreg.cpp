@@ -134,25 +134,30 @@ void Confreg::uart_open_pty(const std::string &path) {
     assert(!uart.opty);
 
     uart.ipty = fopen(path.data(), "r");
+    if (!uart.ipty)
+        return;
+
+    // to prevent create a new file during open opty,
+    // we should open ipty first.
     uart.opty = fopen(path.data(), "w");
+    if (!uart.opty)
+        return;
 
-    if (uart.ipty && uart.opty) {
-        notify("CONFREG: connected to pty \"%s\".\n", path.data());
+    notify("CONFREG: connected to pty \"%s\".\n", path.data());
 
-        // fetch UART input in the background
-        uart.worker = ThreadWorker::loop([this] {
-            auto c = fgetc(uart.ipty);  // fgetc will block util there's a new char.
-            if (c != EOF) {
-                std::lock_guard guard(uart.lock);
-                uart.ififo.push_back(c);
-            }
-        }, [] {}, [this] {
-            if (uart.ipty) {
-                fclose(uart.ipty);
-                uart.ipty = nullptr;
-            }
-        });
-    }
+    // fetch UART input in the background
+    uart.worker = ThreadWorker::loop([this] {
+        auto c = fgetc(uart.ipty);  // fgetc will block util there's a new char.
+        if (c != EOF) {
+            std::lock_guard guard(uart.lock);
+            uart.ififo.push_back(c);
+        }
+    }, [] {}, [this] {
+        if (uart.ipty) {
+            fclose(uart.ipty);
+            uart.ipty = nullptr;
+        }
+    });
 }
 
 void Confreg::_uart_close_pty() {
