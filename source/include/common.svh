@@ -62,6 +62,10 @@ typedef `BITS(40) i40;
 typedef `BITS(41) i41;
 typedef `BITS(42) i42;
 typedef `BITS(64) i64;
+typedef `BITS(65) i65;
+typedef `BITS(66) i66;
+typedef `BITS(67) i67;
+typedef `BITS(68) i68;
 
 // for arithmetic overflow detection
 typedef i33 arith_t;
