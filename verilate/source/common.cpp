@@ -141,14 +141,7 @@ auto parse_memory_file(const std::string &path) -> ByteSeq {
  * simple logging
  */
 
-static struct {
-    std::mutex lock;
-    bool debug_enabled;
-    bool log_enabled;
-    bool status_enabled;
-    bool in_status_line;
-    std::string char_buffer;
-} _ctx;
+_log_ctx_t _ctx;
 
 static void check_status_line(FILE *fp = stdout) {
     if (_ctx.in_status_line) {
@@ -179,9 +172,8 @@ void enable_status_line(bool enable) {
     va_end(args); \
 }
 
-void debug(const char *message, ...) {
-    if (_ctx.log_enabled && _ctx.debug_enabled)
-        VPRINT(stdout);
+void _log_debug(const char *message, ...) {
+    VPRINT(stdout);
 }
 
 void info(const char *message, ...) {

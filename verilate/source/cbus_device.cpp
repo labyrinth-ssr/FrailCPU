@@ -74,7 +74,7 @@ void CBusDevice::sync() {
         tx = ntx;
     }
 
-    enable = randf(0.0, 1.0) >= p_disable;
+    enable = p_disable == 0 || randf(0.0, 1.0) >= p_disable;
 }
 
 auto CBusDevice::dump(addr_t addr, size_t size) -> MemoryDump {

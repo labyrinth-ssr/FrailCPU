@@ -487,7 +487,7 @@ public:
             auto u = ongoing.front();
             ongoing.pop();
 
-            debug(
+            log_debug(
                 "pipeline: %s \"%08x\" @0x%x → got \"%08x\" (size=%d, strobe=%x)\n",
                 u.is_load() ? (u.dest ? "load" : "expect") : "store",
                 u.data, u.addr, data,

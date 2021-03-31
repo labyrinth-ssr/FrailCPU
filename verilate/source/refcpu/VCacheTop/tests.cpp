@@ -68,7 +68,7 @@ WITH SKIP {
     bool one = 1, three = 3;
     ASSERT(one + one == three);  // trust me, it must fail
     // but you should not fail here since it's skipped.
-} AS("akarin!");
+} AS("akarin~");
 
 // if your cache does not support partial writes, you can simply skip
 // this test "strobe".
@@ -399,7 +399,7 @@ WITH {
         int op = randi(0, 1);
         addr_t addr = randi(0ul, MEMORY_SIZE / size - 1) * size;
 
-        debug(
+        log_debug(
             "random: %s @addr=0x%x, size=%d\n",
             op ? "load" : "store", addr, size
         );
@@ -463,7 +463,7 @@ WITH {
         int s = randi(0ul, MEMORY_SIZE - n);
         int t = randi(0, 1);
 
-        debug(
+        log_debug(
             "block: %s @start=0x%x, n=%d\n",
             t ? "load" : "store", s, n
         );

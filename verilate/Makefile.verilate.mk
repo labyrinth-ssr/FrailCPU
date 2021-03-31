@@ -43,6 +43,12 @@ SV_FLAGS += \
 	-CFLAGS -Wno-unknown-warning-option
 endif
 
+ifeq ($(VSIM_OPT), 1)
+SV_FLAGS += \
+	-CFLAGS -O3 \
+	-CFLAGS -flto
+endif
+
 $(SV_MKFILE): $(SV_FILES)
 	@mkdir -p $(SV_BUILD)
 	$(VERILATOR) $(SV_FLAGS) $(SV_VTOP)
