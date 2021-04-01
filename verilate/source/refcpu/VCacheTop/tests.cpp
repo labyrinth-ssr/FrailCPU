@@ -244,6 +244,9 @@ WITH {
     ASSERT(a.get() == 0xdeadbeef);
     ASSERT(c.get() == 0x0000dead);
     ASSERT((a + c) == 0xdeae9d9c);
+
+    b = c;
+    ASSERT(b.get() == 0x0000dead);
 } AS("memory cell");
 
 WITH {
@@ -255,10 +258,10 @@ WITH {
     // take an array of length n from verilated memory.
     auto a = factory.take<uint32_t, n>(0);
 
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         a[i] = uint32_t(0x19260817u * (i + 1));
     }
-    for (size_t i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         ASSERT(a[i] == uint32_t(0x19260817u * (i + 1)));
     }
 } AS("memory cell array");
@@ -501,5 +504,47 @@ WITH {
         }
     }
 } AS("random block load/store");
+
+WITH {
+    constexpr int n = 10000;
+
+    auto p = DBusPipeline(top, dbus);
+    auto factory = MemoryCellFactory(&p);
+
+    auto a = factory.take<uint32_t, n>(0);
+    uint32_t b[n];
+
+    for (int i = 0; i < n; i++) {
+        a[i] = b[i] = randi();
+    }
+
+    std::sort(a, a + n);
+    std::sort(b, b + n);
+
+    for (int i = 0; i < n; i++) {
+        ASSERT(a[i] == b[i]);
+    }
+} AS("std::sort");
+
+WITH {
+    constexpr int n = 10000;
+
+    auto p = DBusPipeline(top, dbus);
+    auto factory = MemoryCellFactory(&p);
+
+    auto a = factory.take<uint32_t, n>(0);
+    uint32_t b[n];
+
+    for (int i = 0; i < n; i++) {
+        a[i] = b[i] = randi();
+    }
+
+    std::stable_sort(a, a + n);
+    std::sort(b, b + n);
+
+    for (int i = 0; i < n; i++) {
+        ASSERT(a[i] == b[i]);
+    }
+} AS("std::stable_sort");
 
 }

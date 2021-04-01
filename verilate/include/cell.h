@@ -82,15 +82,30 @@ public:
 
     // delete default constructors & assignments
     MemoryCellGen() = delete;
-    MemoryCellGen(MemoryCellGen &&) = delete;
     MemoryCellGen(const MemoryCellGen &) = delete;
-    auto operator=(const MemoryCellGen &) = delete;
-    auto operator=(MemoryCellGen &&) = delete;
+
+    // allow move constructor & assignments
+    MemoryCellGen(MemoryCellGen &&rhs) {
+        init_cell(rhs.addr, rhs.p);
+        rhs.addr = 0;
+        rhs.p = nullptr;
+    }
+
+    auto operator=(MemoryCellGen &&rhs) {
+        init_cell(rhs.addr, rhs.p);
+        rhs.addr = 0;
+        rhs.p = nullptr;
+    }
 
     // construct a cell pointed to addr.
     MemoryCellGen(addr_t _addr, Pipeline *_p) {
         init_cell(_addr, _p);
         asserts(addr % Width == 0, "addr must be aligned to %d bytes", Width);
+    }
+
+    // assigned by the same type of memory cell
+    auto operator=(const MemoryCellGen &rhs) {
+        set(rhs.get());
     }
 
     // assigned by other memory cell.
@@ -111,6 +126,14 @@ public:
     // implicitly convert to type T.
     operator T() const {
         return get();
+    }
+
+    // provide std::swap.
+    friend void swap(MemoryCellGen &x, MemoryCellGen &y) noexcept {
+        auto u = x.get();
+        auto v = y.get();
+        x.set(v);
+        y.set(u);
     }
 
     /**
