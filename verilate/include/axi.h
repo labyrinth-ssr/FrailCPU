@@ -44,14 +44,16 @@ struct AXITransaction {
 
     void sync() {
         N++;
+
         if (aligned) {
             addr = addr + Number_Bytes;
-            if (addr >= Upper_Wrap_Boundry)
-                addr = Lower_Wrap_Boundry;
         } else {
             addr = Aligned_Address + Number_Bytes;
-            aligned = false;
+            aligned = true;
         }
+
+        if (addr >= Upper_Wrap_Boundry)
+            addr = Lower_Wrap_Boundry;
     }
 
     auto last() const -> bool {

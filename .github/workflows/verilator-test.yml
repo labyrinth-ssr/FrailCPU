@@ -15,7 +15,7 @@ jobs:
         run: |
           sudo apt install -y verilator gtkwave build-essential libz-dev
       - name: Run NSCSCC functional tests
-        run: make vsim -j VSIM_ARGS='--no-status'
+        run: make vsim -j VSIM_OPT=1 VSIM_ARGS='--no-status'
 
   ubuntu-20-performance-test:
     runs-on: ubuntu-20.04
@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo apt install -y verilator gtkwave build-essential libz-dev
       - name: Run NSCSCC performance tests
-        run: make vsim -j VSIM_ARGS='--no-status --force-diff -m "./misc/nscscc/coremark.coe" -r "./misc/std/coremark.txt"'
+        run: make vsim -j VSIM_OPT=1 TEST=coremark VSIM_ARGS='--no-status'
 
   ubuntu-20-cache-test:
     runs-on: ubuntu-20.04
@@ -37,7 +37,7 @@ jobs:
         run: |
           sudo apt install -y verilator gtkwave build-essential libz-dev
       - name: Run cache tests
-        run: make vsim -j TARGET=refcpu/VCacheTop
+        run: make vsim -j VSIM_OPT=1 TARGET=refcpu/VCacheTop
 
   ubuntu-18-functional-test:
     runs-on: ubuntu-18.04
@@ -51,7 +51,7 @@ jobs:
           sudo dpkg -i verilator4.deb
           sudo ln -s /usr/local/share/verilator /usr/share/
       - name: Run NSCSCC functional tests
-        run: make vsim -j USE_CLANG=1 VSIM_ARGS='--no-status'
+        run: make vsim -j USE_CLANG=1 VSIM_OPT=1 VSIM_ARGS='--no-status'
 
   ubuntu-18-performance-test:
     runs-on: ubuntu-18.04
@@ -65,7 +65,7 @@ jobs:
           sudo dpkg -i verilator4.deb
           sudo ln -s /usr/local/share/verilator /usr/share/
       - name: Run NSCSCC performance tests
-        run: make vsim -j USE_CLANG=1 VSIM_ARGS='--no-status --force-diff -m "./misc/nscscc/coremark.coe" -r "./misc/std/coremark.txt"'
+        run: make vsim -j USE_CLANG=1 VSIM_OPT=1 TEST=coremark VSIM_ARGS='--no-status'
 
   ubuntu-18-cache-test:
     runs-on: ubuntu-18.04
@@ -79,4 +79,4 @@ jobs:
           sudo dpkg -i verilator4.deb
           sudo ln -s /usr/local/share/verilator /usr/share/
       - name: Run cache tests
-        run: make vsim -j TARGET=refcpu/VCacheTop USE_CLANG=1
+        run: make vsim -j USE_CLANG=1 VSIM_OPT=1 TARGET=refcpu/VCacheTop
