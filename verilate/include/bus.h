@@ -326,11 +326,11 @@ public:
     /**
      * asynchronous/synchronous load/store interface
      *
-     * asynchronous version only issue the corresponding request to dbus
-     * and does not handle data placement when the data is ready.
+     * functions with no size specifiers only issue the corresponding request
+     * to dbus and does not handle data placement when the data is ready.
      *
-     * synchronous version will handle data placement by shifting right
-     * when return to the caller.
+     * for asynchronous operations, you have to use await to wait and obtain
+     * the loaded value.
      *
      * both versions DO NOT check address alignment.
      * as a result, you can issue unaligned memory access as long as your

@@ -307,7 +307,7 @@ WITH CMP_TO(ref) {
 } AS("cmp: random");
 
 /**
- * pressure tests or benchmarks
+ * pressure tests and benchmarks
  */
 
 WITH {
@@ -505,6 +505,14 @@ WITH {
     }
 } AS("random block load/store");
 
+/**
+ * real algorithm workloads.
+ *
+ * you can run real algorithms/programs on your verilated cache
+ * with the help of MemoryCell.
+ */
+
+// the first two tests use DBusPipeline for better performance.
 WITH {
     constexpr int n = 10000;
 
@@ -546,5 +554,106 @@ WITH {
         ASSERT(a[i] == b[i]);
     }
 } AS("std::stable_sort");
+
+// you can also use DBus directly.
+// at this time, the reference model can be enabled.
+WITH CMP_TO(ref) {
+    constexpr int n = 10000;
+
+    // here we do not have to create a pipeline.
+    // just dbus is OK.
+    auto factory = MemoryCellFactory(dbus);
+
+    auto a = factory.take<uint32_t, n>(0);
+    uint32_t b[n];
+
+    for (int i = 0; i < n; i++) {
+        a[i] = b[i] = randi();
+    }
+
+    std::make_heap(a, a + n);
+    for (int i = n; i > 0; i--) {
+        std::pop_heap(a, a + i);
+    }
+    std::sort(b, b + n);
+
+    for (int i = 0; i < n; i++) {
+        ASSERT(a[i] == b[i]);
+    }
+} AS("heap sort");
+
+// you can also manually implement any algorithm on top of memory cells.
+WITH CMP_TO(ref) {
+    constexpr int n = 10000;
+
+    // set up cell factory.
+    auto factory = MemoryCellFactory(dbus);
+    auto allocate = [&factory]() {
+        return factory.allocate<int>();
+    };
+    using Cell = decltype(allocate());
+
+    // get a buffer of nodes.
+    struct Node {
+        Cell key, size, left, right;
+    };
+
+    auto construct = [&allocate] {
+        return Node{allocate(), allocate(), allocate(), allocate()};
+    };
+
+    std::vector<Node> m;
+    m.reserve(n + 1);
+    for (int i = 0; i < n + 1; i++) {
+        m.emplace_back(construct());
+    }
+
+    // the algorithms.
+    auto root = factory.allocate_and_init(0);
+    auto count = factory.allocate_and_init(0);
+
+    std::function<int(int, int)> insert;
+    insert = [&insert, &count, &m](int x, int key) -> int {
+        if (x == 0) {
+            count = count + 1;
+            x = count;
+            m[x].key = key;
+        } else {
+            if (key < m[x].key)
+                m[x].left = insert(m[x].left, key);
+            else
+                m[x].right = insert(m[x].right, key);
+        }
+
+        m[x].size = m[x].size + 1;
+        return x;
+    };
+
+    std::function<int(int, int)> kth;
+    kth = [&kth, &m](int x, int k) -> int {
+        int v = m[x].left;
+        int vsize = v ? m[v].size : 0;
+
+        if (k <= vsize)
+            return kth(m[x].left, k);
+        else if (k > vsize + 1)
+            return kth(m[x].right, k - vsize - 1);
+        else
+            return m[x].key;
+    };
+
+    // run it!
+    int keys[n + 1];
+    for (int i = 1; i <= n; i++) {
+        keys[i] = randi();
+        root = insert(root, keys[i]);
+    }
+
+    std::sort(keys + 1, keys + n + 1);
+
+    for (int i = 1; i <= n; i++) {
+        ASSERT(kth(root, i) == keys[i]);
+    }
+} AS("binary search tree");
 
 }

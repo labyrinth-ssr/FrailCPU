@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "cell.h"
 
 #include <vector>
 #include <functional>
@@ -184,6 +185,13 @@ public:
 private:
     RefModel *ref;
 };
+
+// hook MemoryCell's generic bus interface.
+// since the wrapper mimics DBusGen, so the implementation
+// can be directly inherited.
+template <typename U, typename V>
+struct GenericBusInterface<_TestbenchDBusWrapperGen<U, V>>
+    : public GenericBusInterfaceDBusGen<_TestbenchDBusWrapperGen<U, V>> {};
 
 // NOTE: macro CMP_TO will shadow global variable dbus in order to hack in
 #define CMP_TO(reference) \
