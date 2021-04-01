@@ -44,9 +44,13 @@ SV_FLAGS += \
 endif
 
 ifeq ($(VSIM_OPT), 1)
-SV_FLAGS += \
-	-CFLAGS -O3 \
-	-CFLAGS -flto
+SV_FLAGS += -CFLAGS -O3
+
+# clang 10 has issue with LTO and ar.
+ifneq ($(USE_CLANG), 1)
+SV_FLAGS += -CFLAGS -flto
+endif
+
 endif
 
 $(SV_MKFILE): $(SV_FILES)
