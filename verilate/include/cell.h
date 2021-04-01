@@ -88,8 +88,8 @@ public:
     auto operator=(MemoryCellGen &&) = delete;
 
     // construct a cell pointed to addr.
-    MemoryCellGen(addr_t _addr, Pipeline *_p)
-        : addr(_addr), p(_p) {
+    MemoryCellGen(addr_t _addr, Pipeline *_p) {
+        init_cell(_addr, _p);
         asserts(addr % Width == 0, "addr must be aligned to %d bytes", Width);
     }
 
@@ -129,6 +129,15 @@ public:
         p->store(addr, Size, op.strobe(), op.place(value));
     }
 
+protected:
+    template <typename TPipeline>
+    friend class MemoryCellFactory;
+
+    void init_cell(addr_t _addr, Pipeline *_p) {
+        addr = _addr;
+        p = _p;
+    }
+
 private:
     static constexpr auto parse = LoadOp::parse<Width>;
 
@@ -150,6 +159,26 @@ public:
         return MemoryCell<T>(addr, p);
     }
 
+    template <typename T, size_t N>
+    auto take(addr_t addr) -> MemoryCell<T> * {
+        using Cell = MemoryCell<T>;
+
+        uchar *buffer = new uchar[N * sizeof(Cell)];
+        allocated.emplace_back(buffer);
+
+        Cell *cells = reinterpret_cast<Cell *>(buffer);
+
+        for (size_t i = 0; i < N; i++) {
+            cells[i].init_cell(addr + i * sizeof(T), p);
+        }
+
+        return cells;
+    }
+
 private:
     Pipeline *p;
+
+    // use std::unique_ptr<char[]> instead of std::unique_ptr<uchar> to
+    // prevent mismatch of new[] and delete!
+    std::vector<std::unique_ptr<uchar[]>> allocated;
 };

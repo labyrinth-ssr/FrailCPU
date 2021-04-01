@@ -227,6 +227,7 @@ WITH {
     auto p = DBusPipeline(top, dbus);
     auto factory = MemoryCellFactory(&p);
 
+    // take a, b, c from verilated memory.
     auto a = factory.take<word_t>(0);
     auto b = factory.take<uint16_t>(4);
     auto c = factory.take<uint16_t>(2);
@@ -244,6 +245,23 @@ WITH {
     ASSERT(c.get() == 0x0000dead);
     ASSERT((a + c) == 0xdeae9d9c);
 } AS("memory cell");
+
+WITH {
+    constexpr int n = 64;
+
+    auto p = DBusPipeline(top, dbus);
+    auto factory = MemoryCellFactory(&p);
+
+    // take an array of length n from verilated memory.
+    auto a = factory.take<uint32_t, n>(0);
+
+    for (size_t i = 0; i < n; i++) {
+        a[i] = uint32_t(0x19260817u * (i + 1));
+    }
+    for (size_t i = 0; i < n; i++) {
+        ASSERT(a[i] == uint32_t(0x19260817u * (i + 1)));
+    }
+} AS("memory cell array");
 
 /**
  * model comparing

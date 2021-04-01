@@ -17,7 +17,7 @@ auto CBusDevice::eval_resp() -> CBusResp {
         // fetch data if needed
         word_t data = 0;
         if (!tx.is_write) {
-            auto addr = tx.Address_N();
+            auto addr = tx.addr;
             data = mem->load(addr);
         }
 
@@ -44,11 +44,8 @@ void CBusDevice::eval_req(const CBusReq &req) {
         // evaluate next transaction state
         if (tx.last())
             ntx.reset();
-        else {
-            if (tx.on_boundry())
-                ntx.is_wrapped = true;
-            ntx.N++;
-        }
+        else
+            ntx.sync();
     } else if (req.valid()) {
         // no transaction in progress, so we kick off a new one.
         ntx.init(
@@ -65,7 +62,7 @@ void CBusDevice::sync() {
     if (enable) {
         if (tx.busy && tx.is_write) {
             // perform write operation if needed
-            auto addr = tx.Address_N();
+            auto addr = tx.addr;
             auto mask = STROBE_TO_MASK[_strobe];
             mem->store(addr, _data, mask);
             _strobe = _data = 0;
