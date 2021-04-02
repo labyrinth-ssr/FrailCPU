@@ -27,6 +27,9 @@ WITH {
 } AS("void");
 
 WITH {
+    // NOTE: it depends.
+    //       maybe your cache likes to set addr_ok to false.
+    //       in that case, change the following lines to match your design.
     ASSERT(dbus->addr_ok() == true);
     ASSERT(dbus->data_ok() == false);
     ASSERT(dbus->rdata() == 0);
