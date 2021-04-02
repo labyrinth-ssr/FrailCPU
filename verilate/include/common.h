@@ -12,6 +12,9 @@
 
 #include <signal.h>
 
+// detect Linux
+#define ICS_ON_LINUX __linux__
+
 // to control initialization order of global variables
 #define INIT_PRIORITY(value) \
     __attribute__ ((init_priority(value)))

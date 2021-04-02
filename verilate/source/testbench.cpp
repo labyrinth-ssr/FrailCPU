@@ -37,6 +37,8 @@ static void run_test(size_t i, bool report_status = true) {
 #include <unistd.h>
 #include <sys/wait.h>
 
+#if ICS_ON_LINUX
+
 [[noreturn]] static void run_worker(int id, int req, int resp) {
     while (true) {
         // send a dummy char to request a task.
@@ -136,6 +138,8 @@ static auto run_parallel(int n_workers) -> int {
     return count;
 }
 
+#endif
+
 static auto run_serial() -> int {
     int count = 0, total = test_list.size();
 
@@ -148,9 +152,14 @@ static auto run_serial() -> int {
 }
 
 void run_testbench(int n_workers) {
+#if ICS_ON_LINUX
     int count = n_workers == 1 ?
         run_serial() :
         run_parallel(n_workers);
+#else
+    int count = run_serial();
+    (void) n_workers;
+#endif
 
     if (count == 1)
         info(BLUE "(info)" RESET " 1 test passed.\n");

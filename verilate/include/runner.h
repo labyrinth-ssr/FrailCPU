@@ -111,8 +111,11 @@ public:
             top->open_pty(args.pty_path);
         if (_set_fst_folder)
             top->set_fst_folder(args.fst_folder);
+
+#if ICS_ON_LINUX
         if (_set_num_workers)
             top->set_num_workers(args.num_workers);
+#endif
 
         top->run();
 
