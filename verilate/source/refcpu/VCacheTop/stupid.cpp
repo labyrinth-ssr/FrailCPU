@@ -3,6 +3,8 @@
 #include "defs.h"
 #include "stupid.h"
 
+#include <sstream>
+
 #include "thirdparty/nameof.hpp"
 
 StupidBuffer::StupidBuffer()
@@ -29,8 +31,6 @@ void StupidBuffer::tick() {
 }
 
 void StupidBuffer::run() {
-    SimpleTimer timer;
-
     DBus dbus(this, VCacheTop, {dreq, dresp});
 
     // bind variables to ease testing
@@ -42,9 +42,12 @@ void StupidBuffer::run() {
     // default to disable FST tracing
     enable_fst_trace(false);
 
-    run_testbench();
-
-    timer.update(tickcount);
+    if (_num_workers == 1) {
+        SimpleTimer timer;
+        run_testbench(1);
+        timer.update(tickcount);
+    } else
+        run_testbench(_num_workers);
 }
 
 auto StupidBuffer::dump() -> MemoryDump {
@@ -59,13 +62,16 @@ void StupidBuffer::reset_statistics() {
     memset(stat.count, 0, sizeof(stat.count));
 }
 
-void StupidBuffer::print_statistics() {
+void StupidBuffer::print_statistics(const std::string &title) {
     std::string names[] = {
         std::string("IDLE"),
         std::string("FETCH"),
         std::string("READY"),
         std::string("FLUSH"),
     };
+
+    std::stringstream buffer;
+    buffer << "\"" << title << "\": ";
 
     for (int i = 0; i < 4; i++) {
         /**
@@ -76,13 +82,13 @@ void StupidBuffer::print_statistics() {
         // auto name = nameof::nameof_enum(s);
 
         auto name = names[i];
-        notify("[%s]=%llu", name.data(), stat.count[i]);
+        buffer << "[" << name << "]=" << stat.count[i];
 
-        if (i + 1 == 4)
-            notify("\n");
-        else
-            notify(", ");
+        if (i + 1 < 4)
+            buffer << ", ";
     }
+
+    info("%s\n", buffer.str().data());
 }
 
 void StupidBuffer::update_statistics(BufferState state) {

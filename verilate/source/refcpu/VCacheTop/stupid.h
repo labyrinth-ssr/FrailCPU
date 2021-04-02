@@ -17,7 +17,7 @@ public:
 
     void enable_statistics(bool enable);
     void reset_statistics();
-    void print_statistics();
+    void print_statistics(const std::string &title);
 
 private:
     uint64_t tickcount = 0;

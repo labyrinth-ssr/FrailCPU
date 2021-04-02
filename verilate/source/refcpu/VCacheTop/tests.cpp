@@ -62,7 +62,7 @@ WITH {
 WITH {
     dbus->store(0, MSIZE4, 0b1111, 0x2048ffff);
     ASSERT(dbus->load(0, MSIZE4) == 0x2048ffff);
-} AS("naïve");
+} AS("naive");
 
 // this test is explicitly marked with "SKIP".
 WITH SKIP {
@@ -92,7 +92,7 @@ WITH /*SKIP*/ {
 
 // this is a more detailed example of DBus.
 // add DEBUG to see all memory operations.
-WITH TRACE /*DEBUG*/ {
+WITH /*TRACE*/ /*DEBUG*/ {
     {
         dbus->store(0xc, MSIZE4, 0b1111, 0x12345678);
         ASSERT(dbus->load(0xc, MSIZE4) == 0x12345678);
@@ -158,7 +158,7 @@ WITH TRACE /*DEBUG*/ {
 // all operations performed by pipeline are asynchronous, unless
 // p.fence() is called.
 // add DEBUG to see all memory & pipeline operations.
-WITH TRACE /*DEBUG*/ {
+WITH /*TRACE*/ /*DEBUG*/ {
     auto p = DBusPipeline(top, dbus);
 
     {

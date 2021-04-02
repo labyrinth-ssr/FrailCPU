@@ -46,6 +46,7 @@ constexpr word_t STROBE_TO_MASK[] = {
 
 void hook_signal(int sig, handler_t *handler);
 auto trim(const std::string &text) -> std::string;
+auto escape(const std::string &text) -> std::string;
 auto parse_memory_file(const std::string &path) -> ByteSeq;
 
 template <typename T>

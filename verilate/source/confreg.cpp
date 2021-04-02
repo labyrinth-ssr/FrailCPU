@@ -143,7 +143,7 @@ void Confreg::uart_open_pty(const std::string &path) {
     if (!uart.opty)
         return;
 
-    notify("CONFREG: connected to pty \"%s\".\n", path.data());
+    info("CONFREG: connected to pty \"%s\".\n", path.data());
 
     // fetch UART input in the background
     uart.worker = ThreadWorker::loop([this] {
