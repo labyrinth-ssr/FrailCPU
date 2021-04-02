@@ -15,9 +15,20 @@ public:
 
     auto dump() -> MemoryDump;
 
+    void enable_statistics(bool enable);
+    void reset_statistics();
+    void print_statistics();
+
 private:
     uint64_t tickcount = 0;
     CacheRefModel ref;
+
+    struct {
+        bool enabled = false;
+        uint64_t count[4] = {0};
+    } stat;
+
+    void update_statistics(BufferState state);
 
     auto get_creq() const -> CBusWrapper {
         return CBusWrapper(VCacheTop, creq);
@@ -25,7 +36,7 @@ private:
 
     // template is used to reduce the number of unnecessary branches.
     // hope compilers optimizes those "if"s out.
-    template <bool Memory = true, bool Trace = true>
+    template <bool Memory = true, bool Trace = true, bool Stat = true>
     void _tick() {
         // see refcpu/VTop/refcpu.cpp for the descriptions of each stage.
 
@@ -41,6 +52,8 @@ private:
             fst_dump(+1);
         if (Memory)
             dev->eval_req(get_creq());
+        if (Stat)
+            update_statistics(static_cast<BufferState>(VCacheTop->top__DOT__state));
 
         clk = 1;
 

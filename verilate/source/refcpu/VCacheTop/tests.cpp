@@ -12,6 +12,7 @@ DBus *dbus;
 CacheRefModel *ref;
 
 PRETEST_HOOK [] {
+    // reset before every test.
     top->reset();
 };
 
@@ -513,7 +514,7 @@ WITH {
  */
 
 // the first two tests use DBusPipeline for better performance.
-WITH {
+WITH STAT {
     constexpr int n = 10000;
 
     auto p = DBusPipeline(top, dbus);
@@ -534,7 +535,7 @@ WITH {
     }
 } AS("std::sort");
 
-WITH {
+WITH STAT {
     constexpr int n = 10000;
 
     auto p = DBusPipeline(top, dbus);
@@ -557,7 +558,7 @@ WITH {
 
 // you can also use DBus directly.
 // at this time, the reference model can be enabled.
-WITH CMP_TO(ref) {
+WITH STAT CMP_TO(ref) {
     constexpr int n = 10000;
 
     // here we do not have to create a pipeline.
@@ -583,7 +584,7 @@ WITH CMP_TO(ref) {
 } AS("heap sort");
 
 // you can also manually implement any algorithm on top of memory cells.
-WITH CMP_TO(ref) {
+WITH STAT CMP_TO(ref) {
     constexpr int n = 10000;
 
     // set up cell factory.
@@ -631,8 +632,7 @@ WITH CMP_TO(ref) {
 
     std::function<int(int, int)> kth;
     kth = [&kth, &m](int x, int k) -> int {
-        int v = m[x].left;
-        int vsize = v ? m[v].size : 0;
+        int vsize = m[m[x].left].size;
 
         if (k <= vsize)
             return kth(m[x].left, k);

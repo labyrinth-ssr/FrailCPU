@@ -3,6 +3,8 @@
 #include "defs.h"
 #include "stupid.h"
 
+#include "thirdparty/nameof.hpp"
+
 StupidBuffer::StupidBuffer()
     : ref(this, MEMORY_SIZE) {}
 
@@ -47,4 +49,43 @@ void StupidBuffer::run() {
 
 auto StupidBuffer::dump() -> MemoryDump {
     return dev->dump(0, MEMORY_SIZE);
+}
+
+void StupidBuffer::enable_statistics(bool enable) {
+    stat.enabled = enable;
+}
+
+void StupidBuffer::reset_statistics() {
+    memset(stat.count, 0, sizeof(stat.count));
+}
+
+void StupidBuffer::print_statistics() {
+    std::string names[] = {
+        std::string("IDLE"),
+        std::string("FETCH"),
+        std::string("READY"),
+        std::string("FLUSH"),
+    };
+
+    for (int i = 0; i < 4; i++) {
+        /**
+         * nameof is handy for get the name of enumerations.
+         * try it if your compiler supports nameof.
+         */
+        // auto s = static_cast<BufferState>(i);
+        // auto name = nameof::nameof_enum(s);
+
+        auto name = names[i];
+        notify("[%s]=%llu", name.data(), stat.count[i]);
+
+        if (i + 1 == 4)
+            notify("\n");
+        else
+            notify(", ");
+    }
+}
+
+void StupidBuffer::update_statistics(BufferState state) {
+    if (stat.enabled)
+        stat.count[state]++;
 }

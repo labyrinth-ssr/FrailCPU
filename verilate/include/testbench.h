@@ -128,19 +128,27 @@ public:
 #define SKIP { return Skipped; }
 #endif
 
-#define ENABLE_WITH_FN(controller, fn) { \
+#define ENABLE_WITH_BOTH_FN(controller, pre_fn, post_fn) { \
     controller(true); \
-    fn(); \
+    pre_fn(); \
     _.defer([] { \
+        post_fn(); \
         controller(false); \
     }); \
 }
+#define ENABLE_WITH_FN(controller, fn) ENABLE_WITH_BOTH_FN(controller, fn, [] {})
 #define ENABLE(controller) ENABLE_WITH_FN(controller, [] {})
 
 #define LOG ENABLE(enable_logging)
 #define DEBUG ENABLE(enable_debugging)
 #define STATUS ENABLE(enable_status_line)
 #define TRACE ENABLE_WITH_FN(top->enable_fst_trace, top->reset)
+
+#define STAT ENABLE_WITH_BOTH_FN( \
+    top->enable_statistics, \
+    top->reset_statistics, \
+    top->print_statistics \
+)
 
 // hacks DBus::load and DBus::store to compare the results with
 // reference implementation.
