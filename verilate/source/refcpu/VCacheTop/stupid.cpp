@@ -30,26 +30,6 @@ void StupidBuffer::tick() {
     _tick();
 }
 
-void StupidBuffer::run() {
-    DBus dbus(this, VCacheTop, {dreq, dresp});
-
-    // bind variables to ease testing
-    _testbench::top = this;
-    _testbench::scope = VCacheTop;
-    _testbench::dbus = &dbus;
-    _testbench::ref = &ref;
-
-    // default to disable FST tracing
-    enable_fst_trace(false);
-
-    if (_num_workers == 1) {
-        SimpleTimer timer;
-        run_testbench(1);
-        timer.update(tickcount);
-    } else
-        run_testbench(_num_workers);
-}
-
 auto StupidBuffer::dump() -> MemoryDump {
     return dev->dump(0, MEMORY_SIZE);
 }
@@ -94,4 +74,19 @@ void StupidBuffer::print_statistics(const std::string &title) {
 void StupidBuffer::update_statistics(BufferState state) {
     if (stat.enabled)
         stat.count[state]++;
+}
+
+void StupidBuffer::run() {
+    DBus dbus(this, VCacheTop, {dreq, dresp});
+
+    // bind variables to ease testing
+    _testbench::top = this;
+    _testbench::scope = VCacheTop;
+    _testbench::dbus = &dbus;
+    _testbench::ref = &ref;
+
+    // default to disable FST tracing
+    enable_fst_trace(false);
+
+    run_testbench(_num_workers);
 }

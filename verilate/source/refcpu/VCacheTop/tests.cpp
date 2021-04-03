@@ -514,11 +514,13 @@ WITH {
  *
  * you can run real algorithms/programs on your verilated cache
  * with the help of MemoryCell.
+ *
+ * NOTE: be careful with the default 1MiB memory size.
  */
 
 // the first two tests use DBusPipeline for better performance.
 WITH STAT {
-    constexpr int n = 10000;
+    constexpr int n = 150000;
 
     auto p = DBusPipeline(top, dbus);
     auto factory = MemoryCellFactory(&p);
@@ -539,7 +541,7 @@ WITH STAT {
 } AS("std::sort");
 
 WITH STAT {
-    constexpr int n = 10000;
+    constexpr int n = 150000;
 
     auto p = DBusPipeline(top, dbus);
     auto factory = MemoryCellFactory(&p);
@@ -562,7 +564,7 @@ WITH STAT {
 // you can also use DBus directly.
 // at this time, the reference model can be enabled.
 WITH STAT CMP_TO(ref) {
-    constexpr int n = 10000;
+    constexpr int n = 150000;
 
     // here we do not have to create a pipeline.
     // just dbus is OK.
@@ -588,7 +590,7 @@ WITH STAT CMP_TO(ref) {
 
 // you can also manually implement any algorithm on top of memory cells.
 WITH STAT CMP_TO(ref) {
-    constexpr int n = 10000;
+    constexpr int n = 50000;
 
     // set up cell factory.
     auto factory = MemoryCellFactory(dbus);

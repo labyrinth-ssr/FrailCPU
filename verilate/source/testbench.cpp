@@ -5,6 +5,7 @@ static ITestbench *current_test = nullptr;
 static PretestHook pretest_hook INIT_PRIORITY(65533) = [] {};
 static PosttestHook posttest_hook INIT_PRIORITY(65533) = [] {};
 static std::vector<DeferHook> defer_list INIT_PRIORITY(65532);
+static std::vector<DeferHook> global_defer_list INIT_PRIORITY(65532);
 
 auto _testbench_pretest_hook() -> PretestHook & {
     return pretest_hook;
@@ -14,10 +15,20 @@ auto _testbench_posttest_hook() -> PosttestHook & {
     return posttest_hook;
 }
 
+template <bool RunLocal = true, bool RunGlobal = false>
 static void run_defers() {
     // defer_list acts like a stack.
-    for (auto it = defer_list.rbegin(); it != defer_list.rend(); it++) {
-        (*it)();
+
+    if (RunLocal) {
+        for (auto it = defer_list.rbegin(); it != defer_list.rend(); it++) {
+            (*it)();
+        }
+    }
+
+    if (RunGlobal) {
+        for (auto it = global_defer_list.rbegin(); it != global_defer_list.rend(); it++) {
+            (*it)();
+        }
     }
 }
 
@@ -40,6 +51,11 @@ static void run_test(size_t i, bool report_status = true) {
 #if ICS_ON_LINUX
 
 [[noreturn]] static void run_worker(int id, int req, int resp) {
+    // global_defer_list.push_back([req, resp] {
+    //     close(req);
+    //     close(resp);
+    // });
+
     while (true) {
         // send a dummy char to request a task.
         asserts(write(req, "a", 1) == 1, "worker %d failed to send command", id);
@@ -48,16 +64,28 @@ static void run_test(size_t i, bool report_status = true) {
         asserts(read_count >= 0, "worker %d failed to get response", id);
         if (read_count != sizeof(int))
             break;
+        if (i < 0)  // received -1, exit.
+            break;
 
         run_test(i, false);
     }
 
+    run_defers<false, true>();
     exit(EXIT_SUCCESS);
 }
 
 static auto run_parallel(int n_workers) -> int {
-    int count = 0, total = test_list.size(), maxfd = 0;
+    int total = test_list.size(), maxfd = 0;
+    int dispatched = 0, exited = 0, passed = 0;
     std::vector<int> pid, master, worker;
+    pid.reserve(n_workers);
+    master.reserve(n_workers);
+    worker.reserve(n_workers);
+
+    // is the worker the first to request a task?
+    std::vector<bool> first;
+    first.resize(n_workers);
+    std::fill(first.begin(), first.end(), true);
 
     // spawn workers.
     for (int i = 0; i < n_workers; i++) {
@@ -84,11 +112,12 @@ static auto run_parallel(int n_workers) -> int {
     }
 
     bool failed = false;
-    while (!failed && count < total) {
+    while (!failed && exited < n_workers) {
         fd_set set;
         FD_ZERO(&set);
         for (int fd : worker) {
-            FD_SET(fd, &set);
+            if (fd >= 0)
+                FD_SET(fd, &set);
         }
 
         // IO multiplexing
@@ -97,6 +126,9 @@ static auto run_parallel(int n_workers) -> int {
 
         for (size_t j = 0; j < worker.size(); j++) {
             int fd = worker[j];
+            if (fd < 0)
+                continue;
+
             if (FD_ISSET(fd, &set)) {
                 // read the dummy char.
                 char c;
@@ -110,9 +142,26 @@ static auto run_parallel(int n_workers) -> int {
                     break;
                 }
 
-                int write_count = write(master[j], &count, sizeof(int));
-                asserts(write_count == sizeof(int), "failed to send command to worker");
-                count++;
+                if (first[j])
+                    first[j] = false;
+                else
+                    passed++;
+
+                if (dispatched < total) {
+                    // dispatch a new task.
+                    int write_count = write(master[j], &dispatched, sizeof(int));
+                    asserts(write_count == sizeof(int), "failed to send command to worker");
+                    dispatched++;
+                } else {
+                    // or send a -1 to notify the worker to exit.
+                    int v = -1;
+                    int write_count = write(master[j], &v, sizeof(int));
+                    asserts(write_count == sizeof(int), "failed to send command to worker");
+
+                    close(worker[j]);
+                    worker[j] = -1;
+                    exited++;
+                }
             }
         }
     }
@@ -122,10 +171,12 @@ static auto run_parallel(int n_workers) -> int {
         close(fd);
     }
 
-    for (int p : pid) {
+    for (int i = 0; i < n_workers; i++) {
+        int p = pid[i];
+
         // if some tests failed and the worker is still alive, kill it.
         if (failed && waitpid(p, NULL, WNOHANG) == 0) {
-            info(YELLOW "(warn)" RESET " killing worker with pid %d...\n", p);
+            info(YELLOW "(warn)" RESET " killing worker %d (pid=%d)...\n", i, p);
             kill(p, SIGKILL);
         }
 
@@ -135,7 +186,7 @@ static auto run_parallel(int n_workers) -> int {
     if (failed)
         info(RED "FATAL!" RESET " some tests failed.\n");
 
-    return count;
+    return passed;
 }
 
 #endif
@@ -165,6 +216,8 @@ void run_testbench(int n_workers) {
         info(BLUE "(info)" RESET " 1 test passed.\n");
     else
         info(BLUE "(info)" RESET " %d tests passed.\n", count);
+
+    run_defers<false, true>();
 }
 
 void abort_testbench() {
@@ -172,7 +225,7 @@ void abort_testbench() {
         info(RED "ERR!" RESET " testbench aborted in \"%s\"\n", current_test->name);
     fflush(stdout);
     fflush(stderr);
-    run_defers();
+    run_defers<true, true>();
 }
 
 ITestbench::ITestbench(const char *_name) : name(_name) {
@@ -180,14 +233,20 @@ ITestbench::ITestbench(const char *_name) : name(_name) {
 }
 
 void ITestbench::run() {
+    using clock = std::chrono::high_resolution_clock;
+
     current_test = this;
 
+    auto t_start = clock::now();
     auto result = _run(pretest_hook, posttest_hook);
+    auto t_end = clock::now();
+
+    auto span = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start);
 
     if (result == Skipped)
         info(YELLOW "[--]" RESET " %s (skipped)\n", name);
     else
-        info(GREEN "[OK]" RESET " %s\n", name);
+        info(GREEN "[OK]" RESET " %s (%dms)\n", name, span.count());
 
     current_test = nullptr;
 }
