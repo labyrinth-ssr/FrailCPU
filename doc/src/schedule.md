@@ -9,7 +9,7 @@
 * 答疑平台：<i class="fa fa-slack"></i> [FDUCSLG Slack](https://fducslg.slack.com)，#sig-architecture
 * <i class="fa fa-question-circle"></i> [常见问题](faq.md) / <i class="fa fa-book"></i> [外部资料](misc/external.md) / <i class="fa fa-folder-open"></i> [仓库结构](directory-structure.md) / <i class="fa fa-user"></i> [贡献者](contributors.md)
 
-体系结构部分的实验安排：
+实验课程安排：
 
 <table class="schedule-table">
   <thead>
