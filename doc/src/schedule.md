@@ -39,7 +39,6 @@
       <td align="center">5.3</td>
       <td align="center">
         <span class="green">五一劳动节</span><br>
-        <span class="red">实验 3 提交</span><br>
       </td>
     </tr>
     <tr>
@@ -48,6 +47,7 @@
       </td>
       <td align="center">5.10</td>
       <td align="center">
+        <span class="red">实验 3 提交</span><br>
         <a href="arch-lab/lab4.md">布置实验 4</a>
       </td>
     </tr>
@@ -94,6 +94,7 @@
     <tr>
       <td align="center">4.19</td>
       <td align="center">
+        <a href="arch-lab/lab3b.md">布置实验 3b</a>
       </td>
       <td align="center">6.14</td>
       <td align="center">
