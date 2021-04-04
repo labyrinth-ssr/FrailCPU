@@ -29,6 +29,7 @@
       </td>
       <td align="center">4.26</td>
       <td align="center">
+        <a href="arch-lab/lab4.md">布置实验 4</a>
       </td>
     </tr>
     <tr>
@@ -38,7 +39,7 @@
       </td>
       <td align="center">5.3</td>
       <td align="center">
-        <span class="green">五一劳动节</span><br>
+        <span class="green">五一劳动节</span>
       </td>
     </tr>
     <tr>
@@ -47,8 +48,7 @@
       </td>
       <td align="center">5.10</td>
       <td align="center">
-        <span class="red">实验 3 提交</span><br>
-        <a href="arch-lab/lab4.md">布置实验 4</a>
+        <span class="red">实验 3 提交</span>
       </td>
     </tr>
     <tr>
@@ -59,6 +59,7 @@
       </td>
       <td align="center">5.17</td>
       <td align="center">
+        <span class="red">实验 4 提交</span>
       </td>
     </tr>
     <tr>
@@ -69,7 +70,6 @@
       </td>
       <td align="center">5.24</td>
       <td align="center">
-        <span class="red">实验 4 提交</span>
       </td>
     </tr>
     <tr>

@@ -23,7 +23,7 @@ L3         8M       8M   16 Unified         3 8192        1             64
 
 ## 实现 L1d
 
-接下来我们将分步骤介绍 L1d 的基本结构。
+接下来我们将介绍 L1d 的基本结构。
 
 ### Cache Line
 
@@ -37,9 +37,50 @@ Cache line 包含一段连续的内存的副本，一般情况下它的大小是
 
 ### Cache Set
 
-### Cache Line Tag
+前面说的 cache line 是缓存和内存交互的基本单元。相当于缓存将内存视为一大堆 cache line 的集合。之后我们需要考虑如何在缓存中索引 cache line。
 
-## Cache Bus (CBus)
+最常见的做法是把缓存分为若干个桶，每个桶内可以存放一定数量的 cache line，有点类似于哈希表。这些桶在缓存的术语中叫做 cache set。一般地址中除去 offset 后最低的几位会被拿来当作 cache set 的索引（index）：
+
+![索引和偏移量](../asset/lab3/index-offset.svg)
+
+每个 cache set 内能同时存储的 cache line 条数称为关联度（associativity）。显然关联度至少为 1，常见的关联度有 2、4、8（也就是所谓的 2 路、4 路、8 路缓存）。由于很多的 cache line 会被映射到同一个 cache set 内，我们必须用地址中剩下的位对它们进行区分。这些位通常也称作标签（tag）：
+
+![标签、索引和偏移量](../asset/lab3/tag-index-offset.svg)
+
+当我们索引 cache line 时，通常会在 cache set 内并行地比较 tag。因此，关联度太大会导致缓存中比较器消耗的硬件资源过多，反而会降低缓存性能。
+
+> **为什么使用低位作为索引值？**
+>
+> 看一个现实生活中的例子：
+>
+> <img alt="杨浦区某快餐店" src="../asset/lab3/mcdonalds.jpg" width=65% />
+> <center class="fig-caption">（杨浦区某快餐店的外卖暂存区。右下角应该是数字 “9”）</center>
+>
+> 上图中货架上每个数字下面写着 “订单尾号”。
+>
+> 该快餐店的订单号是按顺序生成的。因此用低位作为索引有助于充分利用货架上的每个隔间。也正因为顺序生成的订单号，所以在一段时间内产生的外卖的订单号的高位都是一样的。如果用高位，就会导致大量的外卖放在同一层内。
+
+总结一下：
+
+* offset 用于 cache line 内的寻址。
+* index 用于索引到 cache line。
+* tag 用于区分不同的 cache line。
+
+### 替换策略
+
+缓存的大小通常远小于内存的大小，所以一个程序运行过程中所需要用到的所内存大概率不能都放入缓存中。缓存的主要目标是把程序近期会用到的内存全部装入缓存，这些内存通常也称为工作集（working set）。因此，缓存经常需要把不常用的 cache line 从缓存中清出去，为接下来需要访问的 cache line 腾出空间。
+
+举个例子，对于一个 4 路缓存，某个 cache set 已经有 4 条 cache line 了，然后 CPU 访问的下一个地址对应的 cache line 不在缓存中，但也是映射到这个 cache set 的。此时缓存必须把这个 cache set 内已有的某条 cache line 替换掉，从而能够存放新的 cache line。那么此时应该将哪条 cache line 替换出去呢？
+
+相比各位在 ICS 课上已经了解过各种替换策略了，因此这里不会再一一列举。简单来说，如果我们知道程序的访存顺序，那么我们只需要将下次访问时间最晚的 cache line 替换掉即可。这个贪心算法可以证明是最优的。但显然我们无法准确得知程序的行为。LRU 算法和它的各种变种是缓存中常用的替换算法。LRU 在大多数情况下的效果都比较接近最优贪心算法的效果[^lru]。最原始的 LRU 算法需要维护 cache set 内每条 cache line 的顺序，在硬件上实现可能比较消耗资源，因此出现了一些 LRU 的变种算法。此外，随机替换策略在缓存关联度足够大的时候也有不错的表现。并且随机替换不需要在访存缓存时更新替换算法的状态，也不需要每个 cache set 都存放一些额外信息。相比于 LRU 系列，随机替换可以节约大量的硬件资源。
+
+本次实验中你可以实现任意的替换策略。
+
+### 状态机
+
+### 存储
+
+## 缓存总线（CBus）
 
 CBus 是对 AXI 总线突发传输接口的简化。
 
@@ -72,15 +113,18 @@ TODO
 
 ### 截止时间
 
-**2021 年 5 月 9 日 23:59:59**
+**2021 年 5 月 10 日 12:00**
 
 ## *思考题
 
+* 在关联度为 $2^k$ 的缓存中实现 LRU 算法时，每个 cache set 最少需要为 LRU 算法记录多少位的额外信息？
 * 在先前 `lscpu -C` 的例子中，你可能注意到 L1i/L1d 的 set 数量（SETS）只有 64，远小于 L2 的 set 数量，但是 L1i/L1d 的关联数（WAYS）却反而比 L2 大。为什么它不选择把 L1i/L1d 的关联数降到 4，并且把 set 数量提高到 128 呢？
 * 文档中 `lscpu -C` 的输出来自 Intel 的 Coffee Lake 微架构的 i5 8300H。该 CPU 的 L3 是一个 (strictly) inclusive cache[^inclusive]。结合 [WikiChip](https://en.wikichip.org/wiki/intel/microarchitectures/coffee_lake#Memory_Hierarchy) 上的信息，请尝试解释为什么 L3 的关联数是 16。
 
 ---
 
 [^jit]: 但实际上像 JVM、Javascript V8 这种利用 JIT 技术的软件可能会有这种需求。MIPS 架构中提供了 `CACHE` 指令来解决这个问题。
+
+[^lru]: 如果是在链表上做更新，Sleator & Tarjan 证明了 LRU 算法和最优算法的操作数是同一个级别的：[“Amortized Efficiency of List Update and Paging Rules”](https://dl.acm.org/doi/10.1145/2786.2793)。
 
 [^inclusive]: 参见 [Wikipedia](https://en.wikipedia.org/wiki/CPU_cache#INCLUSIVE) 以及网上的资料。
