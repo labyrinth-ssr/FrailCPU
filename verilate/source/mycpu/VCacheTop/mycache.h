@@ -5,33 +5,40 @@
 #include "defs.h"
 #include "cache_ref.h"
 
-class StupidBuffer final : public ModelBase {
+class MyCache final : public ModelBase {
 public:
-    StupidBuffer();
+    MyCache();
 
     void reset();
     void tick();
     void run();
 
-    auto dump() -> MemoryDump;
-
     void enable_statistics(bool enable);
     void reset_statistics();
     void print_statistics(const std::string &title);
 
+    // get verilated model's memory.
+    auto dump() -> MemoryDump;
+
 private:
+    // your reference model.
     CacheRefModel ref;
 
     struct {
         bool enabled = false;
-        uint64_t count[4] = {0};
-    } stat;
 
-    void update_statistics(BufferState state);
+        /**
+         * TODO (Lab3, optional) store statistics information here :)
+         */
+
+        // uint64_t count[4] = {0};
+    } stat;
 
     auto get_creq() const -> CBusWrapper {
         return CBusWrapper(VCacheTop, creq);
     }
+
+    void update_statistics();
 
     // template is used to reduce the number of unnecessary branches.
     // hope compilers optimize those "if"s out.
@@ -51,7 +58,7 @@ private:
         if (Memory)
             dev->eval_req(get_creq());
         if (Stat && stat.enabled)
-            update_statistics(static_cast<BufferState>(VCacheTop->top__DOT__state));
+            update_statistics();
 
         clk = 1;
 
@@ -67,11 +74,11 @@ private:
     }
 };
 
-using DBus = DBusGen<StupidBuffer, VModelScope>;
-using DBusPipeline = DBusPipelineGen<StupidBuffer, DBus>;
+using DBus = DBusGen<MyCache, VModelScope>;
+using DBusPipeline = DBusPipelineGen<MyCache, DBus>;
 
 namespace _testbench {
-    extern StupidBuffer *top;
+    extern MyCache *top;
     extern VModelScope *scope;
     extern DBus *dbus;
     extern CacheRefModel *ref;

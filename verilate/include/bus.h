@@ -433,7 +433,7 @@ public:
                 return data;
         }
 
-        panic("no response from DBus in %llu cycle(s)", max_count);
+        panic("await timeout: no response from DBus in %llu cycle(s)", max_count);
     }
 
 protected:
@@ -582,7 +582,11 @@ public:
             count++;
         }
 
-        internal_assert(empty(), "all queues should be empty");
+        internal_assert(
+            empty(),
+            "fence timeout: all queues should be empty. max_count=%llu",
+            max_count
+        );
     }
 
 private:

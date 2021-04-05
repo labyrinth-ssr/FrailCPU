@@ -2,11 +2,11 @@
 #include "testbench.h"
 #include "cell.h"
 
-#include "stupid.h"
+#include "mycache.h"
 
 namespace _testbench {
 
-StupidBuffer *top;
+MyCache *top;
 VModelScope *scope;
 DBus *dbus;
 CacheRefModel *ref;
@@ -34,6 +34,10 @@ WITH {
     ASSERT(dbus->data_ok() == false);
     ASSERT(dbus->rdata() == 0);
 } AS("reset");
+
+/**
+ * TODO (Lab3, optional) write your own simple tests :)
+ */
 
 WITH {
     for (int i = 0; i < 4096; i++) {
@@ -660,5 +664,9 @@ WITH STAT CMP_TO(ref) {
         ASSERT(kth(root, i) == keys[i]);
     }
 } AS("binary search tree");
+
+/**
+ * TODO (Lab3, optional) write your own algorithm tests :)
+ */
 
 }

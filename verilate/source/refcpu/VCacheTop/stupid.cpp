@@ -72,8 +72,7 @@ void StupidBuffer::print_statistics(const std::string &title) {
 }
 
 void StupidBuffer::update_statistics(BufferState state) {
-    if (stat.enabled)
-        stat.count[state]++;
+    stat.count[state]++;
 }
 
 void StupidBuffer::run() {
