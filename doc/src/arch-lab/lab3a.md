@@ -109,7 +109,7 @@ Cache line 有三种基本的状态[^mosei]：
 
 对于每个 cache set，你需要存储一个 cache line 的数组。
 
-假设 index 和 offset 都是 6 位，关联度为 4，下面是一个大概的实现：
+假设 index 和 offset 都是 6 位，关联度为 4，下面是一个简略的实现：
 
 ```verilog
 typedef i20 tag_t;
@@ -121,7 +121,7 @@ typedef struct packed {
     tag_t tag;
     logic valid;  // cache line 是否有效？
     logic dirty;  // cache line 是否被写入了？
-} meta_t
+} meta_t;
 typedef meta_t [3:0] meta_set_t;
 
 typedef word_t [15:0] cache_line_t;
@@ -185,7 +185,7 @@ assign dreq.data = bar[offset[5:2]];  // 4 字节对齐
 
     而 `localparam` 仅限模块内部使用，类似于常量值（比如 C++ 中的 `constexpr`）。
 * **强烈建议初次调试时不要使用太大的缓存**。我们推荐最开始调试的时候使用 4 位的 offset 和 2 位的 index，并且关联度不要超过 4。这相当于每条 cache line 存储 4 条指令，缓存中只有 4 个 cache set。过长的 cache line 会让突发传输的过程太长，而过多的 cache set 和过大的关联度会增加在缓存中寻找问题的难度。一般 4 个足以测试出绝大部分的问题。
-* \*使用 LUTRAM 存储 cache line。我们在 `source/ram` 目录下提供了 `LUTRAM.sv` 和 `LUTRAMTest.sv`，它们分别是 LUTRAM IP 核的封装和测试。使用 LUTRAM 可以大幅减少你的缓存消耗的硬件资源[^bram]。你可以在 Vivado 中观察 `LUTRAMTest.sv` 的仿真波形图，或者是阅读 `LUTRAM.sv` 内的行为级模型的 SystemVerilog 代码，来了解 LUTRAM 的行为。我们也提供了 `source/refcpu/StupidBuffer.sv` 作为使用 LUTRAM 的示例。
+* \*使用 LUTRAM 存储 cache line。我们在 `source/ram` 目录下提供了 `LUTRAM.sv` 和 `LUTRAMTest.sv`，它们分别是 LUTRAM IP 核的封装和测试[^bram]。使用 LUTRAM 可以大幅减少你的缓存消耗的硬件资源。你可以在 Vivado 中观察 `LUTRAMTest.sv` 的仿真波形图，或者是阅读 `LUTRAM.sv` 内的行为级模型的 SystemVerilog 代码，来了解 LUTRAM 的行为。我们也提供了 `source/refcpu/StupidBuffer.sv` 作为使用 LUTRAM 的示例。
 
 ## 接口
 
@@ -238,15 +238,17 @@ CBus 的突发传输实际上就是 AXI 总线中的 WRAP 类型的突发传输�
 
 ![CBus 事务传输](../asset/lab3/cbus-transaction.svg)
 
+上图中，四次握手的实际地址分别为 `0xbfc01fc1`、`0xbfc01fc4`、`0xbfc01fc8` 和 `0xbfc01fcc`。
+
 在 `verilate/include/axi.h` 有 AXI WRAP 突发传输的 C++ 描述。
 
 ### 参考实现
 
-`source/refcpu/StupidBuffer.sv` 是一个参考实现。`StupidBuffer` 中展示了如何进行突发传输，并且同时将突发传输中的数据保存到 LUTRAM 中。
+`source/refcpu/StupidBuffer.sv` 是一个参考实现。`StupidBuffer` 中展示了如何进行突发传输，并且同时将突发传输中的数据保存到 LUTRAM。
 
 ## 模块级测试
 
-本次实验会使用 Verilator 对缓存做专门的测试。
+本次实验使用 Verilator 对缓存做专门的测试。
 
 与之前不同，这次用了一个新的名为 `VCacheTop` 的顶层模块，它只接入了缓存，没有带上流水线。同时，测试你的缓存的 C++ 代码也放到了 `verilate/source/mycpu/VCacheTop` 下面。
 
@@ -266,7 +268,7 @@ make vsim -j TARGET=mycpu/VCacheTop VSIM_OPT=1
 
 ### 单元测试
 
-这中间最重要的文件是 `verilate/source/mycpu/VCacheTop/tests.cpp`，这里面包含了本次实验所有的单元测试。每个单元测试形如：
+这中间最重要的文件是 `verilate/source/refcpu/VCacheTop/tests.inl`，这里面包含了本次实验所有的单元测试。`mycpu/VCacheTop` 文件夹下的 `tests.cpp` 里面直接 `include` 了 `tests.inl`，也就是说我们将用测试 `StupidBuffer` 的单元测试来测试你的缓存。每个单元测试形如：
 
 ```c++
 // this test is explicitly marked with "SKIP".
@@ -279,7 +281,7 @@ WITH SKIP {
 
 可以看到，单元测试的代码用 `WITH`...`AS("...")` 包起来，`AS` 后面的字符串是这个单元测试的名字。测试内部使用 `ASSERT` 检查测试状态。如果状态与预期不符，`ASSERT` 会直接中断这个测试并报错。此外，`WITH` 后面可以带上一些插件（plugin），例如上面的 `SKIP`，表明这个测试会直接跳过。
 
-具体的测试内容需要你自己阅读 `tests.cpp`。
+具体的测试内容需要你自己阅读 `tests.inl`。
 
 ### 对照验证
 
@@ -309,7 +311,21 @@ void CacheRefModel::store(addr_t addr, AXISize size, word_t strobe, word_t data)
 }
 ```
 
-分别表示向缓存读取和写入的操作，而这两个函数的目标是计算目前操作完成后，理论上缓存的内部状态是怎么样的。测试框架在向 verilated 模型发送请求后，会先调用对应的函数，然后调用 `compare_internal` 来检查内部状态。
+分别表示向缓存读取和写入的操作，而这两个函数的目标是计算操作完成后，理论上缓存的内部状态是怎么样的。测试框架在向 verilated 模型发送请求并等待 verilated 模型完成后，将先调用对应的函数，然后调用 `compare_internal` 来检查内部状态。
+
+### 调试工具
+
+在单元测试的 `WITH` 后面加上 `TRACE`，就会在运行测试的中途记录 FST 波形图。默认会把波形图放在 `build` 文件夹下面。例如：
+
+```c++
+WITH TRACE {
+    // ...
+} AS("example test 1");
+```
+
+将会把波形图记录到 `build/example-test-1.fst` 这个文件中。
+
+类似的，在 `WITH` 后面加上 `DEBUG`，将会在测试过程中打印所有访存操作。对于比较小的测试可能有用。
 
 ### 参考实现
 
@@ -317,9 +333,9 @@ void CacheRefModel::store(addr_t addr, AXISize size, word_t strobe, word_t data)
 
 ### \*性能监测
 
-`tests.cpp` 最后的四个测试分别会在你的缓存上运行 `std::sort`、`std::stable_sort`、堆排序和二叉树插入和搜索算法。它们都使用了一个名为 `STAT` 的插件。此时你需要实现 `mycache.h` 和 `mycache.cpp` 下面的所有 TODO，主要是 `reset_statistics`、`update_statistics` 和 `print_statistics` 这三个函数。它们分别表示重置统计信息、更新统计信息和打印统计信息。
+`tests.inl` 最后的四个测试分别会在你的缓存上运行 `std::sort`、`std::stable_sort`、堆排序和二叉树插入和搜索算法。它们都使用了一个名为 `STAT` 的插件。此时你需要实现 `mycache.h` 和 `mycache.cpp` 下面的所有 TODO，主要是 `reset_statistics`、`update_statistics` 和 `print_statistics` 这三个函数。它们分别表示重置统计信息、更新统计信息和打印统计信息。
 
-你可以在这里统计你的缓存的命中率、突发传输所用周期数等信息。测试框架在每个单元测试开始的时候会调用 `reset_statistics`；然后在仿真过程中，每个周期都会调用一次 `update_statistics`；测试结束时，会调用 `print_statistics` 来打印这个测试的统计信息。`StupidBuffer` 的配套代码中，实现了 `StupidBuffer` 各个状态所用周期数的计数器。在测试中会输入如下的内容：
+你可以在这里统计你的缓存的命中率、突发传输所用周期数等信息。测试框架在每个单元测试开始的时候会调用 `reset_statistics`；然后在仿真过程中，每个周期都会调用一次 `update_statistics`；测试结束时，会调用 `print_statistics` 来打印这个测试的统计信息。`StupidBuffer` 的配套代码中，实现了 `StupidBuffer` 各个状态所用周期数的计数器，在测试中会输入如下的内容：
 
 ```plaintext
 "std::sort": [IDLE]=8441412, [FETCH]=143504004, [READY]=8441412, [FLUSH]=19608616
@@ -334,7 +350,7 @@ void CacheRefModel::store(addr_t addr, AXISize size, word_t strobe, word_t data)
 
 ### \*自定义测试
 
-如果有需要，你可参照已有的单元测试代码，编写你自己的单元测试。
+如果有需要，你可参照已有的单元测试代码，在 `mycpu/VCacheTop/tests.cpp` 中编写你自己的单元测试。
 
 如果你尝试对缓存进行优化，你也可以用单元测试来检测优化的效果。
 
@@ -386,9 +402,9 @@ make vsim -j TARGET=mycpu/VCacheTop VSIM_OPT=1 VSIM_ARGS="-j4"
 3. 模块级测试的最后四个测试使用了 `MemoryCell`，它表示 verilated 模型中指定地址处的一个小内存单元。所有读写类型为 `MemoryCell` 的变量的操作都会被重定向到 verilated 模型的仿真上。这样一来就能非常方便地在你的缓存上跑各种算法了。
    * 请尝试使用 `MemoryCell` 编写一个新的单元测试。你可以在这个测试内跑任意算法。
    * `MemoryCell` 是否真的把所有的访存操作都重定向了？如果是，请说明理由。如果不是，请指出有哪些访存没有被重定向。
-   * 你有比 `MemoryCell` 更好的解决方案吗？
-4. 在先前 `lscpu -C` 的例子中，你可能注意到 L1i/L1d 的 set 数量（SETS）只有 64，远小于 L2 的 set 数量，但是 L1i/L1d 的关联数（WAYS）是 8，反而比 L2 大。为什么它不选择把 L1i/L1d 的关联数降到 4，并且把 set 数量提高到 128 呢？
-5. 文档中 `lscpu -C` 的输出来自 Intel 的 Coffee Lake 微架构的 i5 8300H。该 CPU 的 L3 是一个 (strictly) inclusive cache[^inclusive]。结合 [WikiChip](https://en.wikichip.org/wiki/intel/microarchitectures/coffee_lake#Memory_Hierarchy) 上的信息，请尝试解释为什么 L3 的关联数是 16。
+   * 你有不同于 `MemoryCell` 的解决方案吗？
+4. 在先前 `lscpu -C` 的例子中，你可能注意到 L1i/L1d 的 set 数量（SETS）只有 64，远小于 L2 的 set 数量，但是 L1i/L1d 的关联度（WAYS）是 8，反而比 L2 大。为什么它不选择把 L1i/L1d 的关联度降到 4，并且把 set 数量提高到 128 呢？
+5. 文档中 `lscpu -C` 的输出来自 Intel 的 Coffee Lake 微架构的 i5 8300H。该 CPU 的 L3 是一个 (strictly) inclusive cache[^inclusive]。结合 [WikiChip](https://en.wikichip.org/wiki/intel/microarchitectures/coffee_lake#Memory_Hierarchy) 上的信息，请尝试解释为什么 L3 的关联度是 16。
 
 ---
 

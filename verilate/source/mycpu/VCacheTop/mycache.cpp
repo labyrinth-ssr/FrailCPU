@@ -53,7 +53,7 @@ void MyCache::print_statistics(const std::string &title) {
      * NOTE: you should use info() to print text.
      */
 
-    (void) title;
+    info("\"%s\": bingo!\n", title.data());
 }
 
 auto MyCache::dump() -> MemoryDump {
