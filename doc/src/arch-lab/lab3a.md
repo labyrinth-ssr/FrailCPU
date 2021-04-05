@@ -403,7 +403,7 @@ make vsim -j TARGET=mycpu/VCacheTop VSIM_OPT=1 VSIM_ARGS="-j4"
    * 请尝试使用 `MemoryCell` 编写一个新的单元测试。你可以在这个测试内跑任意算法。
    * `MemoryCell` 是否真的把所有的访存操作都重定向了？如果是，请说明理由。如果不是，请指出有哪些访存没有被重定向。
    * 你有不同于 `MemoryCell` 的解决方案吗？
-4. 在先前 `lscpu -C` 的例子中，你可能注意到 L1i/L1d 的 set 数量（SETS）只有 64，远小于 L2 的 set 数量，但是 L1i/L1d 的关联度（WAYS）是 8，反而比 L2 大。为什么它不选择把 L1i/L1d 的关联度降到 4，并且把 set 数量提高到 128 呢？
+4. 张三发现，在先前 `lscpu -C` 的例子中，L1i/L1d 的 set 数量（SETS）只有 64，远小于 L2 的 set 数量，但是 L1i/L1d 的关联度（WAYS）是 8，反而比 L2 大。为什么它不选择把 L1i/L1d 的关联度降到 4，并且把 set 数量提高到 128 呢？
 5. 文档中 `lscpu -C` 的输出来自 Intel 的 Coffee Lake 微架构的 i5 8300H。该 CPU 的 L3 是一个 (strictly) inclusive cache[^inclusive]。结合 [WikiChip](https://en.wikichip.org/wiki/intel/microarchitectures/coffee_lake#Memory_Hierarchy) 上的信息，请尝试解释为什么 L3 的关联度是 16。
 
 ---
