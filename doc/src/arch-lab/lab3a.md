@@ -23,7 +23,9 @@ L3         8M       8M   16 Unified         3 8192        1             64
 
 ## 实现 L1d
 
-本次实验要求 L1d 是写分配（write-allocate）以及写回（write-back）缓存。接下来我们将介绍 L1d 的基本结构。
+本次实验要求 L1d 是写分配（write-allocate）和写回（write-back）的缓存。你需要在 `DCache.sv` 中编写你的实现。
+
+接下来我们将介绍 L1d 的基本结构。
 
 ### Cache Line
 
