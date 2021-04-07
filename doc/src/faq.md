@@ -4,6 +4,10 @@
 
 本页面不定期更新。
 
+### 为什么编译时报错 `undefined reference to ...`？
+
+一般是我们更新了代码后会出现这种问题。你可以尝试先 `make clean` 后再重新编译。
+
 ### 为什么 Verilator 会报告 `UNOPT`/`UNOPTFLAT`？
 
 这是因为你的代码中可能存在组合逻辑环。请根据 Verilator 输出的文件位置检查是否真的有逻辑环。
