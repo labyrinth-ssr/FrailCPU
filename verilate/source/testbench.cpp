@@ -56,6 +56,11 @@ static void run_test(size_t i, bool report_status = true) {
     //     close(resp);
     // });
 
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(id, &set);
+    sched_setaffinity(getpid(), sizeof(set), &set);
+
     while (true) {
         // send a dummy char to request a task.
         asserts(write(req, "a", 1) == 1, "worker %d failed to send command", id);

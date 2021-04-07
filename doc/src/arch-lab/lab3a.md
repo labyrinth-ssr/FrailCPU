@@ -23,7 +23,7 @@ L3         8M       8M   16 Unified         3 8192        1             64
 
 ## 实现 L1d
 
-接下来我们将介绍 L1d 的基本结构。
+本次实验要求 L1d 是写分配（write-allocate）以及写回（write-back）缓存。接下来我们将介绍 L1d 的基本结构。
 
 ### Cache Line
 
@@ -283,7 +283,7 @@ WITH SKIP {
 
 具体的测试内容需要你自己阅读 `tests.inl`。
 
-### 对照验证
+### 对照测试
 
 有些测试使用了 `CMP_TO` 插件，例如：
 
@@ -300,7 +300,7 @@ WITH CMP_TO(ref) {
 
 你需要将 `cache_ref.h` 和 `cache_ref.cpp` 中的所有 `TODO` 全部实现，然后才能通过这些测试。
 
-请注意：对照模型的模拟不是以时钟周期为单位的，而是以询问为单位的。也就是说：
+请注意：对照模型的仿真不是以时钟周期为单位的，而是以访存操作为单位的。也就是说：
 
 ```c++
 auto CacheRefModel::load(addr_t addr, AXISize size) -> word_t {
@@ -325,7 +325,7 @@ WITH TRACE {
 
 将会把波形图记录到 `build/example-test-1.fst` 这个文件中。
 
-类似的，在 `WITH` 后面加上 `DEBUG`，将会在测试过程中打印所有访存操作。对于比较小的测试可能有用。
+类似的，在 `WITH` 后面加上 `DEBUG`，将会在终端打印所有访存操作。对比较小的测试可能有用。
 
 ### 参考实现
 
@@ -362,7 +362,7 @@ WITH TRACE {
 make vsim -j TARGET=mycpu/VCacheTop VSIM_OPT=1 VSIM_ARGS="-j4"
 ```
 
-其中 `-j4` 表示使用 4 核一起跑单元测试[^fork]。
+其中 `-j4` 表示使用 4 个进程一起跑单元测试[^fork]。
 
 ## 实验提交
 
