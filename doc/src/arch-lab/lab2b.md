@@ -187,13 +187,70 @@ endmodule
 
 本方法使用了 32 层加法器实现了乘法。如果是 $n$ 位无符号数的乘法，本方法使用的加法器层数为 $\mathrm O(n)$。Wallace tree 和 signed-digit tree 是加法器层数为 $\mathrm O(\log n)$ 的算法，如果你对此感兴趣，可以查阅参考书 J.9 章节。
 
-然而，我们发现，利用 DSP 资源，单周期乘法的性能已经不错了。如果我们采用 DSP 来实现多周期乘法，很可能两个周期乘法器的延迟就可以令人满意。
+然而，我们发现，利用 DSP 资源，单周期乘法的性能已经不错了。
 
 ![single_mult_use_dsp_path](../asset/lab2/single_mult_use_dsp_path.png)
 
 上图为使用 DSP 资源的单周期乘法器的关键路径。左侧的两个端口很多的元件 `DSP48E1` 即为 DSP ，右侧的若干 `CARRY4` 为加法逻辑。每片 `DSP48E1` 内置一个 25 位乘 18 位的乘法器，集成了乘加 $a \times b + c$ 的功能。
 
 如果你想用 DSP 实现乘法器，请查阅 `DSP48E1` 的有关资料与手册。
+
+Vivado 在解析乘法运算符时，默认采用 DSP 实现。我们可以将32位的乘法拆成若干个乘法，使每个乘法的位宽可以被 DSP 内置的乘法器所容纳，然后再将这些乘积进行移位相加。这样，在使用乘法运算符时，综合器就会简单地采用 DSP 中的乘法器。
+
+下面的代码是一个简单的实现方案：将32位的乘法拆成四部分，两个乘数的前16位和后16位分别相乘，这样就是四个16位的乘法，可以用上 DSP 的乘法器。最后的加法里，两个低16位相乘的结果无需移位，高16位乘低16位的结果需要左移16位，两个高16位相乘的结果需要左移32位：
+
+```verilog
+// c = (a[31:16] * b[31:16] << 32) + (a[15:0] * b[31:16] << 16) +
+//     (a[31:16] * b[15:0] << 32) + (a[15:0] * b[15:0])
+module multiplier_multicycle_dsp (
+    input logic clk, resetn, valid,
+	input i32 a, b,
+    output logic done,
+    output i64 c // c = a * b
+);
+    logic [3:0][31:0]p, p_nxt;
+    assign p_nxt[0] = a[15:0] * b[15:0];
+    assign p_nxt[1] = a[15:0] * b[31:16];
+    assign p_nxt[2] = a[31:16] * b[15:0];
+    assign p_nxt[3] = a[31:16] * b[31:16];
+
+    always_ff @(posedge clk) begin
+        if (~resetn) begin
+            p <= '0;
+        end else begin
+            p <= p_nxt;
+        end
+    end
+    logic [3:0][63:0] q;
+    assign q[0] = {p[0]};
+    assign q[1] = {p[1], 16'b0};
+    assign q[2] = {p[2], 16'b0};
+    assign q[3] = {p[3], 32'b0};
+    assign c = q[0] + q[1] + q[2] + q[3];
+
+    enum logic {INIT, DOING} state, state_nxt;
+    always_ff @(posedge clk) begin
+        if (~resetn) begin
+            state <= INIT;
+        end else begin
+            state <= state_nxt;
+        end
+    end
+    always_comb begin
+        state_nxt = state;
+        if (state == DOING) begin
+            state_nxt = INIT;
+        end else if (valid) begin
+            state_nxt = DOING;
+        end
+    end
+    assign done = state_nxt == INIT;
+endmodule
+```
+
+本方法延迟约为 5.3 ns，需要两个周期：第一个周期做四个并行的16位乘法（关键路径，延迟约为 5.3 ns），第二个周期做剩余的加法（延迟约为 4.6 ns）。这个方法用单周期实现，延迟约为 9.6 ns。在接入流水线时，可能需要加一级输入寄存器。
+
+本方法仅利用了 DSP 的乘法器和一层寄存器（经检测，乘法结果的那一级寄存器没有使用额外资源），没有利用乘加的功能，16位的划分也不一定是最优方案，但性能已经令人满意。
 
 ### 除法器
 
