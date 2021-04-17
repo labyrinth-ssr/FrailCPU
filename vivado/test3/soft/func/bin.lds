@@ -1,9 +1,11 @@
+
+
 OUTPUT_ARCH(mips)
 ENTRY(_start)
 SECTIONS
 {
 
-  . = 0xbfc00000;
+  . = 0x9fc00000;
   .text :
   {
     _ftext = . ;

@@ -42,7 +42,7 @@ convert:convert.c
 
 clean:
 	rm -f *.o *.a 
-	rm -rf obj
+	# rm -rf obj
 	make -C inst clean
 
 reset:

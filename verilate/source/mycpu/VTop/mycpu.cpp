@@ -3,7 +3,7 @@
 #include "mycpu.h"
 
 constexpr int MAX_CYCLE = 100000000;
-constexpr addr_t TEST_END_PC = 0xbfc00100;
+constexpr addr_t TEST_END_PC = 0x9fc00100;
 
 auto MyCPU::get_writeback_pc() const -> addr_t {
     /**

@@ -3,7 +3,7 @@
 #include "refcpu.h"
 
 constexpr int MAX_CYCLE = 100000000;
-constexpr addr_t TEST_END_PC = 0xbfc00100;
+constexpr addr_t TEST_END_PC = 0x9fc00100;
 
 void RefCPU::print_status() {
     auto ctx = get_ctx();
@@ -48,9 +48,9 @@ void RefCPU::print_writeback() {
 void RefCPU::print_instruction() {
     auto state = get_ctx().state();
 
-#define PRINT_ENUM(enum_type, enum_value) \
+#define PRINT_ENUM(enum_type, enum_value) ;/* \
     if (get_new_ctx().state() != CPUState::S_EXCEPTION) \
-        info("%s ", nameof::nameof_enum(enum_type(enum_value)).data());
+        info("%s ", nameof::nameof_enum(enum_type(enum_value)).data()); */
 
     switch (state) {
         case CPUState::S_FETCH:
