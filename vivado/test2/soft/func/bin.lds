@@ -1,5 +1,3 @@
-
-
 OUTPUT_ARCH(mips)
 ENTRY(_start)
 SECTIONS

@@ -49,9 +49,9 @@ void RefCPU::print_writeback() {
 void RefCPU::print_instruction() {
     auto state = get_ctx().state();
 
-#define PRINT_ENUM(enum_type, enum_value) ;/* \
+#define PRINT_ENUM(enum_type, enum_value) \
     if (get_new_ctx().state() != CPUState::S_EXCEPTION) \
-        info("%s ", nameof::nameof_enum(enum_type(enum_value)).data()); */
+        info("%s ", nameof::nameof_enum(enum_type(enum_value)).data());
 
     switch (state) {
         case CPUState::S_FETCH:
