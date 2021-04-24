@@ -52,7 +52,7 @@ int main() {
 
     auto scope = top->Bits;
 
-    // top->h: SData;
+    // top->h: SData
     auto h = top->h;
     printf(
         "h: {a: %u, b: %u, c: %u, d: %u}\n",
