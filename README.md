@@ -115,7 +115,7 @@ pacman -S verilator gdb gtkwave base-devel zlib screen
 
 Please use `verilator --version` to ensure that the version of Verilator installed is actually ≥ 4.028. We have found that some Ubuntu 20.04 on WSL2 only provides Verilator 4.016, which is incapable of compiling RefCPU, although the package manager claims it's 4.028.
 
-If you need more recent version of Verilator, please refer to <https://www.veripool.org/projects/verilator/wiki/Installing> and manually build & install from source.
+If you need more recent version of Verilator, please refer to <https://veripool.org/guide/latest/install.html> and manually build & install from source.
 
 ## NSCSCC Performance Test
 

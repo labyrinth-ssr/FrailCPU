@@ -4,6 +4,7 @@ SV_ROOT := $(shell dirname $(TARGET))#        # refcpu. NOTE: builtin $(dir ...)
 SV_NAME := $(notdir $(TARGET))#               # VTop
 SV_MKFILE = $(SV_BUILD)/$(SV_PREFIX).mk#      # build/gcc/refcpu/VTop/verilated/VTop.mk
 SV_VTOP = source/$(TARGET).sv#                # source/refcpu/VTop.sv
+SV_EXTERNAL := $(wildcard source/external/*)  # source/external/xpm_memory.sv, ...
 
 SV_SOURCE_FOLDERS := $(shell find 'source/${SV_ROOT}' -type d)
 SV_FILES := \
@@ -30,6 +31,7 @@ SV_FLAGS = \
 	--output-split 6000 \
 	--trace-fst --trace-structs \
 	--no-trace-params \
+	--bbox-unsup \
 	--Mdir $(SV_BUILD) \
 	--top-module $(SV_NAME) \
 	--prefix $(SV_PREFIX) \
@@ -55,7 +57,7 @@ endif
 
 $(SV_MKFILE): $(SV_FILES)
 	@mkdir -p $(SV_BUILD)
-	$(VERILATOR) $(SV_FLAGS) $(SV_VTOP)
+	$(VERILATOR) $(SV_FLAGS) $(SV_EXTERNAL) $(SV_VTOP)
 	@touch $@
 
 .PHONY: verilate
