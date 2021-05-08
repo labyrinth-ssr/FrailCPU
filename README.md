@@ -40,6 +40,7 @@ Available parameters:
   VSIM_SANITIZE: set to 1 to enable address sanitizer and undefined behavior sanitizer.
   SV_EXTRA_FLAGS: extra synthesis flags passed to Verilator.
   CXX_EXTRA_FLAGS: extra compiler flags passed to C++ compiler.
+  WITH_XPM: compile with Xilinx XPM modules.
 ```
 
 ## Prerequisites

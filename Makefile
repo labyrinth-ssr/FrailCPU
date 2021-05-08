@@ -26,6 +26,7 @@ help:
 	@echo '  VSIM_SANITIZE: set to 1 to enable address sanitizer and undefined behavior sanitizer.'
 	@echo '  SV_EXTRA_FLAGS: extra synthesis flags passed to Verilator.'
 	@echo '  CXX_EXTRA_FLAGS: extra compiler flags passed to C++ compiler.'
+	@echo '  WITH_XPM: compile with Xilinx XPM modules.'
 
 clean:
 	@rm -rf ./build/*
