@@ -71,6 +71,7 @@ if (BACKEND == "behavioral") begin: behavioral
 
 end else begin: xilinx_xpm
 
+`ifdef ICS_WITH_XPM
     // verilator lint_off PINMISSING
 
     // xpm_memory_spram: Single Port RAM
@@ -112,6 +113,9 @@ end else begin: xilinx_xpm
     // End of xpm_memory_spram_inst instantiation
 
     // verilator lint_on PINMISSING
+`else
+    $error("XPM modules are disabled.");
+`endif
 
 end
 

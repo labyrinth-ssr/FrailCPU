@@ -60,6 +60,10 @@ endif
 
 endif
 
+ifeq ($(WITH_XPM),1)
+SV_FLAGS += -DICS_WITH_XPM
+endif
+
 $(SV_MKFILE): $(SV_FILES)
 	@mkdir -p $(SV_BUILD)
 	$(VERILATOR) $(SV_FLAGS) $(SV_EXTERNAL) $(SV_VTOP)
