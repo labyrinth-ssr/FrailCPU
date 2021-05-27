@@ -123,6 +123,40 @@ WITH {
 } AS("priority");
 
 WITH {
+    top->set_w(0, true, 0, 0xabcd);
+    top->tick();
+    check(0, 0xabcd);
+    top->set_w(0, false, 0, 0xcccc);
+    top->set_w(1, true, 0, 0x1234);
+    top->eval();
+    check(0, 0xabcd);
+    top->tick();
+    check(0, 0x1234);
+    check(1, 0x1234);
+    check(2, 0x1234);
+    top->set_w(1, false, 0, 0xcccc);
+    top->set_w(2, true, 0, 0xdddd);
+    top->tick();
+    check(0, 0xdddd);
+} AS("overwrite");
+
+WITH {
+    for (int i = 0; i < N_WRITE; i++) {
+        for (int j = 0; j < N_READ; j++) {
+            for (int k = 0; k < DEPTH; k++) {
+                word_t v = randi() & 0xffff;
+                top->set_w(i, true, k, v);
+                top->set_r(j, k);
+                top->tick();
+                check(j, v);
+            }
+        }
+
+        top->set_w(i, false, 0, 0x0);
+    }
+} AS("pairwise check");
+
+WITH {
     for (int i = 0; i < N_WRITE; i++) {
         for (int j = 0; j < DEPTH; j++) {
             for (int k = 0; k < N_READ; k++) {
@@ -147,7 +181,7 @@ WITH {
 } AS("scan");
 
 WITH {
-    constexpr int T = 500000;
+    constexpr int T = 1000000;
 
     std::vector<word_t> ref;
     ref.resize(DEPTH);
