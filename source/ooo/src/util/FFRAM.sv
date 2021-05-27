@@ -3,6 +3,7 @@ module FFRAM #(
     parameter int DEPTH   = 32,
     parameter int N_WRITE = 1,
     parameter int N_READ  = 1,
+    parameter int LATENCY = 1,
 
     localparam int ADDR_WIDTH = $clog2(DEPTH),
 
@@ -41,13 +42,23 @@ module FFRAM #(
     always_ff @(posedge clk)
     if (resetn) begin
         prev <= next;
-
-        for (int i = 0; i < N_READ; i++) begin
-            rdata[i] <= next[raddr[i]];
-        end
     end else begin
-        for (int i = 0; i < N_READ; i++) begin
-            rdata[i] <= '0;
-        end
+        rdata <= '0;
     end
+
+    if (LATENCY == 0) begin
+        for (genvar i = 0; i < N_READ; i++) begin
+            assign rdata[i] = next[raddr[i]];
+        end
+    end else if (LATENCY == 1) begin
+        always_ff @(posedge clk)
+        if (resetn) begin
+            for (int i = 0; i < N_READ; i++) begin
+                rdata[i] <= next[raddr[i]];
+            end
+        end else begin
+            rdata <= '0;
+        end
+    end else
+        $error("unsupported read latency: %d", LATENCY);
 endmodule

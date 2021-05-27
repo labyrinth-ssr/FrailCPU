@@ -1,5 +1,5 @@
 module VRAM #(
-    parameter string BACKEND = "ff",
+    parameter string BACKEND = "lvt",
 
     parameter int WIDTH   /* verilator public */ = 16,
     parameter int DEPTH   /* verilator public */ = 64,
@@ -77,8 +77,13 @@ module VRAM #(
         assign r_out[i] = rdata[i];
     end
 
-    if (BACKEND == "ff")
-        FFRAM #(.WIDTH, .DEPTH, .N_WRITE, .N_READ) top(.resetn(1), .*);
-    else
+    logic resetn;
+    assign resetn = 1;
+
+    if (BACKEND == "ff") begin: ffram
+        FFRAM #(.WIDTH, .DEPTH, .N_WRITE, .N_READ) top (.*);
+    end else if (BACKEND == "lvt") begin: lvtram
+        LVTRAM #(.WIDTH, .DEPTH, .N_WRITE, .N_READ) top (.*);
+    end else
         $error("unknown backend");
 endmodule

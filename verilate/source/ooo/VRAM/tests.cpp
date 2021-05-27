@@ -79,6 +79,30 @@ WITH {
 } AS("synchronous");
 
 WITH {
+    top->set_w(0, true, 10, 0x1234);
+    top->set_w(1, true, 11, 0x2345);
+    top->set_w(2, true, 12, 0x3456);
+    top->set_r(0, 10);
+    top->set_r(1, 11);
+    top->set_r(2, 12);
+
+    top->tick();
+    check(0, 0x1234);
+    check(1, 0x2345);
+    check(2, 0x3456);
+
+    for (int t = 0; t < 10; t++) {
+        top->set_w(0, false, 10, randi() & 0xffff);
+        top->set_w(1, false, 11, randi() & 0xffff);
+        top->set_w(2, false, 12, randi() & 0xffff);
+        top->tick();
+        check(0, 0x1234);
+        check(1, 0x2345);
+        check(2, 0x3456);
+    }
+} AS("hold");
+
+WITH {
     top->set_w(0, true, 0, 0x1111);
     top->set_w(1, true, 0, 0x2222);
     top->set_w(2, true, 0, 0x3333);
@@ -181,7 +205,7 @@ WITH {
 } AS("scan");
 
 WITH {
-    constexpr int T = 1000000;
+    constexpr int T = 5000000;
 
     std::vector<word_t> ref;
     ref.resize(DEPTH);
@@ -189,26 +213,32 @@ WITH {
     for (int t = 0; t < T; t++) {
         int a = randi(0, DEPTH - 1);
         word_t v = randi() & 0xffff;
+        log_debug("write @%x ← %04x\n", a, v);
         ref[a] = v;
         top->set_w(0, true, a, v);
 
         a = randi(0, DEPTH - 1);
         v = randi() & 0xffff;
+        log_debug("write @%x ← %04x\n", a, v);
         ref[a] = v;
         top->set_w(1, true, a, v);
 
         a = randi(0, DEPTH - 1);
         v = randi() & 0xffff;
+        log_debug("write @%x ← %04x\n", a, v);
         ref[a] = v;
         top->set_w(2, true, a, v);
 
         int r1 = randi(0, DEPTH - 1);
+        log_debug("read @%x ⇒ %04x\n", r1, ref[r1]);
         top->set_r(0, r1);
 
         int r2 = randi(0, DEPTH - 1);
+        log_debug("read @%x ⇒ %04x\n", r2, ref[r2]);
         top->set_r(1, r2);
 
         int r3 = randi(0, DEPTH - 1);
+        log_debug("read @%x ⇒ %04x\n", r3, ref[r3]);
         top->set_r(2, r3);
 
         top->tick();
