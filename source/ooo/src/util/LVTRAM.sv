@@ -1,7 +1,7 @@
 module LVTRAM #(
     parameter int WIDTH   = 32,
     parameter int DEPTH   = 32,
-    parameter int N_WRITE = 2,
+    parameter int N_WRITE = 1,
     parameter int N_READ  = 1,
 
     localparam int ADDR_WIDTH = $clog2(DEPTH),
@@ -24,7 +24,7 @@ module LVTRAM #(
     for (genvar i = 0; i < N_READ; i++) begin: row
         for (genvar j = 0; j < N_WRITE; j++) begin: column
             /* verilator lint_off PINMISSING */
-            DistributedRAM #(.WIDTH, .DEPTH) inst (
+            DistributedRAM #(.WIDTH, .DEPTH) ram_inst (
                 .clk,
                 .wea(wen[j]),
                 .addra(waddr[j]),
@@ -41,8 +41,8 @@ module LVTRAM #(
     if (N_WRITE > 1) begin: use_lvt
         typedef logic [ID_WIDTH-1:0] id_t;
 
-        id_t   [N_WRITE-1:0] wid;
-        id_t   [N_READ-1:0]  rid;
+        id_t [N_WRITE-1:0] wid;
+        id_t [N_READ-1:0]  rid;
 
         for (genvar i = 0; i < N_WRITE; i++) begin
             assign wid[i] = id_t'(i);

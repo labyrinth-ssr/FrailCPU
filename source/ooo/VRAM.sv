@@ -1,5 +1,5 @@
 module VRAM #(
-    parameter string BACKEND = "lvt",
+    parameter string BACKEND = "xor",
 
     parameter int WIDTH   /* verilator public */ = 16,
     parameter int DEPTH   /* verilator public */ = 64,
@@ -84,6 +84,8 @@ module VRAM #(
         FFRAM #(.WIDTH, .DEPTH, .N_WRITE, .N_READ) top (.*);
     end else if (BACKEND == "lvt") begin: lvtram
         LVTRAM #(.WIDTH, .DEPTH, .N_WRITE, .N_READ) top (.*);
+    end else if (BACKEND == "xor") begin: xorram
+        XORRAM #(.WIDTH, .DEPTH, .N_WRITE, .N_READ) top (.*);
     end else
         $error("unknown backend");
 endmodule

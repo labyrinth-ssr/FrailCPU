@@ -103,6 +103,28 @@ WITH {
 } AS("hold");
 
 WITH {
+    top->set_r(0, 10);
+    top->set_r(1, 11);
+    top->set_r(2, 12);
+
+    top->tick();
+    check(0, 0x0);
+    check(1, 0x0);
+    check(2, 0x0);
+
+    top->set_w(0, true, 10, 0x1234);
+    top->set_w(1, true, 11, 0x2345);
+    top->set_w(2, true, 12, 0x3456);
+
+    for (int t = 0; t < 10; t++) {
+        top->tick();
+        check(0, 0x1234);
+        check(1, 0x2345);
+        check(2, 0x3456);
+    }
+} AS("idempotent write");
+
+WITH {
     top->set_w(0, true, 0, 0x1111);
     top->set_w(1, true, 0, 0x2222);
     top->set_w(2, true, 0, 0x3333);
