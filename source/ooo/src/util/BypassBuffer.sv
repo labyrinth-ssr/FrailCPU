@@ -1,7 +1,7 @@
 module BypassBuffer #(
     parameter int WIDTH   = 32,
     parameter int DEPTH   = 32,
-    parameter int N_WRITE = 2,
+    parameter int N_WRITE = 1,
     parameter int N_READ  = 1,
 
     localparam int ADDR_WIDTH = $clog2(DEPTH),

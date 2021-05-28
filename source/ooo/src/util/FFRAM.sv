@@ -39,11 +39,8 @@ module FFRAM #(
         end
     end
 
-    always_ff @(posedge clk)
-    if (resetn) begin
+    always_ff @(posedge clk) begin
         prev <= next;
-    end else begin
-        rdata <= '0;
     end
 
     if (LATENCY == 0) begin
