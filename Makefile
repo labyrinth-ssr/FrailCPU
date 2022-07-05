@@ -33,12 +33,12 @@ clean:
 	@touch ./build/.gitkeep
 
 # make arguments
-TARGET ?= refcpu/VTop
+TARGET ?= mycpu/VTop
 TEST ?=
 FST ?=
-USE_CLANG ?= 0
+USE_CLANG ?= 1
 VSIM_ARGS ?=
-VSIM_OPT ?= 0
+VSIM_OPT ?= 1
 VSIM_SANITIZE ?= 0
 SV_EXTRA_FLAGS ?=
 CXX_EXTRA_FLAGS ?=
