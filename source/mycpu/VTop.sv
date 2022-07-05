@@ -19,8 +19,8 @@ module VTop (
     cbus_resp_t icresp, dcresp;
 
     MyCore core(.*);
-    IBusToCBus icvt(.*);
-    DBusToCBus dcvt(.*);
+    /* IBusToCBus */ ICache icvt(.*);
+    /* DBusToCBus */ DCache dcvt(.*);
 
     /**
      * TODO (Lab2) replace mux with your own arbiter :)
