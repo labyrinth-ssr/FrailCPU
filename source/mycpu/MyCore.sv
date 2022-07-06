@@ -11,6 +11,10 @@ module MyCore (
     /**
      * TODO (Lab1) your code here :)
      */
+    assign pc=ireq.
+    pcselect pcselect (
+        
+    )
 
     always_ff @(posedge clk)
     if (resetn) begin
