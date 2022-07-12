@@ -51,6 +51,10 @@ module DCache (
         IDLE, FETCH, WRITEBACK
     };
 
+    localparam type hit_t = enum logic {
+        CACHE, BUFFER
+    };
+
     function offset_t get_offset(addr_t addr);
         return addr[DATA_BITS+OFFSET_BITS-1:DATA_BITS];
     endfunction
@@ -123,6 +127,7 @@ module DCache (
 
     //计算hit
     logic hit;
+    hit_t hit_reg;
     logic buffer_hit, cache_hit;
     assign hit = buffer_hit | cache_hit;
     associativity_t hit_line;
@@ -142,6 +147,9 @@ module DCache (
     //hit_line + plru_r -> plru_new
     associativity_t replace_line;
     plru_t plru_new;
+    /*
+    double miss -> stall forever
+    */
     PLRU plru(
         .plru_old(plru_r),
         .hit_line,
@@ -159,25 +167,28 @@ module DCache (
 
     //Port 2
     strobe_t miss_write_en;
-    data_addr_t miss_data_addr;
+    data_addr_t miss_data_addr; //内存->Cache && Cache->Buffer
     word_t data_to_buffer;
+
     assign miss_write_en = (state == FETCH && dcresp.ready) ? {BYTE_PER_DATA{1'b1}} : '0;
 
     //cbus_state
     cbus_state_t state;
 
     //cbus
-    addr_t cbus_addr;
+    addr_t cbus_addr;   //内存->Cache && Buffer->内存
 
     //Write_buffer
     buffer_t write_buffer;
     logic buffer_wen;
-    offset_t buffer_offset;
+    offset_t buffer_offset; //Cache->Buffer && Buffer->内存
     info_t replace_info;
     index_t replace_index;
     record_t buffer_finish;
 
-    assign buffer_hit = replace_info.valid & replace_info.tag == dreq_tag & replace_index == dreq_index;
+    word_t buffer_data;
+
+    assign buffer_hit = replace_info.valid & replace_info.tag == dreq_tag & replace_index == dreq_index & ~|dreq.strobe;
 
     //fetch finish
     record_t fetch_finish;
@@ -191,10 +202,9 @@ module DCache (
     logic dreq_hit, dreq_miss;
 
     assign hit_avail = state == IDLE 
-                    | fetch_finish[dreq_addr.offset]
-                    | dreq_addr.tag != cbus_addr.tag
-                    | dreq_addr.index != cbus_addr.index
-                    | replace_line != miss_data_addr.line;
+                    | (fetch_finish[dreq_addr.offset] & buffer_finish[dreq_offset])
+                    | {dreq_addr.tag, dreq_addr.index} != {cbus_addr.tag, cbus_addr.index}
+                    | {dreq_addr.tag, dreq_addr.index} != {replace_info.tag, replace_index};
     assign miss_avail = state == IDLE
                     | (state == FETCH & dcresp.last & ~replace_dirty)
                     | (state == WRITEBACK & dcresp.last);
@@ -256,7 +266,7 @@ module DCache (
                 WRITEBACK : begin
                     if (dcresp.ready) begin
                         state  <= cresp.last ? IDLE : WRITEBACK;
-                        miss_data_addr.offset <= miss_data_addr.offset + 1;
+                        buffer_offset <= buffer_offset + 1;
                     end
                     buffer_wen <= 0;
                 end
@@ -281,9 +291,13 @@ module DCache (
     always_ff(posedge clk) begin
         if (resetn) begin
             data_ok_reg <= dreq_hit;
+            buffer_data <= write_buffer[dreq_offset];
+            hit_reg <= cache_hit ? CACHE : BUFFER;
         end
         else begin
             data_ok_reg <= '0;
+            buffer_data <= '0;
+            hit_reg <= CACHE;
         end
     end
 
@@ -315,7 +329,7 @@ module DCache (
     //DBus
     assign dresp.addr_ok = true_hit;
     assign dresp.data_ok = data_ok_reg;
-    assign dresp.data = data_r;
+    assign dresp.data = (hit_reg == CACHE) ? data_r : buffer_data;
 
     //CBus
     assign dcreq.valid = state != IDLE;     
@@ -323,7 +337,7 @@ module DCache (
     assign dcreq.size = MSIZE4;      
     assign dcreq.addr = cbus_addr;      
     assign dcreq.strobe = {BYTE_PER_DATA{1'b1}};   
-    assign dcreq.data = write_buffer[miss_data_addr.offset];      
+    assign dcreq.data = write_buffer[buffer_offset];      
     assign dcreq.len = MLEN16;  
 
     `UNUSED_OK({clk, resetn, dreq, dcresp});
