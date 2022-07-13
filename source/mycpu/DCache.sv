@@ -78,7 +78,7 @@ module DCache (
     addr_t dreq_addr;
     assign dreq_addr = dreq.addr;
 
-    //meta_ram, plru_ram
+    //meta_ram
     typedef struct packed {
         u1 valid;
         u1 dirty;
@@ -91,10 +91,6 @@ module DCache (
     meta_t meta_r, meta_w;
     assign meta_addr = dreq_index;
 
-    index_t plru_addr;
-    plru_t plru_r, plru_w;
-    assign plru_addr = dreq_index;
-    
     RAM_SinglePort #(
         .ADDR_WIDTH(INDEX_BITS),
         .DATA_WIDTH($bits(meta_t)),
@@ -110,20 +106,14 @@ module DCache (
         .rdata(meta_r)
     );
 
-    RAM_SinglePort #(
-        .ADDR_WIDTH(INDEX_BITS),
-        .DATA_WIDTH($bits(plru_t)),
-        .BYTE_WIDTH($bits(plru_t)),
-        .MEM_TYPE(0),
-        .READ_LATENCY(0)
-    ) plru_ram(
-        .clk(clk), 
-        .en(1),
-        .addr(plru_addr),
-        .strobe(1),
-        .wdata(plru_w),
-        .rdata(plru_r)
-    );
+    //plru_ram
+    plru_t plru_ram [INDEX_BITS-1 : 0];
+    plru_t plru_r, plru_w;
+    assign plru_r = plru_ram[dreq_index];
+    
+    always_ff(posedge) begin
+        plru_ram[dreq_index] = plru_w;
+    end
 
     //计算hit
     logic hit;
