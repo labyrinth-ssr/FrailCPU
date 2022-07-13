@@ -73,6 +73,7 @@ typedef i33 arith_t;
 // all addresses and words are 32-bit
 typedef i32 addr_t;
 typedef i32 word_t;
+typedef i64 double_word_t;
 
 // number of bytes transferred in one memory r/w
 typedef enum i3 {
@@ -159,7 +160,13 @@ typedef struct packed {
     addr_t addr;   // target address
 } ibus_req_t;
 
-typedef dbus_resp_t ibus_resp_t;
+// typedef dbus_resp_t ibus_resp_t;
+
+typedef struct packed {
+    logic  addr_ok;  // is the address accepted by cache?
+    logic  data_ok;  // is the field "data" valid?
+    double_word_t data;     // the data read from cache
+} ibus_resp_t;
 
 `define IREQ_TO_DREQ(ireq) \
     {ireq, MSIZE4, 4'b0, 32'b0}
