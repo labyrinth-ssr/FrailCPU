@@ -94,7 +94,7 @@ module ICache (
 
     //meta_ram
     typedef struct packed {
-        u1 valid;
+        logic valid;
         tag_t tag;
     } info_t;
 
@@ -120,12 +120,12 @@ module ICache (
     );
 
     //plru_ram
-    plru_t plru_ram [INDEX_BITS-1 : 0];
+    plru_t plru_ram [SET_NUM-1 : 0];
     plru_t plru_r, plru_w;
     assign plru_r = plru_ram[ireq_index];
     
-    always_ff(posedge) begin
-        plru_ram[ireq_index] = plru_w;
+    always_ff @(posedge clk) begin
+        plru_ram[ireq_index] <= plru_w;
     end
 
     //计算hit
@@ -217,7 +217,7 @@ module ICache (
 
     assign plru_w = ireq_hit ? plru_new : plru_r;
 
-    always_ff(posedge clk) begin
+    always_ff @(posedge clk) begin
         if (resetn) begin
             if (ireq_miss) begin
                 state <= FETCH;
@@ -253,7 +253,7 @@ module ICache (
         end
     end
 
-    always_ff(posedge clk) begin
+    always_ff @(posedge clk) begin
         if (resetn) begin
             data_ok_reg <= ireq_hit;
         end
@@ -266,7 +266,7 @@ module ICache (
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(DATA_ADDR_BITS),
         .WRITE_MODE("read_first"),
-    ) (
+    ) data_bram(
         .clk, 
         .resetn,
 

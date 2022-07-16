@@ -1,10 +1,13 @@
 `include "common.svh"
+`include "PLRU.sv"
 
 module DCache (
     input logic clk, resetn,
 
-    input  dbus_req_t  dreq,
-    output dbus_resp_t dresp,
+    input  dbus_req_t  dreq_1,
+    output dbus_resp_t dresp_1,
+    input  dbus_req_t  dreq_2,
+    // output dbus_resp_t dresp_2,
     output cbus_req_t  dcreq,
     input  cbus_resp_t dcresp
 );
@@ -18,7 +21,7 @@ module DCache (
     localparam BYTE_PER_DATA = 4;
     localparam DATA_WIDTH = BYTE_WIDTH * BYTE_PER_DATA;
 
-    localparam DATA_BITS = $clog2(BYTES_PER_DATA);
+    localparam DATA_BITS = $clog2(BYTE_PER_DATA);
     localparam OFFSET_BITS = $clog2(DATA_PER_LINE);
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY);
     localparam INDEX_BITS = $clog2(SET_NUM);
@@ -47,14 +50,11 @@ module DCache (
 
     localparam type plru_t = logic [ASSOCIATIVITY-2:0];
 
-    localparam type cbus_state_t = enum logic[1:0] {
-        IDLE, FETCH, WRITEBACK
+    localparam type state_t = enum logic[2:0] {
+        IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2
     };
 
-    localparam type hit_t = enum logic {
-        CACHE, BUFFER
-    };
-
+/*
     function offset_t get_offset(addr_t addr);
         return addr[DATA_BITS+OFFSET_BITS-1:DATA_BITS];
     endfunction
@@ -74,220 +74,341 @@ module DCache (
     assign dreq_offset = get_offset(dreq.addr);
     assign dreq_tag = get_tag(dreq.addr);
     assign dreq_index = get_index(dreq.addr);
+*/
+    dbus_resp_t dresp_2;
 
-    addr_t dreq_addr;
-    assign dreq_addr = dreq.addr;
+    addr_t dreq_1_addr, dreq_2_addr;
+    assign dreq_1_addr = dreq_1.addr;
+    assign dreq_2_addr = dreq_2.addr;
+
+     //state
+    state_t state;
+
+    //buffer
+    buffer_t buffer;
+    offset_t buffer_offset;
+    offset_t offset_count;
 
     //meta_ram
     typedef struct packed {
-        u1 valid;
-        u1 dirty;
+        logic valid;
         tag_t tag;
     } info_t;
 
     localparam type meta_t = info_t [ASSOCIATIVITY-1:0];
 
-    index_t meta_addr;
-    meta_t meta_r, meta_w;
-    assign meta_addr = dreq_index;
+    index_t meta_addr_1, meta_addr_2;
+    meta_t meta_r_1, meta_r_2;
+    meta_t meta_w;
+    logic meta_en;
 
-    RAM_SinglePort #(
+    assign meta_addr_1 = (state==FETCH_2) ? dreq_2_addr.index
+                                          : dreq_1_addr.index;
+
+    assign meta_addr_2 = dreq_2_addr.index;
+    assign meta_en = (state==FETCH_1|state==FETCH_2) ? 1'b1 : 0;
+    
+    LUTRAM_DualPort #(
         .ADDR_WIDTH(INDEX_BITS),
         .DATA_WIDTH($bits(meta_t)),
         .BYTE_WIDTH($bits(meta_t)),
-        .MEM_TYPE(0),
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk), 
-        .en(1),
-        .addr(meta_addr),
-        .strobe(1),
-        .wdata(meta_w),
-        .rdata(meta_r)
+        .en_1(meta_en), 
+        .en_2(0),
+        .addr_1(meta_addr_1), 
+        .addr_2(meta_addr_2),
+        .strobe(1),  
+        .wdata(meta_w), 
+        .rdata_1(meta_r_1), 
+        .rdata_2(meta_r_2)
     );
 
-    //plru_ram
-    plru_t plru_ram [INDEX_BITS-1 : 0];
-    plru_t plru_r, plru_w;
-    assign plru_r = plru_ram[dreq_index];
-    
-    always_ff(posedge) begin
-        plru_ram[dreq_index] = plru_w;
-    end
+    //dirty_ram
+    logic dirty_ram [ASSOCIATIVITY*SET_NUM-1:0];
 
     //计算hit
-    logic hit;
-    hit_t hit_reg;
-    logic buffer_hit, cache_hit;
-    assign hit = buffer_hit | cache_hit;
-    associativity_t hit_line;
+    logic hit_1, hit_2;
+    associativity_t hit_line_1, hit_line_2;
     always_comb begin
-        cache_hit = '0;
-        hit_line= '0;
+        {hit_1, hit_2} = '0;
+        {hit_line_1, hit_line_2} = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (meta_r[i].valid && meta_r[i].tag == dreq_tag) begin
-                cache_hit = 1'b1;
-                hit_line = associativity_t'(i);
-                break;
+            if (meta_r_1[i].valid && meta_r_1[i].tag == dreq_1_addr.tag) begin
+                hit_1 = 1'b1;
+                hit_line_1 = associativity_t'(i);
+            end
+            if (meta_r_2[i].valid && meta_r_2[i].tag == dreq_2_addr.tag) begin
+                hit_2 = 1'b1;
+                hit_line_2 = associativity_t'(i);
             end
         end 
     end
 
+    //hit && miss
+    logic dreq_hit_1, dreq_hit_2;
+    logic dreq_miss_1, dreq_miss_2;
+    logic dreq_avail;
+    logic dreq_hit;
+    
+    assign dreq_avail = state == IDLE;
+    assign dreq_hit_1 = dreq_1.valid & dreq_avail & hit_1;
+    assign dreq_hit_2 = dreq_2.valid & dreq_avail & hit_2;
+    assign dreq_hit = (dreq_hit_1 & dreq_hit_2) | (dreq_hit_1 & ~dreq_2.valid);
+
+    data_addr_t miss_addr;
+    addr_t cbus_addr;
+
+    //plru_ram
+    plru_t plru_ram [SET_NUM-1 : 0];
+    plru_t plru_r_1, plru_r_2;
+    plru_t plru_w_1, plru_w_2;
+    associativity_t replace_line_1, replace_line_2;
+    plru_t plru_new_1, plru_new_2;
+
+    assign plru_r_1 = plru_ram[dreq_1_addr.index];
+    assign plru_r_2 = (dreq_1_addr.index == dreq_2_addr.index) ? plru_new_1
+                                                               : plru_ram[dreq_2_addr.index];
+
+    PLRU plru_1(
+        .plru_old(plru_r_1),
+        .hit_line(hit_line_1),
+        .plru_new(plru_new_1),
+        .replace_line(replace_line_1)
+    );
+
+    PLRU plru_2(
+        .plru_old(plru_r_2),
+        .hit_line(hit_line_2),
+        .plru_new(plru_new_2),
+        .replace_line(replace_line_2)
+    );
+
     //plru_r -> replace_line
     //hit_line + plru_r -> plru_new
-    associativity_t replace_line;
-    plru_t plru_new;
     /*
     double miss -> stall forever
     */
-    PLRU plru(
-        .plru_old(plru_r),
-        .hit_line,
-        .plru_new,
-        .replace_line
-    );
 
-    //Port 1 
-    data_addr_t data_addr;
-    word_t data_w, data_r;
-    assign data_addr = {hit_line, dreq_index, dreq_offset};
-    assign data_w = dreq.data;
+
+    //Port 1 : dreq_1 
+    data_addr_t port_1_addr;
+    word_t port_1_data_w, port_1_data_r;
+    assign port_1_addr = {hit_line_1, dreq_1_addr.index, dreq_1_addr.offset};
+    assign port_1_data_w = dreq_1.data;
+
+    //Port 2 : dreq_2 & cbus
+    logic port_2_en;
+    strobe_t port_2_wen;
+    data_addr_t port_2_addr;
+    word_t port_2_data_w, port_2_data_r;
+    assign port_2_en = (state==IDLE) ? dreq_hit_2 : 1;
+    assign port_2_wen = (state==IDLE) ? dreq_2.strobe
+                                      : (state==FETCH_1|state==FETCH_2) ? {BYTE_PER_DATA{1'b1}}
+                                                                        : '0;
+    assign port_2_addr = (state==IDLE) ? {hit_line_2, dreq_2_addr.index, dreq_2_addr.offset}
+                                       : miss_addr;
+    assign port_2_data_w = (state==IDLE) ? dreq_2.data
+                                         : dcresp.data;
 
     logic data_ok_reg;
+    
+    logic addr_same;
+    assign addr_same = (dreq_1_addr == dreq_2_addr) & (dreq_1.valid & dreq_2.valid);
+    //W -> W
+    logic w_to_w;
+    assign w_to_w = addr_same & |dreq_1.strobe & |dreq_2.strobe;
 
-    //Port 2
-    strobe_t miss_write_en;
-    data_addr_t miss_data_addr; //内存->Cache && Cache->Buffer
-    word_t data_to_buffer;
+    //W -> R
+    logic w_to_r;
+    logic w_to_r_reg;
+    word_t w_to_r_data;
+    assign w_to_r = addr_same & |dreq_1.strobe & ~|dreq_2.strobe;
+    
 
-    assign miss_write_en = (state == FETCH && dcresp.ready) ? {BYTE_PER_DATA{1'b1}} : '0;
+    logic delay_counter;
 
-    //cbus_state
-    cbus_state_t state;
-
-    //cbus
-    addr_t cbus_addr;   //内存->Cache && Buffer->内存
-
-    //Write_buffer
-    buffer_t write_buffer;
-    logic buffer_wen;
-    offset_t buffer_offset; //Cache->Buffer && Buffer->内存
-    info_t replace_info;
-    index_t replace_index;
-    record_t buffer_finish;
-
-    word_t buffer_data;
-
-    assign buffer_hit = replace_info.valid & replace_info.tag == dreq_tag & replace_index == dreq_index & ~|dreq.strobe;
-
-    //fetch finish
-    record_t fetch_finish;
-
-    logic replace_dirty;
-    assign replace_dirty = replace_info.valid & replace_info.dirty;
-
-    //hit && miss
-    logic hit_avail, miss_avail;
-    logic true_hit, true_miss;
-    logic dreq_hit, dreq_miss;
-
-    assign hit_avail = state == IDLE 
-                    | (fetch_finish[dreq_addr.offset] & buffer_finish[dreq_offset])
-                    | {dreq_addr.tag, dreq_addr.index} != {cbus_addr.tag, cbus_addr.index}
-                    | {dreq_addr.tag, dreq_addr.index} != {replace_info.tag, replace_index};
-    assign miss_avail = state == IDLE
-                    | (state == FETCH & dcresp.last & ~replace_dirty)
-                    | (state == WRITEBACK & dcresp.last);
-    assign true_hit = hit & hit_avail;
-    assign true_miss = ~hit & miss_avail;
-    assign dreq_hit = dreq.valid & true_hit;
-    assign dreq_miss = dreq.valid & true_miss;
-
-
-    //更新meta_ram, plru_ram
-    always_comb begin
-        meta_w = meta_r;
-        plru_w = plru_r;
-
-        if (dreq_hit) begin
-            if (|dreq.strobe) begin
-                meta_w[hit_line].dirty = 1'b1;
+    //更新dirty_ram
+    always_ff @(posedge clk) begin
+        unique case (state)
+            IDLE: begin
+                if (dreq_hit) begin
+                    dirty_ram[{hit_line_1, dreq_1_addr.index}] <= |dreq_1.strobe;
+                    if (dreq_2.valid) begin
+                        dirty_ram[{hit_line_2, dreq_2_addr.index}] <= |dreq_2.strobe;
+                    end
+                end
             end
 
-            plru_w = cache_hit ? plru_new : plru_r;
-        end
-        else if (dreq_miss) begin
-            meta_w[replace_line].valid = 1'b1;
-            meta_w[replace_line].dirty = 1'b0;
-            meta_w[replace_line].tag = dreq_tag;
-        end
-        else begin
-        end
-
+            FETCH_1: begin
+                dirty_ram[{replace_line_1, dreq_1_addr.index}] <= '0;
+            end
+        
+            FETCH_2: begin
+                dirty_ram[{replace_line_2, dreq_2_addr.index}] <= '0;
+            end
+            default: begin   
+            end
+        endcase 
     end
 
-    always_ff(posedge clk) begin
+    //hit时更新plru_ram
+    always_ff @(posedge clk) begin
+        if (dreq_hit) begin
+            plru_ram[dreq_1_addr.index] <= (dreq_1_addr.index == dreq_2_addr.index & dreq_2.valid) ? plru_new_2
+                                                                                                    : plru_new_1;
+            if (dreq_1_addr.index != dreq_2_addr.index & dreq_2.valid) begin
+                plru_ram[dreq_2_addr.index] <= plru_new_2;
+            end
+        end
+    end
+
+    always_ff @(posedge clk) begin
         if (resetn) begin
-            if (dreq_miss) begin
-                state <= FETCH;
-                cbus_addr <= dreq_addr;
-                miss_data_addr <= {replace_line, dreq_index, dreq_offset};
-                replace_info <= meta_r[replace_line];
-                replace_index <= dreq_index;
-                fetch_finish <= '0;
-                buffer_finish <= '0;
-            end
-
-            unique case(state) begin
-                FETCH : begin
-                    if (dcresp.ready) begin
-                        miss_data_addr.offset <= miss_data_addr.offset + 1;
-                        fetch_finish[miss_data_addr.offset] <= 1'b1;
+            unique case (state)
+                IDLE: begin
+                    if (dreq_1.valid & ~hit_1) begin
+                        if (dirty_ram[{replace_line_1, dreq_1_addr.index}] & meta_r_1[replace_line_1].valid) begin
+                            state <= WRITEBACK_1;
+                        end
+                        else begin
+                            state <= FETCH_1;
+                        end
+                        miss_addr <= {replace_line_1, dreq_1_addr.index, dreq_1_addr.offset};
+                        offset_count <= dreq_1_addr.offset;
                     end
-                    buffer_wen <= dcresp.ready;
-                    buffer_offset <= miss_data_addr.offset;
 
-                    if (dcresp.last) begin
-                        state <= replace_dirty ? WRITEBACK : IDLE;
-                        cbus_addr.tag <= replace_info.tag;
+                    else if (hit_1 & dreq_2.valid & ~hit_2) begin
+                        if (dirty_ram[{replace_line_2, dreq_2_addr.index}] & meta_r_2[replace_line_2].valid) begin
+                            state <= WRITEBACK_2;
+                        end
+                        else begin
+                            state <= FETCH_2;
+                        end
+                        miss_addr <= {replace_line_2, dreq_2_addr.index, dreq_2_addr.offset};
+                        offset_count <= dreq_2_addr.offset;
+                    end
+
+                    else begin
+                    end
+
+                    delay_counter <= '0;
+                end
+
+                FETCH_1: begin
+                    if (cresp.ready) begin
+                        state  <= cresp.last ? IDLE : FETCH_1; 
+                        miss_addr.offset <= miss_addr.offset + 1;  
                     end
                 end
 
-                WRITEBACK : begin
-                    if (dcresp.ready) begin
-                        state  <= cresp.last ? IDLE : WRITEBACK;
-                        buffer_offset <= buffer_offset + 1;
+                WRITEBACK_1: begin
+                    if (cresp.ready) begin
+                        state  <= cresp.last ? FETCH_1 : WRITEBACK_1;
+                        offset_count <= offset_count + 1;
                     end
-                    buffer_wen <= 0;
+
+                    miss_addr.offset <= miss_addr.offset + 1;  
+                    buffer_offset <= miss_addr.offset;
+                    buffer[buffer_offset] <= port_1_data_r;
+
+                    if (cresp.last) begin
+                        miss_addr.offset <= dreq_1_addr.offset;  
+                    end
+
+                    delay_counter <= 1'b1;
                 end
 
-                default : begin
+                FETCH_2: begin
+                    if (cresp.ready) begin
+                        state  <= cresp.last ? IDLE : FETCH_2;
+                        miss_addr.offset <= miss_addr.offset + 1;  
+                    end
                 end
-            end
 
-            if (buffer_wen) begin
-                write_buffer[buffer_offset] <= data_to_buffer;
-                buffer_finish[buffer_offset] <= '0;
-            end
+                WRITEBACK_2: begin
+                    if (cresp.ready) begin
+                        state  <= cresp.last ? FETCH_2 : WRITEBACK_2;
+                        offset_count <= offset_count + 1;
+                    end
+
+                    miss_addr.offset <= miss_addr.offset + 1;  
+                    buffer_offset <= miss_addr.offset;
+                    buffer[buffer_offset] <= port_2_data_r;
+
+                    if (cresp.last) begin
+                        miss_addr.offset <= dreq_2_addr.offset;  
+                    end
+
+                    delay_counter <= 1'b1;
+                end
+
+                default: begin   
+                end
+            endcase  
         end
         else begin
             state <= IDLE;
-            buffer_wen <= 0;
-            fetch_finish <= '0;
-            {buffer_finish, replace_info, replace_index} <= '0;
         end
     end
 
-    always_ff(posedge clk) begin
+    always_comb begin
+        cbus_addr = '0;
+        unique case (state)
+            FETCH_1: begin
+                cbus_addr = dreq_1_addr;
+            end
+
+            WRITEBACK_1: begin
+                cbus_addr = dreq_1_addr;
+                cbus_addr.tag = meta_r_1[replace_line_1].tag;
+            end
+
+            FETCH_2: begin
+                cbus_addr = dreq_2_addr;
+            end
+
+            WRITEBACK_2: begin
+                cbus_addr = dreq_2_addr;
+                cbus_addr.tag = meta_r_2[replace_line_2].tag;
+            end
+
+            default: begin   
+            end
+        endcase
+    end
+
+    always_comb begin
+        meta_w = meta_r_1;
+        unique case (state)
+            FETCH_1: begin
+                meta_w[replace_line_1].tag = dreq_1_addr.tag;
+                meta_w[replace_line_1].valid = 1'b1;
+            end
+
+            FETCH_2: begin
+                meta_w[replace_line_2].tag = dreq_2_addr.tag;
+                meta_w[replace_line_2].valid = 1'b1;
+            end
+
+            default: begin   
+            end
+        endcase
+    end
+
+    always_ff @(posedge clk) begin
         if (resetn) begin
             data_ok_reg <= dreq_hit;
-            buffer_data <= write_buffer[dreq_offset];
-            hit_reg <= cache_hit ? CACHE : BUFFER;
+
+            w_to_r_reg <= w_to_r;
+            w_to_r_data <= dreq_1.data;
         end
         else begin
             data_ok_reg <= '0;
-            buffer_data <= '0;
-            hit_reg <= CACHE;
+
+            w_to_r_reg <= '0;
+            w_to_r_data <= '0;
         end
     end
 
@@ -295,40 +416,44 @@ module DCache (
     BRAM #(
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(DATA_ADDR_BITS),
-        .WRITE_MODE("read_first"),
-    ) (
+        .WRITE_MODE("read_first")
+    ) data_bram(
         .clk, 
         .resetn,
 
-        // port 1 : dbus
-        .en_1(dreq_hit),
-        .write_en_1(dreq.strobe),
-        .addr_1(data_addr),
-        .data_in_1(data_w),
-        .data_out_1(data_r),
+        // port 1
+        .en_1(dreq_hit_1 & ~w_to_w),
+        .write_en_1(dreq_1.strobe),
+        .addr_1(port_1_addr),
+        .data_in_1(port_1_data_w),
+        .data_out_1(port_1_data_r),
 
-        // port 2 : cbus && write_buffer
-        .en_2(1),
-        .write_en_2(miss_write_en),
-        .addr_2(miss_data_addr),
-        .data_in_2(dcresp.data),
-        .data_out_2(data_to_buffer)
+        // port 2
+        .en_2(port_2_en),
+        .write_en_2(port_2_wen),
+        .addr_2(port_2_addr),
+        .data_in_2(port_2_data_w),
+        .data_out_2(port_2_data_r)
     );
 
 
     //DBus
-    assign dresp.addr_ok = true_hit;
-    assign dresp.data_ok = data_ok_reg;
-    assign dresp.data = (hit_reg == CACHE) ? data_r : buffer_data;
+    assign dresp_1.addr_ok = dreq_hit;
+    assign dresp_1.data_ok = data_ok_reg;
+    assign dresp_1.data = port_1_data_r;
+
+    assign dresp_2.addr_ok = dreq_hit;
+    assign dresp_2.data_ok = data_ok_reg;
+    assign dresp_2.data = w_to_r_reg ? w_to_r_data : port_2_data_r;
 
     //CBus
-    assign dcreq.valid = state != IDLE;     
-    assign dcreq.is_write = state == WRITEBACK;  
+    assign dcreq.valid = state == FETCH_1 | state == FETCH_2 | (state == WRITEBACK_1 & delay_counter) | (state == WRITEBACK_2 & delay_counter);     
+    assign dcreq.is_write = state == WRITEBACK_1 | state == WRITEBACK_2;  
     assign dcreq.size = MSIZE4;      
     assign dcreq.addr = cbus_addr;      
     assign dcreq.strobe = {BYTE_PER_DATA{1'b1}};   
-    assign dcreq.data = write_buffer[buffer_offset];      
+    assign dcreq.data = buffer[offset_count];      
     assign dcreq.len = MLEN16;  
 
-    `UNUSED_OK({clk, resetn, dreq, dcresp});
+    `UNUSED_OK({clk, resetn, dreq_1, dreq_2, dcresp});
 endmodule

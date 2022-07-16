@@ -16,7 +16,10 @@ module VCacheTop (
 
     assign creq = dcreq;
     assign dcresp = cresp;
-    DCache top(.*);
+    DCache top( .dreq_1(dreq),
+                .dresp_1(dresp),
+                .dreq_2('0),
+                .*);
 
     /**
      * TODO (Lab3, optional) expose internal memory to simulator
