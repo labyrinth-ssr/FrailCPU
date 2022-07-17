@@ -7,7 +7,7 @@ module DCache (
     input  dbus_req_t  dreq_1,
     output dbus_resp_t dresp_1,
     input  dbus_req_t  dreq_2,
-    // output dbus_resp_t dresp_2,
+    output dbus_resp_t dresp_2,
     output cbus_req_t  dcreq,
     input  cbus_resp_t dcresp
 );
@@ -75,8 +75,7 @@ module DCache (
     assign dreq_tag = get_tag(dreq.addr);
     assign dreq_index = get_index(dreq.addr);
 */
-    dbus_resp_t dresp_2;
-
+    
     addr_t dreq_1_addr, dreq_2_addr;
     assign dreq_1_addr = dreq_1.addr;
     assign dreq_2_addr = dreq_2.addr;
@@ -148,7 +147,6 @@ module DCache (
 
     //hit && miss
     logic dreq_hit_1, dreq_hit_2;
-    logic dreq_miss_1, dreq_miss_2;
     logic dreq_avail;
     logic dreq_hit;
     
@@ -163,7 +161,6 @@ module DCache (
     //plru_ram
     plru_t plru_ram [SET_NUM-1 : 0];
     plru_t plru_r_1, plru_r_2;
-    plru_t plru_w_1, plru_w_2;
     associativity_t replace_line_1, replace_line_2;
     plru_t plru_new_1, plru_new_2;
 
