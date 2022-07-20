@@ -1,4 +1,8 @@
+`ifndef __ICACHE_SV
+`define __ICACHE_SV
+
 `include "common.svh"
+`include "plru.sv"
 
 module ICache (
     input logic clk, resetn,
@@ -24,7 +28,7 @@ module ICache (
     localparam WORD_PER_DATA = DATA_WIDTH / WORD_WIDTH;
     localparam WORD_PER_LINE = WORD_PER_DATA * DATA_PER_LINE;
 
-    localparam DATA_BITS = $clog2(BYTES_PER_DATA);
+    localparam DATA_BITS = $clog2(BYTE_PER_DATA);
     localparam OFFSET_BITS = $clog2(DATA_PER_LINE);
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY);
     localparam INDEX_BITS = $clog2(SET_NUM);
@@ -59,35 +63,6 @@ module ICache (
     localparam type cbus_state_t = enum logic {
         IDLE, FETCH
     };
-    localparam type align_type_t = enum logic {
-        ALIGN, NO_ALIGN
-    };
-
-    function offset_t get_offset(addr_t addr);
-        return addr[DATA_BITS+OFFSET_BITS-1:DATA_BITS];
-    endfunction
-
-    function index_t get_index(addr_t addr);
-        return addr[DATA_BITS+INDEX_BITS+OFFSET_BITS-1:OFFSET_BITS+DATA_BITS];
-    endfunction
-
-    function tag_t get_tag(addr_t addr);
-        return addr[DATA_BITS+INDEX_BITS+OFFSET_BITS+TAG_BITS-1:DATA_BITS+INDEX_BITS+OFFSET_BITS];
-    endfunction
-
-    function align_t get_align(addr_t addr);
-        return addr[DATA_BITS-1:0];
-    endfunction
-
-    offset_t ireq_offset;
-    tag_t ireq_tag;
-    index_t ireq_index;
-    align_t ireq_align;
-
-    assign ireq_offset = get_offset(ireq.addr);
-    assign ireq_tag = get_tag(ireq.addr);
-    assign ireq_index = get_index(ireq.addr);
-    assign ireq_align = get_align(ireq.addr);
 
     addr_t ireq_addr;
     assign ireq_addr = ireq.addr;
@@ -102,7 +77,7 @@ module ICache (
 
     index_t meta_addr;
     meta_t meta_r, meta_w;
-    assign meta_addr = ireq_index;
+    assign meta_addr = ireq_addr.index;
 
     RAM_SinglePort #(
         .ADDR_WIDTH(INDEX_BITS),
@@ -119,27 +94,22 @@ module ICache (
         .rdata(meta_r)
     );
 
-    //plru_ram
-    plru_t plru_ram [SET_NUM-1 : 0];
-    plru_t plru_r, plru_w;
-    assign plru_r = plru_ram[ireq_index];
-    
-    always_ff @(posedge clk) begin
-        plru_ram[ireq_index] <= plru_w;
-    end
-
     //计算hit
     logic hit;
     associativity_t hit_line;
     always_comb begin
-        hit_line= '0;
+        {hit, hit_line} = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (meta_r[i].valid && meta_r[i].tag == ireq_tag) begin
+            if (meta_r[i].valid && meta_r[i].tag == ireq_addr.tag) begin
+                hit = 1'b1;
                 hit_line = associativity_t'(i);
                 break;
             end
         end 
     end
+
+    //plru_ram
+    plru_t plru_ram [SET_NUM-1 : 0];
 
     //plru_r -> replace_line
     //hit_line + plru_r -> plru_new
@@ -148,8 +118,8 @@ module ICache (
     /*
     double miss -> stall forever
     */
-    PLRU plru(
-        .plru_old(plru_r),
+    plru plru(
+        .plru_old(plru_ram[ireq_addr.index]),
         .hit_line,
         .plru_new,
         .replace_line
@@ -158,19 +128,23 @@ module ICache (
     //Port 1 
     data_addr_t data_addr;
     data_t data_r;
-    assign data_addr = {hit_line, ireq_index, ireq_offset};
+    assign data_addr = {hit_line, ireq_addr.index, ireq_addr.offset};
 
     logic data_ok_reg;
 
     //Port 2
-    strobe_t miss_write_en;
+    double_strobe_t miss_write_en;
     data_addr_t miss_data_addr; //内存->Cache
+    data_t data_w;
     data_t unused_data_r;
     /*
     改动！！
     */
     assign miss_write_en = (state == FETCH && icresp.ready) 
-                            ? (fetch_count[0] ? {BYTE_PER_WORD{1'b1}, BYTE_PER_WORD{1'b0}} : {BYTE_PER_WORD{1'b0}, BYTE_PER_WORD{1'b1}})
+                            ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
+                            : '0;
+    assign data_w = (state == FETCH && icresp.ready) 
+                            ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
                             : '0;
 
     //cbus_state
@@ -184,51 +158,53 @@ module ICache (
     record_t part_fetch_finish;
     cbus_num_t fetch_count;
 
-    for (genvar i = 0; i < WORD_PER_LINE/2; i++) begin
+    for (genvar i = 0; i < WORD_PER_LINE; i = i + 2) begin
         assign fetch_finish[i] = part_fetch_finish[i] & part_fetch_finish[i+1];
         assign fetch_finish[i+1] = part_fetch_finish[i+1];
     end
 
     //hit && miss
     logic hit_avail, miss_avail;
-    logic true_hit, true_miss;
     logic ireq_hit, ireq_miss;
 
     assign hit_avail = state == IDLE 
                     | fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}]
                     | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index};
     assign miss_avail = state == IDLE
-                    | (state == FETCH & icresp.last)
-    assign true_hit = hit & hit_avail;
-    assign true_miss = ~hit & miss_avail;
-    assign ireq_hit = ireq.valid & true_hit;
-    assign ireq_miss = ireq.valid & true_miss;
+                    | (state == FETCH & icresp.last);
+    assign ireq_hit = ireq.valid & hit_avail & hit;
+    assign ireq_miss = ireq.valid & miss_avail & ~hit;
 
     //更新meta_ram, plru_ram
     always_comb begin
         meta_w = meta_r;
         if (ireq_miss) begin
             meta_w[replace_line].valid = 1'b1;
-            meta_w[replace_line].tag = ireq_tag;
+            meta_w[replace_line].tag = ireq_addr.tag;
         end
         else begin
         end
     end
 
-    assign plru_w = ireq_hit ? plru_new : plru_r;
+    always_ff @(posedge clk) begin
+        if (ireq_hit) begin
+            plru_ram[ireq_addr.index] <= plru_new;
+        end
+    end
 
     always_ff @(posedge clk) begin
         if (resetn) begin
             if (ireq_miss) begin
                 state <= FETCH;
+                
                 cbus_addr <= ireq_addr;
-                miss_data_addr <= {replace_line, ireq_index, ireq_offset};
+                miss_data_addr <= {replace_line, ireq_addr.index, ireq_addr.offset};
                 
                 part_fetch_finish <= '0;
-                fetch_count <= {ireq_offset, ireq_addr[DATA_BITS-1]};
+                fetch_count <= {ireq_addr.offset, ireq_addr[DATA_BITS-1]};
             end
 
-            unique case(state) begin
+            unique case(state)
                 FETCH : begin
                     if (icresp.ready) begin
                         if (fetch_count[0])  begin
@@ -237,19 +213,16 @@ module ICache (
 
                         part_fetch_finish[fetch_count] <= 1'b1;
                         fetch_count <= fetch_count + 1;
-                    end
 
-                    if (icresp.last) begin
-                        state <= IDLE;
+                        state <= icresp.last ? IDLE : FETCH;
                     end
                 end
                 default : begin
                 end
-            end
+            endcase
         end
         else begin
             state <= IDLE;
-            
         end
     end
 
@@ -281,7 +254,7 @@ module ICache (
         .en_2(1),
         .write_en_2(miss_write_en),
         .addr_2(miss_data_addr),
-        .data_in_2(icresp.data),
+        .data_in_2(data_w),
         .data_out_2(unused_data_r)
     );
 
@@ -302,6 +275,7 @@ module ICache (
 
 
     `UNUSED_OK({clk, resetn, ireq, icresp});
-endmodule
 
 endmodule
+
+`endif
