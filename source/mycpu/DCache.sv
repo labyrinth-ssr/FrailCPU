@@ -1,5 +1,8 @@
+`ifndef __DCACHE_SV
+`define __DCACHE_SV
+
 `include "common.svh"
-`include "PLRU.sv"
+`include "plru.sv"
 
 module DCache (
     input logic clk, resetn,
@@ -53,28 +56,6 @@ module DCache (
     localparam type state_t = enum logic[2:0] {
         IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2
     };
-
-/*
-    function offset_t get_offset(addr_t addr);
-        return addr[DATA_BITS+OFFSET_BITS-1:DATA_BITS];
-    endfunction
-
-    function index_t get_index(addr_t addr);
-        return addr[DATA_BITS+INDEX_BITS+OFFSET_BITS-1:OFFSET_BITS+DATA_BITS];
-    endfunction
-
-    function tag_t get_tag(addr_t addr);
-        return addr[DATA_BITS+INDEX_BITS+OFFSET_BITS+TAG_BITS-1:DATA_BITS+INDEX_BITS+OFFSET_BITS];
-    endfunction
-
-    offset_t dreq_offset;
-    tag_t dreq_tag;
-    index_t dreq_index;
-
-    assign dreq_offset = get_offset(dreq.addr);
-    assign dreq_tag = get_tag(dreq.addr);
-    assign dreq_index = get_index(dreq.addr);
-*/
     
     addr_t dreq_1_addr, dreq_2_addr;
     assign dreq_1_addr = dreq_1.addr;
@@ -114,6 +95,7 @@ module DCache (
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk), 
+        .resetn,
         .en_1(meta_en), 
         .en_2(0),
         .addr_1(meta_addr_1), 
@@ -168,14 +150,14 @@ module DCache (
     assign plru_r_2 = (dreq_1_addr.index == dreq_2_addr.index) ? plru_new_1
                                                                : plru_ram[dreq_2_addr.index];
 
-    PLRU plru_1(
+    plru port_1_plru(
         .plru_old(plru_r_1),
         .hit_line(hit_line_1),
         .plru_new(plru_new_1),
         .replace_line(replace_line_1)
     );
 
-    PLRU plru_2(
+    plru port_2_plru(
         .plru_old(plru_r_2),
         .hit_line(hit_line_2),
         .plru_new(plru_new_2),
@@ -230,9 +212,9 @@ module DCache (
     always_ff @(posedge clk) begin
         unique case (state)
             IDLE: begin
-                if (dreq_hit) begin
+            if (dreq_hit & |dreq_1.strobe) begin
                     dirty_ram[{hit_line_1, dreq_1_addr.index}] <= |dreq_1.strobe;
-                    if (dreq_2.valid) begin
+                    if (dreq_2.valid & |dreq_2.strobe) begin
                         dirty_ram[{hit_line_2, dreq_2_addr.index}] <= |dreq_2.strobe;
                     end
                 end
@@ -308,7 +290,7 @@ module DCache (
 
                     miss_addr.offset <= miss_addr.offset + 1;  
                     buffer_offset <= miss_addr.offset;
-                    buffer[buffer_offset] <= port_1_data_r;
+                    buffer[buffer_offset] <= port_2_data_r;
 
                     if (cresp.last) begin
                         miss_addr.offset <= dreq_1_addr.offset;  
@@ -388,7 +370,7 @@ module DCache (
                 meta_w[replace_line_2].tag = dreq_2_addr.tag;
                 meta_w[replace_line_2].valid = 1'b1;
             end
-
+            
             default: begin   
             end
         endcase
@@ -454,3 +436,5 @@ module DCache (
 
     `UNUSED_OK({clk, resetn, dreq_1, dreq_2, dcresp});
 endmodule
+
+`endif
