@@ -94,6 +94,7 @@ typedef enum i4 {
 
 // a 4-bit mask for memory r/w, namely "write enable"
 typedef i4 strobe_t;
+typedef i8 double_strobe_t;
 
 // general-purpose register index
 typedef i5 regidx_t;
