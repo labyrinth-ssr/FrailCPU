@@ -184,7 +184,12 @@ typedef struct packed {
     addr_t addr;   // target address
 } ibus_req_t;
 
-typedef dbus_resp_t ibus_resp_t;
+// typedef dbus_resp_t ibus_resp_t;
+typedef struct packed {
+    logic  addr_ok;  // is the address accepted by cache?
+    logic  data_ok;  // is the field "data" valid?
+    u64 data;     // the data read from cache
+} ibus_resp_t;
 
 `define IREQ_TO_DREQ(ireq) \
     {ireq, MSIZE4, 4'b0, 32'b0}

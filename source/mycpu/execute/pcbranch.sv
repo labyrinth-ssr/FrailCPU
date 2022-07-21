@@ -2,8 +2,8 @@
 `define __PCBRANCH_SV
 
 `ifdef VERILATOR
-`include "common.sv"
-`include "pipes.sv"
+`include "common.svh"
+`include "pipes.svh"
 `else
 
 `endif
@@ -12,7 +12,7 @@ module pcbranch
 	(
         input branch_t branch,
         output u1 branch_condition,
-        input u64 srca,srcb,
+        input word_t srca,srcb,
         input u1 valid
 );
     always_comb begin

@@ -2,13 +2,13 @@
 `define __CP0_SV
 
 `ifdef VERILATOR
-`include "common.sv"
-`include "cp0_pkg.sv"
+`include "common.svh"
+`include "cp0_pkg.svh"
 `else
 `endif
 
 module cp0
-	import cp0_pkg::*;(
+	(
 	input logic clk, reset,
 	input u8 ra,wa,
 	input word_t wd,
@@ -20,9 +20,9 @@ module cp0
 	input excp_type_t etype,
 	input cp0_type_t ctype,
 	input u1 inter_valid,
-	output u1 interrupt_valid,
-	input u5 ext_int,
-	input u1 is_slot,is_INTEXC
+	input u6 ext_int,
+	input u1 is_slot,
+	output is_INTEXC
 );
 	u1 double;
 	cp0_regs_t regs, regs_nxt;
@@ -52,8 +52,8 @@ module cp0
 	always_ff @(posedge clk) begin
 		if (reset) begin
 			regs <= '0;
-			regs.mcause[1] <= 1'b1;
-			regs.epc[31] <= 1'b1;
+			// regs.mcause[1] <= 1'b1;
+			// regs.epc[31] <= 1'b1;
 		end else begin
 			regs <= regs_nxt;
 			double <= 1'b1-double;
@@ -106,13 +106,13 @@ module cp0
 		end
 	end
 
-	assign interrupt=regs.status.ie&&~regs.status.exl&&(({ext_int, 2'b00} | regs.cause.ip | {regs.cause.ti, 7'b0}) & regs.status.im);
+	assign interrupt=regs.status.ie&&~regs.status.exl&&(|(({ext_int, 2'b00} | regs.cause.ip| {regs.cause.ti, 7'b0}) & regs.status.im));
 
 	assign regs.cause.ti= regs.count==regs.compare;
 	always_comb begin
 		regs_nxt = regs;
 		delayed_interupt='0;
-		if (double&&wa!=5'd9) begin
+		if (double&&wa[7:3]!=5'd9) begin
 			regs_nxt.count = regs.count + 1;
 		end
 
@@ -144,35 +144,35 @@ module cp0
 					delayed_interupt='1;
 				end
 				 else if (valid) begin
-					case (wa)
-						5'd0:  regs_nxt.index = wdata;
-						// 5'd1:  regs_nxt.random=wdata;
-						5'd2:  regs_nxt.entry_lo0 = wdata[29:0];
-						5'd3:  regs_nxt.entry_lo1 = wdata[29:0];
-						5'd4:  regs_nxt.context_[31:23] = wdata[31:23];
-						5'd5:  regs_nxt.page_mask=wdata;
-						5'd6:  regs_nxt.wired = wdata;
-						// 5'd7:  regs_nxt.reserved7=wdata;
-						5'd9:  regs_nxt.count = wdata;
+					case (wa[7:3])
+						5'd0:  regs_nxt.index = wd;
+						// 5'd1:  regs_nxt.random=wd;
+						5'd2:  regs_nxt.entry_lo0[29:0] = wd[29:0];
+						5'd3:  regs_nxt.entry_lo1[29:0] = wd[29:0];
+						5'd4:  regs_nxt.context_[31:23] = wd[31:23];
+						5'd5:  regs_nxt.page_mask=wd;
+						5'd6:  regs_nxt.wired = wd;
+						// 5'd7:  regs_nxt.reserved7=wd;
+						5'd9:  regs_nxt.count = wd;
 						5'd10: begin
-							regs_nxt.entry_hi[31:13] = wdata[31:13];
-							regs_nxt.entry_hi[7:0] = wdata[7:0];
+							regs_nxt.entry_hi[31:13] = wd[31:13];
+							regs_nxt.entry_hi[7:0] = wd[7:0];
 						end
-						5'd11: regs_nxt.compare = wdata;
+						5'd11: regs_nxt.compare = wd;
 						5'd12: begin
-							regs_nxt.status.cu0 = wdata[28];
-							regs_nxt.status.bev = wdata[22];
-							regs_nxt.status.im = wdata[15:8];
-							regs_nxt.status.um = wdata[4];
-							regs_nxt.status[2:0] = wdata[2:0]; // ERL/EXL/IE
+							regs_nxt.status.cu0 = wd[28];
+							regs_nxt.status.bev = wd[22];
+							regs_nxt.status.im = wd[15:8];
+							regs_nxt.status.um = wd[4];
+							regs_nxt.status[2:0] = wd[2:0]; // ERL/EXL/IE
 						end
 						5'd13: begin
-							regs_nxt.cause.iv = wdata[23];
-							regs_nxt.cause.ip[1:0] = wdata[9:8];
+							regs_nxt.cause.iv = wd[23];
+							regs_nxt.cause.ip[1:0] = wd[9:8];
 						end
-						5'd14: regs_nxt.epc = wdata;
-						// 5'd15: regs_nxt.prid=wdata;
-						5'd16: regs_nxt.config0[2:0] = wdata[2:0];
+						5'd14: regs_nxt.epc = wd;
+						// 5'd15: regs_nxt.prid=wd;
+						5'd16: regs_nxt.config0[2:0] = wd[2:0];
 					endcase
 			// regs_nxt.mstatus.sd = regs_nxt.mstatus.fs != 0;
 		end else if (is_eret) begin

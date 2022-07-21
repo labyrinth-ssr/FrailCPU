@@ -12,12 +12,12 @@ module regfile
 ) (
 	input logic clk, reset,
 	input creg_addr_t [READ_PORTS-1:0] ra1, ra2,
-	output u64 [READ_PORTS-1:0] rd1, rd2,
+	output word_t [READ_PORTS-1:0] rd1, rd2,
 	input creg_addr_t [WRITE_PORTS-1:0] wa,
 	input u1 [WRITE_PORTS-1:0] wvalid,
-	input u64 [WRITE_PORTS-1:0] wd
+	input word_t [WRITE_PORTS-1:0] wd
 );
-	u64 [31:0] regs, regs_nxt;
+	word_t [31:0] regs, regs_nxt;
 
 	for (genvar i = 0; i < READ_PORTS; i++) begin
 		assign rd1[i] = regs[ra1[i]];

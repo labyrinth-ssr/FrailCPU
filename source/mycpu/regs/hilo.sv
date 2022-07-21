@@ -2,8 +2,8 @@
 `define __HILO_SV
 
 `ifdef VERILATOR
-`include "include/common.sv"
-`include "include/pipes.sv"
+`include "common.svh"
+`include "pipes.svh"
 `else
 
 `endif

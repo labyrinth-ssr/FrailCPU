@@ -1,6 +1,6 @@
 `include "pipes.svh"
 
-module ALU (
+module alu (
         input word_t a, 
         input word_t b,
         input alufunc_t alufunc,

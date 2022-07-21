@@ -2,14 +2,14 @@
 `define __HAZARD_SV
 
 `ifdef VERILATOR
-`include "include/common.sv"
+`include "common.svh"
 `endif 
 
 module hazard
 (
-    output u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushI,flush_que
+    output u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushI,flush_que,stallF2,flushF2,
     // input creg_addr_t edst,mdst,wdst,mdst2,
-    input dbranch,i_wait,d_wait,e_wait,
+    input branchE,i_wait,d_wait,e_wait,branch_misalign,
     // input creg_addr_t ra1,ra2,ra1E,ra2E,
     // input wrE,wrM,wrW,wrM2,
     // input memwrE,memwrM,memwrM2,
@@ -19,7 +19,6 @@ module hazard
 u1 branch_stall,lwstall,multi_stall;
 u1 excp_iwait,excp_iwait_nxt,branch_iwait,branch_iwait_nxt,misalign_iwait,misalign_iwait_nxt;
 u64 int_save;
-u1 flushM2;
 
 always_ff @(posedge clk) begin
         excp_iwait<=excp_iwait_nxt;
@@ -49,10 +48,10 @@ end
                 stallM='1;flushM='0;
             end 
         end else if (d_wait) begin
-            stallM='1;stallE='1;stallF='1;stallD='1;flushM2='1;stallF2='1;
+            stallM='1;stallE='1;stallF='1;stallD='1;stallF2='1;
         end  else if (i_wait) begin
             stallF='1;flushD='1;
-            if (dbranch) begin
+            if (branchE) begin
                 branch_iwait_nxt=1'b1;
             end 
             if (branch_misalign) begin
@@ -72,12 +71,12 @@ end
             // stallF=stallD;
             // flushE=stallD;
 
-            flushF2=dbranch||branch_misalign;
-            flushD=dbranch||branch_misalign;
-            flushI=dbranch;
-            flushE=dbranch;
-            flushM=dbranch;
-            flush_que=dbranch;
+            flushF2=branchE||branch_misalign;
+            flushD=branchE||branch_misalign;
+            flushI=branchE;
+            flushE=branchE;
+            flushM=branchE;
+            flush_que=branchE;
         end
 
         if (~i_wait&&excp_iwait) begin

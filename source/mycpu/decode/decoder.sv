@@ -295,7 +295,6 @@ module decoder (
                     `C_ERET:begin
                         cp0_ctl.ctype=ERET;
                         cp0_ctl.valid='1;
-                        ctl.op = ERET;
                         ctl.is_eret = 1'b1;
                         srcrega = '0;
                         srcregb = '0;

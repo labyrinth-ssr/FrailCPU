@@ -6,6 +6,8 @@
 `include "pipes.svh"
 `include "alu.sv"
 `include "pcbranch.sv"
+`include "multi.sv"
+`include "div.sv"
 
 `endif 
 
@@ -13,7 +15,7 @@
         input clk,resetn,
         input issue_data_t dataI[1:0],
         output execute_data_t dataE[1:0],
-        output mem_misalign1
+        output e_wait
     );
 
     word_t a[1:0],b[1:0],c[1:0],extend_b[1:0];
@@ -24,6 +26,8 @@
     assign extend_b[0] = dataI[0].ctl.zeroext ? {16'b0, dataI[0].imm } : {{16{dataI[0].imm [15]}}, dataI[0].imm };
     assign a[1]=dataI[1].rd1;
     assign a[0]=dataI[0].rd1;
+
+    u1 exception_of[1:0];
 
     always_comb begin
         for (int i=0; i<2; ++i) begin
@@ -39,112 +43,127 @@
         .b(b[1]),
         .c(aluout),
         .alufunc(dataI[1].ctl.alufunc),
-        .exception_of
+        .exception_of(exception_of[1])
     );
-    assign dataE[1].alu_out=dataI[1].ctl.is_link? dataI[1].pc+12:aluout;
-
-    assign mem_misalign1=(dataI[1].ctl.memtoreg||dataI[1].ctl.memwrite)&&((dataI[1].ctl.msize==MSIZE2&&aluout[0]!=1'b0)||(dataI[1].ctl.msize==MSIZE4&&aluout[1:0]!=2'b00));
-
-    always_comb begin
-        dataE.cp0_ctl=dataI.cp0_ctl;
-        if (dataI[1].ctl.memwrite && store_misalign) begin
-            dataE[1].cp0_ctl.ctype=EXCEPTION;
-            dataE[1].cp0_ctl.etype.adesD='1;
-            dataE[0].cp0_ctl.valid='0;
-            dataE[1].cp0_ctl.valid='1;
-        end else if (dataI[1].ctl.memtoreg && load_misalign) begin
-            dataE[1].cp0_ctl.ctype=EXCEPTION;
-            dataE[1].cp0_ctl.valid='1;
-            dataE[1].cp0_ctl.etype.adelD='1;
-            dataE[0].cp0_ctl.valid='0;
-        end else if (dataI[0].ctl.memwrite && store_misalign) begin
-            dataE[0].cp0_ctl.ctype=EXCEPTION;
-            dataE[0].cp0_ctl.valid='1;
-            dataE[0].cp0_ctl.etype.adesD='1;
-        end else if (dataI[0].ctl.memtoreg && load_misalign) begin
-            dataE[0].cp0_ctl.ctype=EXCEPTION;
-            dataE[0].cp0_ctl.valid='1;
-            dataE[0].cp0_ctl.etype.adelD='1;
-        end
-    end
 
     alu alu_inst2(
         .a(a[0]),
         .b(b[0]),
         .c(dataE[0].alu_out),
-        .alufunc(dataI[0].ctl.alufunc)
-        .exception_of
+        .alufunc(dataI[0].ctl.alufunc),
+        .exception_of(exception_of[0])
     );
-    assign branch_condition;
+
+    assign dataE[1].alu_out=dataI[1].ctl.is_link? dataI[1].pc+12:aluout;
+
+    always_comb begin//都是双端口
+        dataE[1].cp0_ctl=dataI[1].cp0_ctl;
+        dataE[0].cp0_ctl=dataI[0].cp0_ctl;
+        if (dataI[1].ctl.memwrite &&exception_of[1]) begin
+            dataE[1].cp0_ctl.ctype=EXCEPTION;
+            dataE[1].cp0_ctl.etype.overflow= '1;
+            dataE[0].cp0_ctl.valid='0;
+            dataE[1].cp0_ctl.valid='1;
+        end
+        else if (dataI[0].ctl.memwrite && exception_of[0]) begin
+            dataE[0].cp0_ctl.ctype=EXCEPTION;
+            dataE[0].cp0_ctl.valid='1;
+            dataE[0].cp0_ctl.etype.overflow= '1;
+        end
+    end
+
+    
+    word_t slot_pc;
+    assign slot_pc=dataI[1].pc+4;
+    word_t raw_instr;
+    assign raw_instr=dataI[1].raw_instr;
     always_comb begin
         dataE[1].target='0;
         if (dataI[1].ctl.branch) begin
-            dataE[1].target=dataI[1].pc+4+target_offset;
+            dataE[1].target=slot_pc+target_offset;
         end else if (dataI[1].ctl.jr) begin
-            dataE[1].target={(dataI[1].pc+4)[31:28],dataI[1].raw_instr[25:0],2'b00};
+            dataE[1].target={slot_pc[31:28],raw_instr[25:0],2'b00};
         end else if (dataI[1].ctl.jump) begin
             dataE[1].target=dataI[1].rd1;
         end
     end
 
-    assign target_offset={{15{dataI[1].raw_instr[15]}},dataI[1].raw_instr[14:0],2'b00};
+    assign target_offset={{15{raw_instr[15]}},raw_instr[14:0],2'b00};
 
     pcbranch pcbranch_inst(
         .branch(dataI[1].ctl.branch_type),
         .branch_condition,
-        .srca,.srcb,
-        .valid(dataI[1].branch)
+        .srca(dataI[1].rd1),.srcb(dataI[1].rd2),
+        .valid(dataI[1].ctl.branch)
     );
 
-    assign dataE[1].branch_taken=dataI[1].jump||(dataI[1].branch&&branch_condition);
-    assign dataE[1].srcb=dataI[1].rd2;
-    assign dataE[0].srcb=dataI[0].rd2;
-    assign dataE[0].is_slot=dataI[0].is_slot;
-    assign dataE[1].cp0ra=dataI[0].cp0ra;
-
-    always_comb begin
-        dataE.ctl=dataI.ctl;
-        if (mem_misalign1) begin
-            dataE[0].ctl.regwrite='0;
-        end
+    assign dataE[1].branch_taken=dataI[1].ctl.jump||(dataI[1].ctl.branch&&branch_condition);
+    for (genvar i=0; i<2; ++i) begin
+    assign dataE[i].srcb=dataI[i].rd2;
+    assign dataE[i].rdst=dataI[i].rdst;
+        
     end
+    assign dataE[0].is_slot=dataI[0].is_slot;
+    
+    assign dataE[0].cp0ra=dataI[0].cp0ra;
+    assign dataE[1].cp0ra=dataI[1].cp0ra;
 
     u1 mult_done,div_done,nega,negb;
     word_t multia,multib;
     u64 multc,divc,multi_res;
-    assign multia=dataI[1].rd1;
-    assign multib=dataI[1].rd2;
+    assign multia=dataI[valid_i].rd1;
+    assign multib=dataI[valid_i].rd2;
     // assign diva=dataI[1].rd1;
     // assign divb=dataI[1].rd2;
-    assign nega=(dataI[1].ctl.op==MULT||dataI[1].ctl.op==DIV)&& dataI[1].rd1[31];
-    assign negb=(dataI[1].ctl.op==MULT||dataI[1].ctl.op==DIV)&& dataI[1].rd2[31];
+    assign nega=(dataI[valid_i].ctl.op==MULT||dataI[valid_i].ctl.op==DIV)&& dataI[valid_i].rd1[31];
+    assign negb=(dataI[valid_i].ctl.op==MULT||dataI[valid_i].ctl.op==DIV)&& dataI[valid_i].rd2[31];
     
     // always_comb begin
     //     {multia,multib,diva,divb}='0;
     //     if
     // end
+    u1 mult_valid,div_valid;
+    assign mult_valid=dataI[1].ctl.op==MULT||dataI[1].ctl.op==MULTU||dataI[0].ctl.op==MULT||dataI[0].ctl.op==MULTU;
+    assign div_valid=dataI[1].ctl.op==DIV||dataI[1].ctl.op==DIVU||dataI[0].ctl.op==DIV||dataI[0].ctl.op==DIVU;
 
-    multiplier_multicycle_dsp multiplier_multicycle_dsp(
+    multi multiplier_multicycle_dsp(
         .clk,.resetn,
-        .valid(dataI[1].ctl.op==MULT||dataI[1].ctl.op==MULTU),
+        .valid(mult_valid),
         .a(nega? -multia:multia),.b(negb? -multib:multib),
-        .done,
+        .done(mult_done),
         .c (multc)
+    );
+        div divider_multicycle_from_single(
+        .clk,.resetn,
+        .valid(div_valid),
+        .a(nega? -multia:multia),.b(negb? -multib:multib),
+        .done(div_done),
+        .c(divc)
     );
 
     assign multi_res= nega^negb? -multc:multc;
 
     u1 hi_write,lo_write;
     word_t hi_data,lo_data;
-    assign dataE[1].hilo={hi_data,lo_data};
+    assign dataE[valid_i].hilo={hi_data,lo_data};
+
+    u1 valid_i;
+    always_comb begin
+        if (dataI[1].ctl.op==MULT||dataI[1].ctl.op==MULTU||dataI[1].ctl.op==DIV||dataI[1].ctl.op==DIVU) begin
+            valid_i='1;
+        end else if (dataI[0].ctl.op==MULT||dataI[0].ctl.op==MULTU||dataI[0].ctl.op==DIV||dataI[0].ctl.op==DIVU) begin
+            valid_i='0;
+            
+        end
+    end
 
     always_comb begin
         // {hi_write,lo_write,hi_data,lo_data}='0;
-        if (dataI[1].ctl.op==MULT||dataI[1].ctl.op==MULTU) begin
+        if (mult_valid) begin
             {hi_write,lo_write}='1;
             hi_data=multi_res[63:32];
             lo_data=multi_res[31:0];
-        end else if (dataI[1].ctl.op==DIV||dataI[1].ctl.op==DIVU) begin
+        end else if (div_valid) begin
             {hi_write,lo_write}='1;
             unique case ({nega,negb})
             2'b00:begin
@@ -167,13 +186,8 @@
         end
     end
 
-    divider_multicycle_from_single divider_multicycle_from_single(
-        .clk,.resetn,
-        .valid(dataI[1].ctl.op==DIV||dataI[1].ctl.op==DIVU),
-        .a(nega? -multia:multia),.b(negb? -multib:multib),
-        .done,
-        .c(divc)
-    );
+
+    assign e_wait=((div_valid)&&~div_done)||((mult_valid)&&~mult_done);
 
     endmodule
 

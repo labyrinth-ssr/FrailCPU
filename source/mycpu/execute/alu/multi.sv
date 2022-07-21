@@ -2,15 +2,13 @@
 `define __MULTI_SV
 
 `ifdef VERILATOR
-`include "include/common.sv"
-`include "include/pipes.sv"
+`include "common.svh"
+`include "pipes.svh"
 `else
 
 `endif
-import common::*;
-import pipes::*;
 
-module multiplier_multicycle_dsp (
+module multi (
     input logic clk, resetn, valid,
     input i32 a, b,
     output logic done,
@@ -30,9 +28,9 @@ module multiplier_multicycle_dsp (
         end
     end
     logic [3:0][63:0] q;
-    assign q[0] = {p[0]};
-    assign q[1] = {p[1], 16'b0};
-    assign q[2] = {p[2], 16'b0};
+    assign q[0] = {32'b0,p[0]};
+    assign q[1] = {16'b0,p[1], 16'b0};
+    assign q[2] = {16'b0,p[2], 16'b0};
     assign q[3] = {p[3], 32'b0};
     assign c = q[0] + q[1] + q[2] + q[3];
 

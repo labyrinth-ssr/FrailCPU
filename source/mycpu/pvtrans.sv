@@ -2,7 +2,7 @@
 `define __PVTRANS_SV
 
 `ifdef VERILATOR
-`include "common.sv"
+`include "common.svh"
 `endif 
 
 module pvtrans(

@@ -26,6 +26,7 @@ typedef struct packed {
 	u8 cp0ra;
 	u1 lowrite,hiwrite,cp0write;
 	u1 memtoreg;
+	u1 regwrite;
 } bypass_input_t;
 
 typedef struct packed {
@@ -37,12 +38,14 @@ typedef struct packed {
 typedef struct packed {
 	u1 lowrite,hiwrite,cp0write;
 	u8 cp0ra;
+	u1 regwrite;
 	creg_addr_t rdst;
 } bypass_execute_t;
 
 typedef struct packed {
 	word_t data;
 	u1 valid;
+	u1 [1:0] bypass;
 } bypass_output_t;
 
 
@@ -63,11 +66,11 @@ typedef struct packed {
 	u32 pc;
 } bp_res_t;
 
-typedef enum i3 {
-     MSIZE1 = 3'b000,
-     MSIZE2 = 3'b001,
-     MSIZE4 = 3'b010,
- } msize_t;
+// typedef enum i3 {
+//      MSIZE1 = 3'b000,
+//      MSIZE2 = 3'b001,
+//      MSIZE4 = 3'b010
+//  } msize_t;
 
 
 
@@ -134,21 +137,24 @@ typedef struct packed {
 	word_t pc;
 	u16 imm;
 	u1 is_slot;
-	// cp0_control_t cp0_ctl;
+	cp0_control_t cp0_ctl;
+	word_t rd1,rd2;
 } decode_data_t;
 
 typedef struct packed {
 	// int_type_t int_type;
 	u1 valid;
-	word_t rd1,rd2;
+	word_t rd1,rd2,lo_rd,hi_rd,cp0_rd;
 	control_t ctl;
 	u8 cp0ra;
 	u16 imm;
 	// creg_addr_t rd,ra1,ra2;//2^5=32 assign the reg to be written
 	word_t pc;
 	u1 is_slot;
+	u32 raw_instr;
+	creg_addr_t rdst;
 
-	// cp0_control_t cp0_ctl;
+	cp0_control_t cp0_ctl;
 } issue_data_t;
 
 typedef struct packed {
@@ -167,26 +173,29 @@ typedef struct packed {
 	word_t target;
 	u1 branch_taken;
 	u1 is_slot;
+	word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;
-	// cp0_control_t cp0_ctl;
+	cp0_control_t cp0_ctl;
 } execute_data_t;
 
 typedef struct packed {
 	u1 valid;
 	// int_type_t int_type;
-	u64 pc;
-	u64 alu_out;
+	word_t pc;
+	word_t alu_out;
 	control_t ctl;
 	creg_addr_t rdst;
-	u64 sextimm;
 	u8 cp0ra;
 	u1 is_slot;
-	// cp0_control_t cp0_ctl;
+	// word_t lo_rd,hi_rd,cp0_rd;
+	cp0_control_t cp0_ctl;
+	word_t srcb;
+
 	// u64 target;
 	word_t rd;
 	// u64 rs1rd;
 } memory_data_t;
-
+//写回阶段dataM与dataW混用
 typedef struct packed {
 	u1 valid;
 	creg_addr_t wa;
@@ -195,6 +204,7 @@ typedef struct packed {
 	word_t cp0_rd;
 	word_t lo_rd;
 	word_t hi_rd;
+	u1 regwrite;
 
 } writeback_data_t;
 

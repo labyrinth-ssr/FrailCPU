@@ -11,7 +11,7 @@ module ICache (
     // simply use DCache as ICache
     DCache proxy(
         .dreq(`IREQ_TO_DREQ(ireq)),
-        .dresp(iresp),
+        .dresp(iresp[65:32]),
         .dcreq(icreq),
         .dcresp(icresp),
         .*

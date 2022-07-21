@@ -2,15 +2,13 @@
 `define __DIV_SV
 
 `ifdef VERILATOR
-`include "include/common.sv"
-`include "include/pipes.sv"
+`include "common.svh"
+`include "pipes.svh"
 `else
 
 `endif
-import common::*;
-import pipes::*;
 
-module divider_multicycle_from_single (
+module div (
     input logic clk, resetn, valid,
     input i32 a, b,
     output logic done,
@@ -18,7 +16,7 @@ module divider_multicycle_from_single (
 );
     enum i1 { INIT, DOING } state, state_nxt;
     i35 count, count_nxt;
-    localparam i35 DIV_DELAY = {'0, 1'b1, 32'b0};
+    localparam i35 DIV_DELAY = {2'b00, 1'b1, 32'b0};
     always_ff @(posedge clk) begin
         if (~resetn) begin
             {state, count} <= '0;
@@ -49,10 +47,10 @@ module divider_multicycle_from_single (
         p_nxt = p;
         unique case(state)
             INIT: begin
-                p_nxt = {'0, a};
+                p_nxt = {32'h0, a};
             end
             DOING: begin
-                p_nxt = {p_nxt[63:0], 1'b0};
+                p_nxt = {p_nxt[62:0], 1'b0};
                 if (p_nxt[63:32] >= b) begin
                     p_nxt[63:32] -= b;
                     p_nxt[0] = 1'b1;
