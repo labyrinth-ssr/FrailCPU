@@ -195,6 +195,32 @@ typedef struct packed {
 /**
  * AXI-related typedefs
  */
+ `define TLB_NUM 16
+typedef logic [$clog2(`TLB_NUM)-1:0] tlb_index_t;
+
+typedef struct packed {
+    logic [18:0] vpn2;
+    logic [7:0] asid;
+    logic g;
+    logic [19:0] pfn0;
+    logic c0;
+    logic d0;
+    logic v0;
+    logic [19:0] pfn1;
+    logic c1;
+    logic d1;
+    logic v1;   
+} tlb_entry_t;
+
+typedef struct packed {
+    logic found,
+    tlb_index_t index,
+    logic [19:0] pfn,
+    logic [2:0] c,
+    logic d,
+    logic v,
+} tlb_search_t;
+
 
 typedef enum i2 {
     AXI_BURST_FIXED,
