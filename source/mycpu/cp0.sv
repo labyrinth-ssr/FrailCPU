@@ -122,10 +122,10 @@ module cp0
 					end
 					if (~regs.status.exl) begin
 						if (~is_slot) begin
-							regs_nxt.epc=pc;
+							regs_nxt.epc= interrupt&&inter_valid&&~int_saved? pc+4:pc;
 							regs_nxt.cause.bd='0;
 						end else begin
-							regs_nxt.epc=pc-4;
+							regs_nxt.epc=interrupt&&inter_valid&&~int_saved? pc+4:pc-4;
 							regs_nxt.cause.bd='1;
 						end
 					end
@@ -133,10 +133,10 @@ module cp0
 		end  else if (int_saved&&inter_valid) begin
 					if (~regs.status.exl) begin
 						if (~is_slot) begin
-							regs_nxt.epc=pc;
+							regs_nxt.epc=pc+4;
 							regs_nxt.cause.bd='0;
 						end else begin
-							regs_nxt.epc=pc-4;
+							regs_nxt.epc=pc+4;
 							regs_nxt.cause.bd='1;
 						end
 					end

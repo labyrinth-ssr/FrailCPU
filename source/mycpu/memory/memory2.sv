@@ -39,6 +39,7 @@ for (genvar i=0; i<2; ++i) begin
     assign dataM[i].ctl=dataE[i].ctl;
     assign dataM[i].cp0ra=dataE[i].cp0ra;
     assign dataM[i].srcb=dataE[i].srcb;
+    assign dataM[i].hilo=dataE[i].hilo;
 end
 
 endmodule

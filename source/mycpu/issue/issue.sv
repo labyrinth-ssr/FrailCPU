@@ -121,32 +121,22 @@ end
 
     always_comb begin
         dataI='0; 
+        
         if (que_empty) begin
-            if (issue_en[1]) begin
-                dataI[1].ctl=dataD[1].ctl;
-                dataI[1].pc=dataD[1].pc;
-                dataI[1].valid=dataD[1].valid;
-                dataI[1].imm=dataD[1].imm;
-                dataI[1].is_slot=dataD[1].is_slot;
-                dataI[1].rd1= bypass_in[1].bypass[1]? bypass_in[1].data :dataD[1].rd1;
-                dataI[1].rd2= bypass_in[1].bypass[0]? bypass_in[1].data :dataD[1].rd2;
-                dataI[1].raw_instr=dataD[1].raw_instr;
-                dataI[1].cp0ra=dataD[1].cp0ra;
-                dataI[1].raw_instr=dataD[1].raw_instr;
-                dataI[1].rdst=dataD[1].rdst;
-                if (issue_en[0]) begin
-                    dataI[0].ctl=dataD[0].ctl;
-                    dataI[0].pc=dataD[0].pc;
-                    dataI[0].valid=dataD[0].valid;
-                    dataI[0].imm=dataD[0].imm;
-                    dataI[0].is_slot=dataD[0].is_slot;
-                    dataI[0].rd1=bypass_in[0].bypass[1]? bypass_in[0].data :dataD[0].rd1;
-                    dataI[0].rd2=bypass_in[0].bypass[0]? bypass_in[0].data :dataD[0].rd2;
-                    dataI[0].raw_instr=dataD[0].raw_instr;
-                    dataI[0].cp0ra=dataD[0].cp0ra;
-                    dataI[0].raw_instr=dataD[0].raw_instr;
-                    dataI[0].rdst=dataD[1].rdst;
-                end 
+            for (int i=0; i<2; ++i) begin
+                if (issue_en[i]) begin
+                dataI[i].ctl=dataD[i].ctl;
+                dataI[i].pc=dataD[i].pc;
+                dataI[i].valid=dataD[i].valid;
+                dataI[i].imm=dataD[i].imm;
+                dataI[i].is_slot=dataD[i].is_slot;
+                dataI[i].rd1= bypass_in[i].bypass[1]? bypass_in[i].data :dataD[i].rd1;
+                dataI[i].rd2= bypass_in[i].bypass[0]? bypass_in[i].data :dataD[i].rd2;
+                dataI[i].raw_instr=dataD[i].raw_instr;
+                dataI[i].cp0ra=dataD[i].cp0ra;
+                dataI[i].raw_instr=dataD[i].raw_instr;
+                dataI[i].rdst=dataD[i].rdst;
+                end
             end
         end else begin
             if (issue_en[1]) begin
@@ -176,7 +166,6 @@ end
                 end
             end
         end
-        
 end
 
 endmodule

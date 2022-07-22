@@ -187,6 +187,8 @@ typedef struct packed {
 	creg_addr_t rdst;
 	u8 cp0ra;
 	u1 is_slot;
+	u64 hilo;
+
 	// word_t lo_rd,hi_rd,cp0_rd;
 	cp0_control_t cp0_ctl;
 	word_t srcb;
@@ -205,6 +207,7 @@ typedef struct packed {
 	word_t lo_rd;
 	word_t hi_rd;
 	u1 regwrite;
+	word_t pc;
 
 } writeback_data_t;
 

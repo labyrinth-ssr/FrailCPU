@@ -63,6 +63,7 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].is_slot=dataE[i].is_slot;
     assign dataE2[i].cp0ra=dataE[i].cp0ra;
     assign dataE2[i].srcb=dataE[i].srcb;
+    assign dataE2[i].hilo=dataE[i].hilo;
 end
     
 writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.store_misalign(store_misalign[1]));

@@ -283,11 +283,11 @@ module MyCore (
     always_comb begin
         for (int i=1; i>=0; --i) begin
             if (dataM2[i].ctl.hiwrite) begin
-                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srcb:dataM2[i][63:32];
+                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srcb:dataM2[i].hilo[63:32];
                 valid_j=i[0];
             end 
             if (dataM2[i].ctl.lowrite) begin
-                hi_data=dataM2[i].ctl.op==MTLO? dataM2[i].srcb:dataM2[i][31:0];
+                lo_data=dataM2[i].ctl.op==MTLO? dataM2[i].srcb:dataM2[i].hilo[31:0];
                 valid_k=i[0];
             end
         end

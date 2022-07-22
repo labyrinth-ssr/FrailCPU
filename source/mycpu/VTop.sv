@@ -13,14 +13,15 @@ module VTop (
 
     ibus_req_t  ireq;
     ibus_resp_t iresp;
-    dbus_req_t  dreq;
-    dbus_resp_t dresp;
+    dbus_req_t  dreq[1:0];
+    dbus_resp_t dresp[1:0];
     cbus_req_t  icreq,  dcreq;
     cbus_resp_t icresp, dcresp;
 
     MyCore core(.*);
     /* IBusToCBus */ ICache icvt(.*);
-    /* DBusToCBus */ DCache dcvt(.*);
+    /* DBusToCBus */ DCache dcvt(.*, .dreq_1(dreq[1]), .dreq_2(dreq[0]),
+    .dresp_1(dresp[1]), .dresp_2(dresp[0]));
 
     /**
      * TODO (Lab2) replace mux with your own arbiter :)

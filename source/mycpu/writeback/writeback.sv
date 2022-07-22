@@ -13,6 +13,16 @@
         u1 valid_i,valid_j,valid_k
     );
 
+    word_t pc[1:0]/* verilator public_flat_rd */,wd[1:0]/* verilator public_flat_rd */;
+    u1 wen[1:0]/* verilator public_flat_rd */;
+    creg_addr_t wa[1:0]/* verilator public_flat_rd */;
+
+    for (genvar i=0; i<2; ++i) begin
+        assign pc[i]=dataW[i].pc;
+        assign wa[i]=dataW[i].wa;
+        assign wd[i]=dataW[i].wd;
+        assign wen[i]=dataW[i].valid;
+    end
         for (genvar i=0; i<2; ++i) begin
             // always_comb begin
 
@@ -33,6 +43,7 @@
             assign dataW[i].valid=dataM[i].valid;
             assign dataW[i].ctl=dataM[i].ctl;
             assign dataW[i].wa=dataM[i].rdst;
+            assign dataW[i].pc=dataM[i].pc;
         end
 
         always_comb begin

@@ -6,32 +6,59 @@ constexpr int MAX_CYCLE = 100000000;
 constexpr addr_t TEST_END_PC = 0x9fc00100;
 constexpr addr_t TEST_END_PC_MASK = 0xdfffffff;
 
-auto MyCPU::get_writeback_pc() const -> addr_t {
+auto MyCPU::get_writeback_pc1() const -> addr_t {
     /**
      * TODO (Lab2) retrieve PC from verilated model :)
      */
-    return 0x19260817;
+    return VTop->core__DOT__writeback__DOT__pc[1];
+}
+auto MyCPU::get_writeback_pc2() const -> addr_t {
+    /**
+     * TODO (Lab2) retrieve PC from verilated model :)
+     */
+    return VTop->core__DOT__writeback__DOT__pc[0];
 }
 
-auto MyCPU::get_writeback_id() const -> int {
+auto MyCPU::get_writeback_id1() const -> int {
     /**
      * TODO (Lab2) retrieve writeback register id from verilated model :)
      */
-    return 0;
+        return VTop->core__DOT__writeback__DOT__wa[1];
+
+}
+auto MyCPU::get_writeback_id2() const -> int {
+    /**
+     * TODO (Lab2) retrieve writeback register id from verilated model :)
+     */
+        return VTop->core__DOT__writeback__DOT__wa[0];
+
 }
 
-auto MyCPU::get_writeback_value() const -> addr_t {
+auto MyCPU::get_writeback_value1() const -> addr_t {
     /**
      * TODO (Lab2) retrieve writeback value from verilated model :)
      */
-    return 0xdeadbeef;
+        return VTop->core__DOT__writeback__DOT__wd[1];
+}
+auto MyCPU::get_writeback_value2() const -> addr_t {
+    /**
+     * TODO (Lab2) retrieve writeback value from verilated model :)
+     */
+        return VTop->core__DOT__writeback__DOT__wd[0];
 }
 
-auto MyCPU::get_writeback_wen() const -> word_t {
+auto MyCPU::get_writeback_wen1() const -> word_t {
     /**
      * TODO (Lab2) retrieve writeback wen from verilated model :)
      */
-    return get_writeback_id() != 0;
+    return VTop->core__DOT__writeback__DOT__wen[1]&&get_writeback_id1()!=0;
+}
+
+auto MyCPU::get_writeback_wen2() const -> word_t {
+    /**
+     * TODO (Lab2) retrieve writeback wen from verilated model :)
+     */
+    return VTop->core__DOT__writeback__DOT__wen[0]&&get_writeback_id2()!=0;
 }
 
 void MyCPU::print_status() {
@@ -45,13 +72,21 @@ void MyCPU::print_status() {
 }
 
 void MyCPU::print_writeback() {
-    auto pc = get_writeback_pc();
-    auto id = get_writeback_id();
-    auto value = get_writeback_value();
+    auto pc1 = get_writeback_pc1();
+    auto id1 = get_writeback_id1();
+    auto value1 = get_writeback_value1();
 
-    if (get_writeback_wen() != 0) {
+    auto pc2 = get_writeback_pc2();
+    auto id2 = get_writeback_id2();
+    auto value2 = get_writeback_value2();
+
+    if (get_writeback_wen1() != 0) {
         // log_debug("R[%d] <- %08x\n", id, value);
-        text_dump(con->trace_enabled(), pc, id, value);
+        text_dump(con->trace_enabled(), pc1, id1, value1);
+    }
+    if (get_writeback_wen2() != 0) {
+        // log_debug("R[%d] <- %08x\n", id, value);
+        text_dump(con->trace_enabled(), pc2, id2, value2);
     }
 }
 
