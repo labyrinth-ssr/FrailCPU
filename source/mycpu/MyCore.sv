@@ -258,7 +258,7 @@ assign flushM2 = d_wait2? '0:d_wait;
 	);
 	
 	memory2 memory2(
-		.dataE,
+		.dataE(dataM1),
 		.dataM(dataM2_nxt),
 		.dresp
 	);

@@ -101,6 +101,9 @@
     for (genvar i=0; i<2; ++i) begin
     assign dataE[i].srcb=dataI[i].rd2;
     assign dataE[i].rdst=dataI[i].rdst;
+    assign dataE[i].pc=dataI[i].pc;
+    assign dataE[i].ctl=dataI[i].ctl;
+    assign dataE[i].valid=dataI[i].valid;
         
     end
     assign dataE[0].is_slot=dataI[0].is_slot;

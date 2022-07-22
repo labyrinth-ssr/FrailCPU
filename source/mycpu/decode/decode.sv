@@ -18,6 +18,7 @@ module decode(
     assign {dataD0.valid,dataD0.raw_instr,dataD0.cp0ra,dataD0.pc,dataD0.imm,dataD0.is_slot,dataD0.rd1,dataD0.rd2,dataD0.cp0_ctl}='0;
     u1 jump1,jump2;
     decoder decoder_inst1(
+        .valid(dataF2[1].valid),
         .instr(dataF2[1].raw_instr),
         .cp0_ctl_old(dataF2[1].cp0_ctl),
         .cp0_ctl(dataD[1].cp0_ctl),
@@ -28,6 +29,7 @@ module decode(
         .jump(jump1)
     );
     decoder decoder_inst2(
+        .valid(dataF2[0].valid),
         .instr(dataF2[0].raw_instr),
         .ctl(dataD0.ctl),
         .cp0_ctl_old(dataF2[0].cp0_ctl),

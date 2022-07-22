@@ -6,6 +6,7 @@
 
 module decoder (
         input word_t instr,
+        input u1 valid,
         // input creg_addr_t rs, rt, rd,
         // output decoded_op_t ctl.op,
         input cp0_control_t cp0_ctl_old,
@@ -28,7 +29,8 @@ module decoder (
         exception_ri = 1'b0;
         ctl = '0;
         cp0_ctl=cp0_ctl_old;
-        case (op_)
+        if (valid) begin
+            case (op_)
             `OP_MUL: begin
                 ctl.op = MULT;
                 ctl.regwrite = 1'b1;
@@ -623,6 +625,8 @@ module decoder (
                 destreg = 'b0;
             end
         endcase
+        end
         cp0_ctl.etype.reserveInstr=exception_ri;
+        
 	end
 endmodule

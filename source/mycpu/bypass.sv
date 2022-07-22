@@ -23,7 +23,6 @@ module bypass(
     for (genvar i=0; i<2; ++i) begin//针对issue head的对应端口
         always_comb begin
                 out[i]='0;
-
                 if ((dataEnxt_in[0].rdst==dataI_in[i].ra1||dataEnxt_in[0].rdst==dataI_in[i].ra2)&&dataEnxt_in[0].regwrite) begin
                     out[i].valid='0;//e阶段有来不及转发的写入
                 end else if ((dataEnxt_in[1].rdst==dataI_in[i].ra1||dataEnxt_in[1].rdst==dataI_in[i].ra2)&&dataEnxt_in[1].regwrite) begin
