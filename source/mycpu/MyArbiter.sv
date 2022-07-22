@@ -1,3 +1,6 @@
+`ifndef __MYARBITER_SV
+`define __MYARBITER_SV
+
 `include "common.svh"
 
 module MyArbiter #(
@@ -12,7 +15,7 @@ module MyArbiter #(
 );
 
     logic busy;
-    logic index, select;
+    logic [$clog2(NUM_INPUTS)-1:0] index, select;
 
     assign oreq = busy ? ireqs[index] : '0;  // prevent early issue
 
@@ -38,12 +41,7 @@ module MyArbiter #(
     if (resetn) begin
         if (busy) begin
             if (oresp.last) begin
-                if (ireqs[~select].valid) begin
-                    index <= ~select;
-                end
-                else begin
-                    busy <= '0;
-                end
+                busy <= '0;   
             end
         end else begin
             busy <= ireqs[select].valid;
@@ -54,3 +52,5 @@ module MyArbiter #(
     end
 
 endmodule
+
+`endif 
