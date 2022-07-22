@@ -11,8 +11,8 @@ module ireq_interface(
     input cbus_resp_t iresp_1, iresp_2,// 32 bits data
     output ibus_resp_t _iresp// 64 bits data, {iresp2.data, iresp1.data}
 );
-
-    assign ireq_1.valid = _ireq.valid;
+    u1 req1_finish,req2_finish;
+    assign ireq_1.valid = req1_finish? '0:_ireq.valid;
     assign ireq_1.addr = _ireq.addr;
     assign ireq_1.is_write = 0;  
     assign ireq_1.size = MSIZE4;         
@@ -20,7 +20,26 @@ module ireq_interface(
     assign ireq_1.data = 0;      
     assign ireq_1.len = MLEN1;  
 
-    assign ireq_2.valid = _ireq.valid;
+    always_ff @(posedge clk) begin
+        if (ireq_1.valid&&iresp_1.last) begin
+            req1_finish<='1;
+        end else if (req1_finish&&ireq_2.valid) begin
+            req1_finish<='1;
+        end else begin
+            req1_finish<='0;
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (ireq_2.valid&&iresp_2.last) begin
+            req2_finish<='1;
+        end else begin
+            req2_finish<='0;
+        end
+    end
+
+
+    assign ireq_2.valid = req2_finish? '0:_ireq.valid;
     assign ireq_2.addr = _ireq.addr + 4;
     assign ireq_2.is_write = 0;  
     assign ireq_2.size = MSIZE4;         
@@ -36,7 +55,7 @@ module ireq_interface(
     i2 state, state_nxt;
 
     always_comb begin : gen_statenxt
-        if(~_ireq.valid) 
+        if(~_ireq.valid||req2_finish) 
             state_nxt = 2'b00;
         else
             state_nxt = state;
