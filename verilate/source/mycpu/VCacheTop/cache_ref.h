@@ -28,4 +28,5 @@ private:
 
     // int state;
     BlockMemory mem;
+    word_t buffer[16];
 };
