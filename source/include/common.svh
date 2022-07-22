@@ -238,12 +238,12 @@ typedef struct packed {
 } tlb_entry_t;
 
 typedef struct packed {
-    logic found,
-    tlb_index_t index,
-    logic [19:0] pfn,
-    logic [2:0] c,
-    logic d,
-    logic v,
+    logic found;
+    tlb_index_t index;
+    logic [19:0] pfn;
+    logic [2:0] c;
+    logic d;
+    logic v;
 } tlb_search_t;
 
 
