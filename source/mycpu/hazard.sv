@@ -16,9 +16,9 @@ module hazard
     input excpW,
     input clk
 );
-u1 branch_stall,lwstall,multi_stall;
+// u1 branch_stall,lwstall,multi_stall;
 u1 excp_iwait,excp_iwait_nxt,branch_iwait,branch_iwait_nxt,misalign_iwait,misalign_iwait_nxt;
-u64 int_save;
+// u64 int_save;
 
 always_ff @(posedge clk) begin
         excp_iwait<=excp_iwait_nxt;
@@ -27,8 +27,8 @@ always_ff @(posedge clk) begin
 end
 
     always_comb begin
-        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;
-        stallM='0;stallE='0;branch_stall='0;lwstall='0;excp_iwait_nxt=excp_iwait;stallM2='0;flushW='0;branch_iwait_nxt=branch_iwait;misalign_iwait_nxt=misalign_iwait;
+        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;
+        stallM='0;stallE='0;excp_iwait_nxt=excp_iwait;stallM2='0;flushW='0;branch_iwait_nxt=branch_iwait;misalign_iwait_nxt=misalign_iwait;
 
         if (excpW) begin
             flushF2='1;

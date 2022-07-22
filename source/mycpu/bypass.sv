@@ -17,8 +17,8 @@ module bypass(
     // input u8 cp0ra,
     output bypass_output_t out [1:0]
 );
-    u1 no_relate_[1:0][1:0];
-    u1 invalid[1:0];
+    // u1 no_relate_[1:0][1:0];
+    // u1 invalid[1:0];
 
     for (genvar i=0; i<2; ++i) begin//针对issue head的对应端口
         always_comb begin

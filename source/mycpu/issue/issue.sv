@@ -18,7 +18,7 @@ module issue(
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam ISSUE_QUEUE_SIZE = 16;
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
-decode_data_t candidate[1:0];
+// decode_data_t candidate[1:0];
 
 function index_t push(index_t tail);
     return tail==0? 4'hf:tail-1;
@@ -120,7 +120,7 @@ always_comb begin
 end
 
     always_comb begin
-        dataI='0; 
+        {dataI[1],dataI[0]}='0; 
         
         if (que_empty) begin
             for (int i=0; i<2; ++i) begin

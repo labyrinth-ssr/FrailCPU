@@ -19,7 +19,7 @@ strobe_t strobe[1:0];
 u1 store_misalign[1:0];
 u1 load_misalign[1:0];
 word_t paddr[1:0];
-word_t cp0wd;
+// word_t cp0wd;
 pvtrans pvtransd1(
     .vaddr(dataE[1].alu_out),
     .paddr(paddr[1])
@@ -32,12 +32,12 @@ for (genvar i=0; i<2; ++i) begin
     always_comb begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
-            dreq[i].valid = dataE[i].cp0_ctl.valid|| load_misalign? '0: '1;
+            dreq[i].valid = dataE[i].cp0_ctl.valid|| load_misalign[i] ? '0: '1;
             dreq[i].strobe = '0;
             dreq[i].addr = paddr[i];
             dreq[i].size=dataE[i].ctl.msize;
         end else if (dataE[i].ctl.memwrite) begin
-            dreq[i].valid =  dataE[i].cp0_ctl.valid||store_misalign? '0:'1;
+            dreq[i].valid =  dataE[i].cp0_ctl.valid||store_misalign[i] ? '0:'1;
             dreq[i].addr = paddr[i];
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];
@@ -89,22 +89,22 @@ always_comb begin
 always_comb begin//都是双端口
         dataE2[1].cp0_ctl=dataE[1].cp0_ctl;
         dataE2[0].cp0_ctl=dataE[0].cp0_ctl;
-        if (dataE[1].ctl.memwrite && store_misalign) begin
+        if (dataE[1].ctl.memwrite && store_misalign[1]) begin
             dataE2[1].cp0_ctl.ctype=EXCEPTION;
             dataE2[1].cp0_ctl.etype.adesD= '1;
             dataE2[0].cp0_ctl.valid='0;
             dataE2[1].cp0_ctl.valid='1;
-        end else if (dataE[0].ctl.memwrite && store_misalign) begin
+        end else if (dataE[0].ctl.memwrite && store_misalign[0]) begin
             dataE2[0].cp0_ctl.ctype=EXCEPTION;
             dataE2[0].cp0_ctl.valid='1;
             dataE2[0].cp0_ctl.etype.adesD='1;
         end
-        if (dataE[1].ctl.memtoreg && load_misalign) begin
+        if (dataE[1].ctl.memtoreg && load_misalign[1]) begin
             dataE2[1].cp0_ctl.ctype=EXCEPTION;
             dataE2[1].cp0_ctl.valid='1;
             dataE2[1].cp0_ctl.etype.adelD= '1;
             dataE2[0].cp0_ctl.valid='0;
-        end else if (dataE[0].ctl.memtoreg && load_misalign) begin
+        end else if (dataE[0].ctl.memtoreg && load_misalign[0]) begin
             dataE2[0].cp0_ctl.ctype=EXCEPTION;
             dataE2[0].cp0_ctl.valid='1;
             dataE2[0].cp0_ctl.etype.adelD='1;

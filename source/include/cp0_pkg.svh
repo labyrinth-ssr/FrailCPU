@@ -14,7 +14,7 @@ parameter EXCCODE_RI = 5'ha;
 parameter EXCCODE_OV = 5'hc;
 
 typedef enum u3 { 
-	EXCEPTION,INTERUPT,ERET,INSTR
+	NO_EXC,EXCEPTION,INTERUPT,ERET,INSTR
  } cp0_type_t;
 
 typedef struct packed {

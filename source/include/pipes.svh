@@ -17,8 +17,8 @@
 
 /* Define pipeline structures here */
 
-parameter F6_J = 6'b000010;
-parameter F6_JAL = 6'b000011;
+// parameter F6_J = 6'b000010;
+// parameter F6_JAL = 6'b000011;
 
 typedef struct packed {
 	word_t data;

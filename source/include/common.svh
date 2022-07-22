@@ -98,6 +98,7 @@ typedef i33 arith_t;
 // all addresses and words are 32-bit
 typedef i32 addr_t;
 typedef i32 word_t;
+typedef i64 double_word_t;
 
 // number of bytes transferred in one memory r/w
 typedef enum i3 {
@@ -118,6 +119,7 @@ typedef enum i4 {
 
 // a 4-bit mask for memory r/w, namely "write enable"
 typedef i4 strobe_t;
+typedef i8 double_strobe_t;
 
 // general-purpose register index
 typedef i5 regidx_t;
@@ -185,10 +187,11 @@ typedef struct packed {
 } ibus_req_t;
 
 // typedef dbus_resp_t ibus_resp_t;
+
 typedef struct packed {
     logic  addr_ok;  // is the address accepted by cache?
     logic  data_ok;  // is the field "data" valid?
-    u64 data;     // the data read from cache
+    double_word_t data;     // the data read from cache
 } ibus_resp_t;
 
 `define IREQ_TO_DREQ(ireq) \
@@ -218,30 +221,30 @@ typedef struct packed {
  * AXI-related typedefs
  */
  `define TLB_NUM 16
-// typedef logic [$clog2(`TLB_NUM)-1:0] tlb_index_t;
+typedef logic [$clog2(`TLB_NUM)-1:0] tlb_index_t;
 
-// typedef struct packed {
-//     logic [18:0] vpn2;
-//     logic [7:0] asid;
-//     logic g;
-//     logic [19:0] pfn0;
-//     logic c0;
-//     logic d0;
-//     logic v0;
-//     logic [19:0] pfn1;
-//     logic c1;
-//     logic d1;
-//     logic v1;   
-// } tlb_entry_t;
+typedef struct packed {
+    logic [18:0] vpn2;
+    logic [7:0] asid;
+    logic g;
+    logic [19:0] pfn0;
+    logic c0;
+    logic d0;
+    logic v0;
+    logic [19:0] pfn1;
+    logic c1;
+    logic d1;
+    logic v1;   
+} tlb_entry_t;
 
-// typedef struct packed {
-//     logic found,
-//     tlb_index_t index,
-//     logic [19:0] pfn,
-//     logic [2:0] c,
-//     logic d,
-//     logic v,
-// } tlb_search_t;
+typedef struct packed {
+    logic found;
+    tlb_index_t index;
+    logic [19:0] pfn;
+    logic [2:0] c;
+    logic d;
+    logic v;
+} tlb_search_t;
 
 
 typedef enum i2 {

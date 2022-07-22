@@ -67,7 +67,7 @@ void MyCPU::print_status() {
         current_cycle,
         get_text_diff().current_line(),
         get_text_diff().current_progress(),
-        get_writeback_pc()
+        get_writeback_pc1(),get_writeback_pc2()
     );
 }
 
@@ -124,10 +124,14 @@ void MyCPU::tick() {
     checkout_confreg();
 
     // check for the end of tests
-    if ((get_writeback_pc() & TEST_END_PC_MASK) == TEST_END_PC + 4 ||
+    if ((get_writeback_pc1() & TEST_END_PC_MASK) == TEST_END_PC + 4 ||
+        (con->has_char() && con->get_char() == 0xff))
+        test_finished = true;
+        else if ((get_writeback_pc2() & TEST_END_PC_MASK) == TEST_END_PC + 4 ||
         (con->has_char() && con->get_char() == 0xff))
         test_finished = true;
 }
+
 
 void MyCPU::run() {
     SimpleTimer timer;

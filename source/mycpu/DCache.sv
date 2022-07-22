@@ -276,15 +276,15 @@ module DCache (
                 end
 
                 FETCH_1: begin
-                    if (cresp.ready) begin
-                        state  <= cresp.last ? IDLE : FETCH_1; 
+                    if (dcresp.ready) begin
+                        state  <= dcresp.last ? IDLE : FETCH_1; 
                         miss_addr.offset <= miss_addr.offset + 1;  
                     end
                 end
 
                 WRITEBACK_1: begin
-                    if (cresp.ready) begin
-                        state  <= cresp.last ? FETCH_1 : WRITEBACK_1;
+                    if (dcresp.ready) begin
+                        state  <= dcresp.last ? FETCH_1 : WRITEBACK_1;
                         offset_count <= offset_count + 1;
                     end
 
@@ -292,7 +292,7 @@ module DCache (
                     buffer_offset <= miss_addr.offset;
                     buffer[buffer_offset] <= port_2_data_r;
 
-                    if (cresp.last) begin
+                    if (dcresp.last) begin
                         miss_addr.offset <= dreq_1_addr.offset;  
                     end
 
@@ -300,15 +300,15 @@ module DCache (
                 end
 
                 FETCH_2: begin
-                    if (cresp.ready) begin
-                        state  <= cresp.last ? IDLE : FETCH_2;
+                    if (dcresp.ready) begin
+                        state  <= dcresp.last ? IDLE : FETCH_2;
                         miss_addr.offset <= miss_addr.offset + 1;  
                     end
                 end
 
                 WRITEBACK_2: begin
-                    if (cresp.ready) begin
-                        state  <= cresp.last ? FETCH_2 : WRITEBACK_2;
+                    if (dcresp.ready) begin
+                        state  <= dcresp.last ? FETCH_2 : WRITEBACK_2;
                         offset_count <= offset_count + 1;
                     end
 
@@ -316,7 +316,7 @@ module DCache (
                     buffer_offset <= miss_addr.offset;
                     buffer[buffer_offset] <= port_2_data_r;
 
-                    if (cresp.last) begin
+                    if (dcresp.last) begin
                         miss_addr.offset <= dreq_2_addr.offset;  
                     end
 

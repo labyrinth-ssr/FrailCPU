@@ -18,7 +18,7 @@
         output e_wait
     );
 
-    word_t a[1:0],b[1:0],c[1:0],extend_b[1:0];
+    word_t a[1:0],b[1:0],extend_b[1:0];
     word_t target_offset;
     u1 branch_condition;
     word_t aluout;
@@ -143,12 +143,13 @@
 
     assign multi_res= nega^negb? -multc:multc;
 
-    u1 hi_write,lo_write;
+    // u1 hi_write,lo_write;
     word_t hi_data,lo_data;
     assign dataE[valid_i].hilo={hi_data,lo_data};
 
     u1 valid_i;
     always_comb begin
+        valid_i='0;
         if (dataI[1].ctl.op==MULT||dataI[1].ctl.op==MULTU||dataI[1].ctl.op==DIV||dataI[1].ctl.op==DIVU) begin
             valid_i='1;
         end else if (dataI[0].ctl.op==MULT||dataI[0].ctl.op==MULTU||dataI[0].ctl.op==DIV||dataI[0].ctl.op==DIVU) begin
@@ -158,13 +159,13 @@
     end
 
     always_comb begin
-        // {hi_write,lo_write,hi_data,lo_data}='0;
+        {hi_data,lo_data}='0;
         if (mult_valid) begin
-            {hi_write,lo_write}='1;
+            // {hi_write,lo_write}='1;
             hi_data=multi_res[63:32];
             lo_data=multi_res[31:0];
         end else if (div_valid) begin
-            {hi_write,lo_write}='1;
+            // {hi_write,lo_write}='1;
             unique case ({nega,negb})
             2'b00:begin
                 hi_data= divc[63:32];

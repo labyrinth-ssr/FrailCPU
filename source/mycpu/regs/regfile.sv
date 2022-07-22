@@ -19,6 +19,8 @@ module regfile
 );
 	word_t [31:0] regs, regs_nxt;
 
+	assign regs_nxt[0]='0;
+
 	for (genvar i = 0; i < READ_PORTS; i++) begin
 		assign rd1[i] = regs[ra1[i]];
 		assign rd2[i] = regs[ra2[i]];

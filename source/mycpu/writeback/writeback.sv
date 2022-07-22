@@ -6,11 +6,11 @@
 `include "cp0.sv"
 `endif 
     module writeback(
-        input u1 clk,reset,
+        // input u1 clk,reset,
         input memory_data_t dataM [1:0],
         output writeback_data_t dataW [1:0],
         input word_t hi_rd,lo_rd,cp0_rd,
-        u1 valid_i,valid_j,valid_k
+        input u1 valid_i,valid_j,valid_k
     );
 
     word_t pc[1:0]/* verilator public_flat_rd */,wd[1:0]/* verilator public_flat_rd */;

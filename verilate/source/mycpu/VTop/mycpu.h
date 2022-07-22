@@ -23,10 +23,14 @@ private:
         return CBusWrapper(VTop, oreq);
     }
 
-    auto get_writeback_pc() const -> addr_t;
-    auto get_writeback_id() const -> int;
-    auto get_writeback_value() const -> word_t;
-    auto get_writeback_wen() const -> word_t;
+    auto get_writeback_pc1() const -> addr_t;
+    auto get_writeback_pc2() const -> addr_t;
+    auto get_writeback_id1() const -> int;
+    auto get_writeback_id2() const -> int;
+    auto get_writeback_value1() const -> word_t;
+    auto get_writeback_value2() const -> word_t;
+    auto get_writeback_wen1() const -> word_t;
+    auto get_writeback_wen2() const -> word_t;
 
     void print_status();
     void print_writeback();

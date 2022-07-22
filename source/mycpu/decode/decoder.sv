@@ -11,7 +11,8 @@ module decoder (
         input cp0_control_t cp0_ctl_old,
         output control_t ctl,
         output creg_addr_t srcrega, srcregb, destreg,
-        output cp0_control_t cp0_ctl
+        output cp0_control_t cp0_ctl,
+        output u1 jump
     );
     u6 op_;
     creg_addr_t rs,rd,rt;
@@ -116,6 +117,7 @@ module decoder (
             `OP_BEQ: begin
                 ctl.op = BEQ;
                 ctl.branch = 1'b1;
+                jump='1;
                 ctl.branch_type = T_BEQ;
                 srcrega = rs;
                 srcregb = rt;
@@ -123,6 +125,7 @@ module decoder (
             end   
             `OP_BNE: begin
                 ctl.op = BNE;
+                jump='1;
                 ctl.branch = 1'b1;
                 ctl.branch_type = T_BNE;
                 srcrega = rs;
@@ -133,6 +136,7 @@ module decoder (
                 case (instr[20:16])
                     `B_BGEZ:  begin
                         ctl.op = BGEZ;
+                jump='1;
                         ctl.branch = 1'b1;
                         ctl.branch_type = T_BGEZ;
                         srcrega = rs;
@@ -141,6 +145,7 @@ module decoder (
                     end  
                     `B_BLTZ: begin
                         ctl.op = BLTZ;
+                jump='1;
                         ctl.branch = 1'b1;
                         ctl.branch_type = T_BLTZ;
                         srcrega = rs;
@@ -149,6 +154,7 @@ module decoder (
                     end   
                     `B_BGEZAL: begin
                         ctl.op = BGEZAL;
+                jump='1;
                         ctl.branch = 1'b1;
                         ctl.regwrite = 1'b1;
                         ctl.branch_type = T_BGEZ;
@@ -159,6 +165,7 @@ module decoder (
                     end 
                     `B_BLTZAL: begin
                         ctl.op = BLTZAL;
+                jump='1;
                         ctl.branch = 1'b1;
                         ctl.regwrite = 1'b1;
                         ctl.branch_type = T_BLTZ;
@@ -178,6 +185,7 @@ module decoder (
             end
             `OP_BGTZ: begin
                 ctl.op = BGTZ;
+                jump='1;
                 ctl.branch = 1'b1;
                 ctl.branch_type = T_BGTZ;
                 srcrega = rs;
@@ -186,6 +194,7 @@ module decoder (
             end  
             `OP_BLEZ: begin
                 ctl.op = BLEZ;
+                jump='1;
                 ctl.branch = 1'b1;
                 ctl.branch_type = T_BLEZ;
                 srcrega = rs;
@@ -195,12 +204,14 @@ module decoder (
             `OP_J: begin
                 ctl.op = J;
                 ctl.jump = 1'b1;
+                jump='1;
                 srcrega = '0;
                 srcregb = '0;
                 destreg = '0;
             end     
             `OP_JAL: begin
                 ctl.op = JAL;
+                jump='1;
                 ctl.jump = 1'b1;
                 ctl.regwrite = 1'b1;
                 ctl.is_link = 'b1;
@@ -519,6 +530,7 @@ module decoder (
                     end		
 					`F_JR:begin
                         ctl.op = JR;
+                jump='1;
                         ctl.jump = 1'b1;
                         ctl.jr = 1'b1;
                         srcrega = rs;
@@ -527,6 +539,7 @@ module decoder (
                     end		
 					`F_JALR:begin
                         ctl.op = JALR;
+                jump='1;
                         ctl.jump = 1'b1;
                         ctl.jr = 1'b1;
                         ctl.regwrite = 1'b1;

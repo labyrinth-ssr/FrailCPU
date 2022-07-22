@@ -15,7 +15,7 @@ module cp0
 	output word_t rd,
 	output word_t epc,
 	input u1 valid,is_eret,
-	output cp0_regs_t regs_out,
+	// output cp0_regs_t regs_out,
 	input word_t pc,
 	input excp_type_t etype,
 	input cp0_type_t ctype,
@@ -26,8 +26,8 @@ module cp0
 );
 	u1 double;
 	cp0_regs_t regs, regs_nxt;
-	assign regs_out=regs_nxt;
-	u1 trint,swint,exint;
+	// assign regs_out=regs_nxt;
+	// u1 trint,swint,exint;
 	u1 interrupt,delayed_interupt;
 	assign is_INTEXC= ctype==EXCEPTION||(interrupt&&inter_valid)||delayed_interupt;
 
@@ -62,7 +62,8 @@ module cp0
 
 	always_comb begin
 		rd = '0;
-		unique case(ra[7:3])
+		if (ra[2:0]==3'b0) begin
+			unique case(ra[7:3])
 			5'd0:  rd = regs.index;
 			5'd1:  rd = regs.random;
 			5'd2:  rd = regs.entry_lo0;
@@ -82,6 +83,8 @@ module cp0
 			5'd16: rd = regs.config0;
 			default: rd = '0;
 		endcase
+		end 
+		
 	end
 	// write
 	u5 code;
@@ -108,7 +111,7 @@ module cp0
 
 	assign interrupt=regs.status.ie&&~regs.status.exl&&(|(({ext_int, 2'b00} | regs.cause.ip| {regs.cause.ti, 7'b0}) & regs.status.im));
 
-	assign regs.cause.ti= regs.count==regs.compare;
+	assign regs_nxt.cause.ti= regs.count==regs.compare;
 	always_comb begin
 		regs_nxt = regs;
 		delayed_interupt='0;
@@ -132,11 +135,11 @@ module cp0
 					regs_nxt.status.exl='1;
 		end  else if (int_saved&&inter_valid) begin
 					if (~regs.status.exl) begin
-						if (~is_slot) begin
-							regs_nxt.epc=pc+4;
+						if (~int_save.is_slot) begin
+							regs_nxt.epc=int_save.pc+4;
 							regs_nxt.cause.bd='0;
 						end else begin
-							regs_nxt.epc=pc+4;
+							regs_nxt.epc=int_save.pc+4;
 							regs_nxt.cause.bd='1;
 						end
 					end
@@ -144,6 +147,8 @@ module cp0
 					delayed_interupt='1;
 				end
 				 else if (valid) begin
+		if (wa[2:0]==3'b0) begin
+
 					case (wa[7:3])
 						5'd0:  regs_nxt.index = wd;
 						// 5'd1:  regs_nxt.random=wd;
@@ -173,7 +178,9 @@ module cp0
 						5'd14: regs_nxt.epc = wd;
 						// 5'd15: regs_nxt.prid=wd;
 						5'd16: regs_nxt.config0[2:0] = wd[2:0];
+						default:;
 					endcase
+		end
 			// regs_nxt.mstatus.sd = regs_nxt.mstatus.fs != 0;
 		end else if (is_eret) begin
 			regs_nxt.status.exl='0;

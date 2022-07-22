@@ -13,9 +13,9 @@ module memory2
     output memory_data_t dataM[1:0],
     input  dbus_resp_t dresp[1:0]
 );
-u64 wd;
-u8 strobe;
-u1 load_misalign;
+// u64 wd;
+// u8 strobe;
+// u1 load_misalign;
 
 
 readdata readdata1(._rd(dresp[1].data),.rd(dataM[1].rd),.addr(dataE[1].alu_out[1:0]),.msize(dataE[1].ctl.msize),.mem_unsigned(~dataE[1].ctl.memsext));

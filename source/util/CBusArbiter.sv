@@ -6,7 +6,7 @@
  */
 
 module CBusArbiter #(
-    parameter int NUM_INPUTS = 2,  // NOTE: NUM_INPUTS >= 1
+    parameter int NUM_INPUTS = 4,  // NOTE: NUM_INPUTS >= 1
 
     localparam int MAX_INDEX = NUM_INPUTS - 1
 ) (
@@ -29,7 +29,7 @@ module CBusArbiter #(
     always_comb begin
         select = 0;
 
-        for (int i = 0; i < NUM_INPUTS; i++) begin
+        for (int i = MAX_INDEX; i >= 0; i--) begin
             if (ireqs[i].valid) begin
                 select = i;
                 break;
@@ -42,7 +42,7 @@ module CBusArbiter #(
         iresps = '0;
 
         if (busy) begin
-            for (int i = 0; i < NUM_INPUTS; i++) begin
+            for (int i = MAX_INDEX; i >= 0; i--) begin
                 if (index == i)
                     iresps[i] = oresp;
             end

@@ -53,9 +53,11 @@ module MyCore (
     u1 get_read[1:0];
     assign get_read[1]=dresp[1].addr_ok;
     assign get_read[0]=dresp[0].addr_ok;
-    assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].data_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
-    ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].data_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
-    
+    assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
+    ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
+    assign d_wait2=(dreq[1].valid && ( (~(|dreq[1].strobe) && ~get_read[1] && dreq[1].addr[15]==0)))||(dreq[0].valid && ( (~(|dreq[0].strobe) && ~get_read[0] && dreq[0].addr[15]==0))) ;
+assign flushM2 = d_wait2? '0:d_wait;
+
     hazard hazard(
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2
 	);
@@ -71,14 +73,14 @@ module MyCore (
     execute_data_t dataE_nxt[1:0],dataE[1:0];
     execute_data_t dataM1_nxt[1:0],dataM1[1:0];
     memory_data_t dataM2_nxt[1:0],dataM2[1:0];
-    creg_addr_t ra1I[1:0],ra2I[1:0];
+    // creg_addr_t ra1I[1:0],ra2I[1:0];
 
     writeback_data_t dataW[1:0];
-	u32 raw_instr;
+	// u32 raw_instr;
     u1 branch_misalign;
     u1 reset;
     u1 pc_except;
-    word_t pc_branch,pc_selected,pc_succ,dataF1_pc;
+    word_t pc_selected,pc_succ,dataF1_pc;
     assign pc_except=dataF1_pc[1:0]!=2'b00;
 
     assign pc_succ=dataF1_pc[2]==1||branch_misalign?dataF1_pc+4:dataF1_pc+8;
@@ -101,22 +103,24 @@ module MyCore (
 			dataF1_pc<=pc_selected;
 		end
 	end
+    word_t pc_f1;
 
     pipereg #(.T(u32))F1F2reg(
         .clk,
         .reset,
         .in(dataF1_pc),
-        .out(dataF2_nxt[1].pc),
+        .out(pc_f1),
         .en(~stallF2),
         .flush(flushF2)
     );
 
+    assign dataF2_nxt[1].pc=pc_f1;
     assign dataF2_nxt[1].raw_instr=pc_except? '0:iresp.data[63:32];
     assign dataF2_nxt[1].valid='1;
     assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
     assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
     assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
-    assign dataF2_nxt[0].pc=dataF2_nxt[1].pc+4;
+    assign dataF2_nxt[0].pc=pc_f1+4;
     assign dataF2_nxt[0].raw_instr=pc_except? '0:iresp.data[31:0];
     assign dataF2_nxt[0].valid=~pc_except;
 
@@ -125,7 +129,7 @@ module MyCore (
         .reset,
         .in(dataF2_nxt),
         .out(dataF2),
-        .en(1'b1),
+        .en(~stallD),
         .flush(flushD)
     );
 
@@ -213,7 +217,7 @@ module MyCore (
         .reset,
         .in(dataI_nxt),
         .out(dataI),
-        .en(1'b1),
+        .en(~stallE),
         .flush(flushE)
     );
 
@@ -229,8 +233,8 @@ module MyCore (
         .reset,
         .in(dataE_nxt),
         .out(dataE),
-        .en(1'b1),
-        .flush(1'b0)
+        .en(~stallM),
+        .flush(flushM)
     );
 
     memory memory(
@@ -267,10 +271,10 @@ module MyCore (
 		.flush(flushW)
 	);
 
-    cp0_regs_t regs_out ;
+    // cp0_regs_t regs_out ;
 
     writeback writeback(
-        .clk,.reset,
+        // .clk,.reset,
         .dataM(dataM2),
         .dataW,
         .lo_rd,.hi_rd,.cp0_rd,
@@ -278,9 +282,12 @@ module MyCore (
     );
 
     // u1 hi_write,lo_write;
+
     u1 valid_j,valid_k;
     word_t hi_data,lo_data;
     always_comb begin
+        {hi_data,lo_data}='0;
+        {valid_j,valid_k}='0;
         for (int i=1; i>=0; --i) begin
             if (dataM2[i].ctl.hiwrite) begin
                 hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srcb:dataM2[i].hilo[63:32];
@@ -295,7 +302,7 @@ module MyCore (
     word_t hi_rd,lo_rd;
     hilo hilo(
     .clk,
-    .hi(dataW[valid_j].hi_rd), .lo(dataW[valid_k].lo_rd),
+    .hi(hi_rd), .lo(lo_rd),
     .hi_write(dataM2[1].ctl.hiwrite||dataM2[0].ctl.hiwrite), .lo_write(dataM2[1].ctl.lowrite||dataM2[0].ctl.lowrite),
     .hi_data , .lo_data
     );
@@ -313,7 +320,7 @@ module MyCore (
         .epc,
         .valid(dataM2[1].cp0_ctl.valid? dataM2[1].cp0_ctl.valid:dataM2[1].cp0_ctl.valid||dataM2[0].cp0_ctl.valid),
         .is_eret,
-        .regs_out,
+        // .regs_out,
         .ctype(dataM2[valid_i].cp0_ctl.ctype),
         .pc(dataM2[valid_i].pc),
         .etype(dataM2[valid_i].cp0_ctl.etype),

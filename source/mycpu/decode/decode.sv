@@ -15,6 +15,8 @@ module decode(
     input word_t rd2[1:0]
 );
     decode_data_t dataD0;
+    assign {dataD0.valid,dataD0.raw_instr,dataD0.cp0ra,dataD0.pc,dataD0.imm,dataD0.is_slot,dataD0.rd1,dataD0.rd2,dataD0.cp0_ctl}='0;
+    u1 jump1,jump2;
     decoder decoder_inst1(
         .instr(dataF2[1].raw_instr),
         .cp0_ctl_old(dataF2[1].cp0_ctl),
@@ -22,7 +24,8 @@ module decode(
         .ctl(dataD[1].ctl),
         .srcrega(dataD[1].ra1), 
         .srcregb(dataD[1].ra2), 
-        .destreg(dataD[1].rdst)
+        .destreg(dataD[1].rdst),
+        .jump(jump1)
     );
     decoder decoder_inst2(
         .instr(dataF2[0].raw_instr),
@@ -31,7 +34,8 @@ module decode(
         .cp0_ctl(dataD[1].cp0_ctl),
         .srcrega(dataD0.ra1), 
         .srcregb(dataD0.ra2), 
-        .destreg(dataD0.rdst)
+        .destreg(dataD0.rdst),
+        .jump(jump2)
     );
     assign dataD[1].raw_instr=dataF2[1].raw_instr;
     assign dataD[1].valid=dataF2[1].valid;
@@ -47,9 +51,9 @@ module decode(
             dataD[0].pc=dataF2[0].pc;
         end 
     end
-    assign dataD[0].is_slot=dataD[1].ctl.jump||dataD[1].ctl.branch;
+    assign dataD[0].is_slot=jump1;
     assign branch_misalign=dataD0.ctl.jump||dataD0.ctl.branch;
-    assign dataD[1].cp0ra=dataD[1].ctl.cp0write? {dataF2[1].raw_instr[15:11],dataF2[1].raw_instr[2:0]}:'0;
+    assign dataD[1].cp0ra={dataF2[1].raw_instr[15:11],dataF2[1].raw_instr[2:0]};
     assign dataD[0].cp0ra=dataD0.ctl.cp0write? {dataF2[0].raw_instr[15:11],dataF2[0].raw_instr[2:0]}:'0;
     for (genvar i=0; i<2; ++i) begin
         assign dataD[i].rd1=rd1[i];
