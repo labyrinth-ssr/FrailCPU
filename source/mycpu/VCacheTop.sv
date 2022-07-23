@@ -18,14 +18,14 @@ module VCacheTop (
     assign dcresp = cresp;
 
     dbus_resp_t dresp_2;
-    // DCache top( .dreq_1(dreq),
-    //             .dresp_1(dresp),
-    //             .dreq_2('0),
-    //             .*);
+    DCache top( .dreq_1(dreq),
+                .dresp_1(dresp),
+                .dreq_2('0),
+                .*);
     
     // DCache top( .*);
-    ICache top(.ireq(dreq),
-    .iresp(dresp), .icreq(dcreq), .icresp(dcresp), .*);
+    // ICache top(.ireq(dreq),
+    // .iresp(dresp), .icreq(dcreq), .icresp(dcresp), .*);
 
 
     /**
