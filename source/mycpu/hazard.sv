@@ -61,6 +61,7 @@ end
             end 
             if (branch_misalign) begin
                 misalign_iwait_nxt=1'b1;
+                flushF2='1;flushD='1;
             end
             // multi_stall=multialud && ((wrE&&(edst==ra1||edst==ra2))||(memwrM&& (mdst==ra1||mdst==ra2)) || (memwrM2&& (mdst2==ra1||mdst2==ra2)) || (((ra1!=0&&ra1==mdst && wrM)||(ra2!=0&&ra2==mdst && wrM))) || ((((ra1!=0&&ra1==mdst2 && wrM2)||(ra2!=0&&ra2==mdst2 && wrM2)))));
             // lwstall= (memwrE && (edst==ra1||edst==ra2)) || ((memwrM&& (mdst==ra1||mdst==ra2))) ;

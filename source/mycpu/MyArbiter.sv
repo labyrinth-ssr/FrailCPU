@@ -1,10 +1,16 @@
+`ifndef __MYARBITER_SV
+`define __MYARBITER_SV
+
 `include "common.svh"
 
 module MyArbiter #(
     parameter int NUM_INPUTS = 2,
 
-    localparam int MAX_INDEX = NUM_INPUTS - 1
+    localparam int MAX_INDEX = NUM_INPUTS - 1,
+    localparam type index_t  = logic [$clog2(NUM_INPUTS)-1:0]
 ) (
+    input logic clk, resetn,
+
     input  cbus_req_t  [MAX_INDEX:0] ireqs,
     output cbus_resp_t [MAX_INDEX:0] iresps,
     output cbus_req_t  oreq,
@@ -12,7 +18,7 @@ module MyArbiter #(
 );
 
     logic busy;
-    logic index, select;
+    index_t index, select;
 
     assign oreq = busy ? ireqs[index] : '0;  // prevent early issue
 
@@ -20,7 +26,7 @@ module MyArbiter #(
         select = 0;
         for (int i = 0; i < NUM_INPUTS; i++) begin
             if (ireqs[i].valid) begin
-                select = i;
+                select = index_t'(i);
                 break;
             end
         end
@@ -38,12 +44,7 @@ module MyArbiter #(
     if (resetn) begin
         if (busy) begin
             if (oresp.last) begin
-                if (ireqs[~select].valid) begin
-                    index <= ~select;
-                end
-                else begin
-                    busy <= '0;
-                end
+                busy <= '0;   
             end
         end else begin
             busy <= ireqs[select].valid;
@@ -54,3 +55,5 @@ module MyArbiter #(
     end
 
 endmodule
+
+`endif 

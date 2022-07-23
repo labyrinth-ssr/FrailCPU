@@ -104,11 +104,19 @@ assign flushM2 = d_wait2? '0:d_wait;
     word_t pc_selected,pc_succ,dataF1_pc;
     assign pc_except=dataF1_pc[1:0]!=2'b00;
 
-    assign pc_succ=dataF1_pc[2]==1||branch_misalign?dataF1_pc+4:dataF1_pc+8;
+    always_comb begin
+        pc_succ=dataF1_pc+8;
+        if (branch_misalign) begin
+            pc_succ=dataD_nxt[0].pc;
+        end else if (dataF1_pc[2]==1) begin
+            pc_succ=dataF1_pc+4;
+        end
+    end
+    // assign pc_succ=dataF1_pc[2]==1?dataF1_pc+4:dataF1_pc+8;
 
     //跳转且i_wait时保存跳转pc，
-    word_t jpc_save,ipc_save,pc_nxt;
-    u1 jpc_saved,ipc_saved;
+    word_t jpc_save,ipc_save,pc_nxt,bpc_save;
+    u1 jpc_saved,ipc_saved,bpc_saved;
     always_ff @(posedge clk) begin
 		if ((i_wait||d_wait)&&is_INTEXC) begin
 			ipc_save<=pc_selected;
@@ -116,11 +124,16 @@ assign flushM2 = d_wait2? '0:d_wait;
         end else if (i_wait && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
+        end else if (i_wait&& branch_misalign) begin
+            bpc_save<=pc_selected;
+            bpc_saved<='1;
         end else if (~i_wait&&~d_wait) begin
 			ipc_save<='0;
 			ipc_saved<='0;
             jpc_save<='0;
 			jpc_saved<='0;
+            bpc_save<='0;
+			bpc_saved<='0;
 		end
 	end
 
@@ -129,10 +142,13 @@ assign flushM2 = d_wait2? '0:d_wait;
             pc_nxt=ipc_save;
         end else if (jpc_saved) begin
             pc_nxt=jpc_save;
+        end else if (bpc_saved) begin
+            pc_nxt=bpc_save;
         end else begin
             pc_nxt=pc_selected;
         end
     end
+    //can be perf
     
 
     pcselect pcselect_inst (
@@ -143,7 +159,9 @@ assign flushM2 = d_wait2? '0:d_wait;
         .epc,
         .entrance(32'hBFC0_0380),
 		.is_eret,
-		.is_INTEXC
+		.is_INTEXC,
+        .branch_misalign,
+        .misaligned_pc(dataD_nxt[0].pc)
     );
     //pipereg between pcselect and fetch1
     always_ff @( posedge clk ) begin
@@ -170,9 +188,9 @@ assign flushM2 = d_wait2? '0:d_wait;
     assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
     assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
     assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
-    assign dataF2_nxt[0].pc=pc_f1+4;
+    assign dataF2_nxt[0].pc= dataF1_pc[2]==1? '0: pc_f1+4;
     assign dataF2_nxt[0].raw_instr=pc_except? '0:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=~pc_except;
+    assign dataF2_nxt[0].valid=~pc_except&&~(dataF1_pc[2]==1);
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
         .clk,
@@ -186,9 +204,9 @@ assign flushM2 = d_wait2? '0:d_wait;
     decode decode_inst(
         .dataF2(dataF2),
         .dataD(dataD_nxt),
-        .branch_misalign,
-        .rd1,.rd2,
-        .ra1,.ra2
+        .branch_misalign
+        // .rd1,.rd2,
+        // .ra1,.ra2
     );
 
     pipereg2 #(.T(decode_data_t))DIreg(
@@ -200,11 +218,11 @@ assign flushM2 = d_wait2? '0:d_wait;
         .flush(flushI)
     );
     word_t rd1[1:0],rd2[1:0];
-    creg_addr_t ra1[1:0],ra2[1:0];
+    // creg_addr_t ra1[1:0],ra2[1:0];
 
     regfile regfile_inst(
         .clk,.reset,
-        .ra1({ra1[1],ra1[0]}),.ra2({ra2[1],ra2[0]}),
+        .ra1({dataD[1].ra1,dataD[0].ra1}),.ra2({dataD[1].ra2,dataD[0].ra2}),
         .wa({dataW[1].wa,dataW[0].wa}),
         .wvalid({dataW[1].ctl.regwrite,dataW[0].ctl.regwrite}),
         .wd({dataW[1].wd,dataW[0].wd}),
@@ -212,12 +230,21 @@ assign flushM2 = d_wait2? '0:d_wait;
         .rd2({rd2[1],rd2[0]})
     );
 
+    decode_data_t readed_dataD[1:0];
+    always_comb begin
+        readed_dataD=dataD;
+        for (int i=0; i<2; ++i) begin
+        readed_dataD[i].rd1=rd1[i];
+        readed_dataD[i].rd2=rd2[i];
+        end
+    end
+
     bypass_input_t dataE_in[1:0],dataM1_in[1:0],dataM2_in[1:0];
     bypass_output_t bypass_out [1:0];
 
     issue issue_inst(
         .clk,
-        .dataD,
+        .dataD(readed_dataD),
         .dataI(dataI_nxt),
         .issue_bypass_out,
         .bypass_in(bypass_out),

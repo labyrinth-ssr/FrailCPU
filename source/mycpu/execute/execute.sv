@@ -24,8 +24,8 @@
     word_t aluout;
     assign extend_b[1] = dataI[1].ctl.zeroext ? {16'b0, dataI[1].imm} : {{16{dataI[1].imm[15]}}, dataI[1].imm};
     assign extend_b[0] = dataI[0].ctl.zeroext ? {16'b0, dataI[0].imm } : {{16{dataI[0].imm [15]}}, dataI[0].imm };
-    assign a[1]=dataI[1].rd1;
-    assign a[0]=dataI[0].rd1;
+    assign a[1]= dataI[1].ctl.shamt_valid? {27'b0,dataI[1].raw_instr [10:6]} : dataI[1].rd1;
+    assign a[0]=dataI[0].ctl.shamt_valid? {27'b0, dataI[0].raw_instr [10:6]} :dataI[0].rd1;
 
     u1 exception_of[1:0];
 
@@ -54,7 +54,7 @@
         .exception_of(exception_of[0])
     );
 
-    assign dataE[1].alu_out=dataI[1].ctl.is_link? dataI[1].pc+12:aluout;
+    assign dataE[1].alu_out=dataI[1].ctl.is_link? dataI[1].pc+8:aluout;
 
     always_comb begin//都是双端口
         dataE[1].cp0_ctl=dataI[1].cp0_ctl;
@@ -82,9 +82,9 @@
         if (dataI[1].ctl.branch) begin
             dataE[1].target=slot_pc+target_offset;
         end else if (dataI[1].ctl.jr) begin
-            dataE[1].target={slot_pc[31:28],raw_instr[25:0],2'b00};
-        end else if (dataI[1].ctl.jump) begin
             dataE[1].target=dataI[1].rd1;
+        end else if (dataI[1].ctl.jump) begin
+            dataE[1].target={slot_pc[31:28],raw_instr[25:0],2'b00};
         end
     end
 

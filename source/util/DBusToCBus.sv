@@ -1,3 +1,6 @@
+`ifndef __DBUSTOCBUS_SV
+`define __DBUSTOCBUS_SV
+
 `include "common.svh"
 
 /**
@@ -25,3 +28,5 @@ module DBusToCBus (
     assign dresp.data_ok = okay;
     assign dresp.data    = dcresp.data;
 endmodule
+
+`endif 
