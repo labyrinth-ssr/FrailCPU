@@ -1,0 +1,54 @@
+name: document-synchronization
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout -dev repository
+        uses: actions/checkout@v2.3.4
+        with:
+          path: dev
+      - name: Checkout -FDU repository
+        uses: actions/checkout@v2.3.4
+        with:
+          repository: FDUCSLG/ICS-2021Spring-FDU
+          ref: gh-pages
+          token: ${{ secrets.DOC_SYNC }}
+          persist-credentials: false
+          fetch-depth: 0
+          path: target
+      - name: Install mdbook 0.4.7
+        uses: peaceiris/actions-mdbook@v1.1.13
+        with:
+          mdbook-version: '0.4.7'
+      - name: Install mdbook-katex 0.2.8
+        run: |
+          mkdir downloads
+          cd downloads
+          wget -O mdbook-katex.tar.gz https://github.com/lzanini/mdbook-katex/releases/download/v0.2.8/mdbook-katex-v0.2.8-x86_64-unknown-linux-gnu.tar.gz
+          tar xvf mdbook-katex.tar.gz
+          sudo cp ./target/x86_64-unknown-linux-gnu/release/mdbook-katex /usr/local/bin
+      - name: mdBook build
+        working-directory: ./dev/doc
+        run: mdbook build
+      - name: Copy output files
+        run: |
+          rm -rf ./target/docs
+          mv ./dev/doc/book ./target/docs
+      - name: Commit to gh-pages
+        working-directory: ./target
+        run: |
+          git config --local user.email "riteme@qq.com"
+          git config --local user.name "riteme"
+          git add -A
+          git commit -m "Update docs: ${{ github.sha }}" --allow-empty
+      - name: Push to gh-pages
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          directory: ./target
+          github_token: ${{ secrets.DOC_SYNC }}
+          repository: FDUCSLG/ICS-2021Spring-FDU
+          branch: gh-pages

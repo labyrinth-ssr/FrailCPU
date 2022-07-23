@@ -1,0 +1,46 @@
+name: repository-synchronization
+on:
+  push:
+    branches:
+      - sync
+jobs:
+  prune-and-sync:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout -dev repository
+        uses: actions/checkout@v2.3.4
+        with:
+          path: dev
+      - name: Checkout -FDU repository
+        uses: actions/checkout@v2.3.4
+        with:
+          repository: FDUCSLG/ICS-2021Spring-FDU
+          ref: master
+          token: ${{ secrets.DOC_SYNC }}
+          persist-credentials: false
+          fetch-depth: 0
+          path: target
+      - name: Prune files
+        working-directory: ./dev
+        run: ./misc/prune.sh
+      - name: Copy files
+        run: |
+          mv -f ./target/.git .
+          rm -rf ./target
+          cp -rf ./dev ./target
+          rm -rf ./target/.git
+          mv -f ./.git ./target
+      - name: Git commit
+        working-directory: ./target
+        run: |
+          git config --local user.email "riteme@qq.com"
+          git config --local user.name "riteme"
+          git add -A
+          git commit -m "Sync: ${{ github.sha }}" --allow-empty
+      - name: Git push
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          directory: ./target
+          github_token: ${{ secrets.DOC_SYNC }}
+          repository: FDUCSLG/ICS-2021Spring-FDU
+          branch: master

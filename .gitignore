@@ -1,0 +1,6 @@
+# directories
+build/*
+!build/.gitkeep
+.vscode/
+*.gtkw
+*.fst
