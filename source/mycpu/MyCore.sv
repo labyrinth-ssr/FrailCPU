@@ -49,12 +49,33 @@ module MyCore (
         .paddr,
         .vaddr
     );
+
+        u1 req1_finish,req2_finish;
+        always_ff @(posedge clk) begin
+        if (dreq[1].valid&&dresp[1].addr_ok) begin
+            req1_finish<='1;
+        end else if (req1_finish&&dreq[0].valid) begin
+            req1_finish<='1;
+        end else begin
+            req1_finish<='0;
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (dreq[0].valid&&dresp[0].addr_ok) begin
+            req2_finish<='1;
+        end else begin
+            req2_finish<='0;
+        end
+    end
+
     assign i_wait=ireq.valid && ~iresp.data_ok;
     u1 get_read[1:0];
     assign get_read[1]=dresp[1].addr_ok;
     assign get_read[0]=dresp[0].addr_ok;
-    assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
-    ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
+    assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
+    // assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
+    // ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
     assign d_wait2=(dreq[1].valid && ( (~(|dreq[1].strobe) && ~get_read[1] && dreq[1].addr[15]==0)))||(dreq[0].valid && ( (~(|dreq[0].strobe) && ~get_read[0] && dreq[0].addr[15]==0))) ;
 assign flushM2 = d_wait2? '0:d_wait;
 
@@ -85,6 +106,35 @@ assign flushM2 = d_wait2? '0:d_wait;
 
     assign pc_succ=dataF1_pc[2]==1||branch_misalign?dataF1_pc+4:dataF1_pc+8;
 
+    //跳转且i_wait时保存跳转pc，
+    word_t jpc_save,ipc_save,pc_nxt;
+    u1 jpc_saved,ipc_saved;
+    always_ff @(posedge clk) begin
+		if ((i_wait||d_wait)&&is_INTEXC) begin
+			ipc_save<=pc_selected;
+			ipc_saved<='1;
+        end else if (i_wait && dataE[1].branch_taken) begin
+            jpc_save<=pc_selected;
+            jpc_saved<='1;
+        end else if (~i_wait&&~d_wait) begin
+			ipc_save<='0;
+			ipc_saved<='0;
+            jpc_save<='0;
+			jpc_saved<='0;
+		end
+	end
+
+    always_comb begin
+        if (ipc_saved) begin
+            pc_nxt=ipc_save;
+        end else if (jpc_saved) begin
+            pc_nxt=jpc_save;
+        end else begin
+            pc_nxt=pc_selected;
+        end
+    end
+    
+
     pcselect pcselect_inst (
         .pc_selected,
         .pc_succ,
@@ -100,7 +150,7 @@ assign flushM2 = d_wait2? '0:d_wait;
 		if (reset) begin
 			dataF1_pc<=32'hbfc0_0000;//
 		end  else if(~stallF) begin
-			dataF1_pc<=pc_selected;
+			dataF1_pc<=pc_nxt;
 		end
 	end
     word_t pc_f1;
@@ -115,13 +165,13 @@ assign flushM2 = d_wait2? '0:d_wait;
     );
 
     assign dataF2_nxt[1].pc=pc_f1;
-    assign dataF2_nxt[1].raw_instr=pc_except? '0:iresp.data[63:32];
+    assign dataF2_nxt[1].raw_instr=pc_except? '0:iresp.data[31:0];
     assign dataF2_nxt[1].valid='1;
     assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
     assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
     assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
     assign dataF2_nxt[0].pc=pc_f1+4;
-    assign dataF2_nxt[0].raw_instr=pc_except? '0:iresp.data[31:0];
+    assign dataF2_nxt[0].raw_instr=pc_except? '0:iresp.data[63:32];
     assign dataF2_nxt[0].valid=~pc_except;
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
@@ -137,7 +187,8 @@ assign flushM2 = d_wait2? '0:d_wait;
         .dataF2(dataF2),
         .dataD(dataD_nxt),
         .branch_misalign,
-        .rd1,.rd2
+        .rd1,.rd2,
+        .ra1,.ra2
     );
 
     pipereg2 #(.T(decode_data_t))DIreg(
@@ -149,10 +200,11 @@ assign flushM2 = d_wait2? '0:d_wait;
         .flush(flushI)
     );
     word_t rd1[1:0],rd2[1:0];
+    creg_addr_t ra1[1:0],ra2[1:0];
 
-    regfile refile_inst(
+    regfile regfile_inst(
         .clk,.reset,
-        .ra1({dataD[1].ra1,dataD[0].ra1}),.ra2({dataD[1].ra2,dataD[0].ra2}),
+        .ra1({ra1[1],ra1[0]}),.ra2({ra2[1],ra2[0]}),
         .wa({dataW[1].wa,dataW[0].wa}),
         .wvalid({dataW[1].ctl.regwrite,dataW[0].ctl.regwrite}),
         .wd({dataW[1].wd,dataW[0].wd}),
@@ -160,7 +212,7 @@ assign flushM2 = d_wait2? '0:d_wait;
         .rd2({rd2[1],rd2[0]})
     );
 
-        bypass_input_t dataE_in[1:0],dataM1_in[1:0],dataM2_in[1:0];
+    bypass_input_t dataE_in[1:0],dataM1_in[1:0],dataM2_in[1:0];
     bypass_output_t bypass_out [1:0];
 
     issue issue_inst(
@@ -240,7 +292,8 @@ assign flushM2 = d_wait2? '0:d_wait;
     memory memory(
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
-		.dreq
+		.dreq,
+        .req_finish({req1_finish,req2_finish})
 		// .exception(is_eret||is_INTEXC)
 	);
 

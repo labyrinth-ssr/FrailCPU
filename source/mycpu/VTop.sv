@@ -25,6 +25,24 @@ module VTop (
     // /* IBusToCBus */ ICache icvt(.*);
     // /* DBusToCBus */ DCache dcvt(.*, .dreq_1(dreq[1]), .dreq_2(dreq[0]),
     // .dresp_1(dresp[1]), .dresp_2(dresp[0]));
+    u1 req1_finish,req2_finish;
+        always_ff @(posedge clk) begin
+        if (dcreq[1].valid&&dcresp[1].last) begin
+            req1_finish<='1;
+        end else if (req1_finish&&dcreq[0].valid) begin
+            req1_finish<='1;
+        end else begin
+            req1_finish<='0;
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (dcreq[0].valid&&dcresp[0].last) begin
+            req2_finish<='1;
+        end else begin
+            req2_finish<='0;
+        end
+    end
 
     assign dresp[1].data=dcresp[1].data;
     assign dresp[1].data_ok=dcresp[1].last;
@@ -34,7 +52,7 @@ module VTop (
     assign dresp[0].data_ok=dcresp[0].last;
     assign dresp[0].addr_ok=dcresp[0].last;
 
-    assign dcreq[1].valid = dreq[1].valid;
+    assign dcreq[1].valid = req1_finish? '0:dreq[1].valid;
     assign dcreq[1].is_write = |dreq[1].strobe;
     assign dcreq[1].size = dreq[1].size;
     assign dcreq[1].addr = dreq[1].addr;
@@ -42,7 +60,7 @@ module VTop (
     assign dcreq[1].data = dreq[1].data;
     assign dcreq[1].len = MLEN1;
 
-    assign dcreq[0].valid = dreq[0].valid;
+    assign dcreq[0].valid = req2_finish? '0: dreq[0].valid;
     assign dcreq[0].is_write = |dreq[0].strobe;
     assign dcreq[0].size = dreq[0].size;
     assign dcreq[0].addr = dreq[0].addr;

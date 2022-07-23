@@ -53,6 +53,11 @@ end
             stallF='1;flushD='1;
             if (branchE) begin
                 branch_iwait_nxt=1'b1;
+                flushF2='1;
+            flushI='1;
+            flushE='1;
+            flushM='1;
+            flush_que='1;
             end 
             if (branch_misalign) begin
                 misalign_iwait_nxt=1'b1;

@@ -39,14 +39,20 @@ index_t tail;
 u1 issue_en[1:0];
 assign issue_en[1]=bypass_in[1].valid;
 
+decode_data_t candidate1,candidate2;
+assign candidate1=que_empty? dataD[1]:issue_queue[head];
+assign candidate2=que_empty? dataD[0]:issue_queue[pop(head)];
+
 always_comb begin
+    //不一定是dataD
     issue_en[0]=bypass_in[0].valid;
-    if ((dataD[1].ctl.regwrite&&(dataD[1].rdst==dataD[0].ra1||dataD[1].rdst==dataD[0].ra2))
-        ||(multi_op(dataD[1].ctl.op)&&multi_op(dataD[0].ctl.op))
-        ||(dataD[1].ctl.cp0write&&dataD[0].ctl.cp0write)||~issue_en[1]||
-        (dataD[1].ctl.hiwrite&&dataD[0].ctl.hiwrite)||
-        (dataD[1].ctl.lowrite&&dataD[0].ctl.lowrite)) begin
+    if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2))
+        ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]) begin
         issue_en[0]='0;
+    end
+    if (candidate2.is_slot) begin
+        issue_en[0]='1;
     end
 end
 
@@ -63,7 +69,7 @@ always_ff @(posedge clk) begin
                 issue_queue[tail]<=dataD[0];
                 tail<=push(tail);
             end
-        end else if (~issue_en[0]&&dataD[1].valid) begin
+        end else if (~issue_en[0]&&dataD[0].valid) begin
             issue_queue[tail]<=dataD[0];
             tail<=push(tail);
         end
@@ -78,11 +84,17 @@ always_ff @(posedge clk) begin
     end
 
     if (~que_empty) begin
-        unique case ({issue_en[1],issue_en[0]})
-            2'b10:head<=pop(head);
-            2'b11:head<=pop(pop(head));
-            default: ;
-        endcase
+        if (issue_en[1]) begin
+            head<=pop(head);
+            if (head!=tail&&issue_en[0]) begin
+                head<=pop(head);
+            end
+        end
+        // unique case ({issue_en[1],issue_en[0]})
+        //     2'b10:head<=pop(head);
+        //     2'b11:head<=pop(pop(head));
+        //     default: ;
+        // endcase
     end
     
 end

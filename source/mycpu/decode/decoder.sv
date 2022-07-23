@@ -29,6 +29,7 @@ module decoder (
         exception_ri = 1'b0;
         ctl = '0;
         cp0_ctl=cp0_ctl_old;
+        jump='0;
         if (valid) begin
             case (op_)
             `OP_MUL: begin

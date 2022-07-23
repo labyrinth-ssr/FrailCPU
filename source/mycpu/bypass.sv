@@ -34,8 +34,8 @@ module bypass(
                     out[i].data=dataE_in[0].data;
                 end else if ((dataE_in[1].rdst==dataI_in[i].ra1||dataE_in[1].rdst==dataI_in[i].ra2)&&dataE_in[1].regwrite) begin
                     out[i].valid=dataE_in[1].memtoreg=='0;
-                    out[i].bypass[1]=dataE_in[0].memtoreg=='0&&dataE_in[0].rdst==dataI_in[i].ra1;
-                    out[i].bypass[0]=dataE_in[0].memtoreg=='0&&dataE_in[0].rdst==dataI_in[i].ra2;
+                    out[i].bypass[1]=dataE_in[1].memtoreg=='0&&dataE_in[1].rdst==dataI_in[i].ra1;
+                    out[i].bypass[0]=dataE_in[1].memtoreg=='0&&dataE_in[1].rdst==dataI_in[i].ra2;
                     out[i].data=dataE_in[1].data;
                 end else if (dataM1_in[0].regwrite&&(dataM1_in[0].rdst==dataI_in[i].ra1||dataM1_in[0].rdst==dataI_in[i].ra2)) begin
                     out[i].valid=dataM1_in[0].memtoreg=='0;
@@ -44,8 +44,8 @@ module bypass(
                     out[i].data=dataM1_in[0].data;
                 end else if (dataM1_in[1].regwrite&&(dataM1_in[1].rdst==dataI_in[i].ra1||dataM1_in[1].rdst==dataI_in[i].ra2)) begin
                     out[i].valid=dataM1_in[1].memtoreg=='0;
-                    out[i].bypass[1]=dataM1_in[0].memtoreg=='0&&dataM1_in[0].rdst==dataI_in[i].ra1;
-                    out[i].bypass[0]=dataM1_in[0].memtoreg=='0&&dataM1_in[0].rdst==dataI_in[i].ra2;
+                    out[i].bypass[1]=dataM1_in[1].memtoreg=='0&&dataM1_in[1].rdst==dataI_in[i].ra1;
+                    out[i].bypass[0]=dataM1_in[1].memtoreg=='0&&dataM1_in[1].rdst==dataI_in[i].ra2;
                     out[i].data=dataM1_in[1].data;
                 end else if (dataM2_in[0].regwrite&&(dataM2_in[0].rdst==dataI_in[i].ra1||dataM2_in[0].rdst==dataI_in[i].ra2)) begin
                     out[i].valid='1;
@@ -54,8 +54,8 @@ module bypass(
                     out[i].data=dataM2_in[0].data;
                 end else if (dataM2_in[1].regwrite&&(dataM2_in[1].rdst==dataI_in[i].ra1||dataM2_in[1].rdst==dataI_in[i].ra2)) begin
                     out[i].valid='1;
-                    out[i].bypass[1]=dataM2_in[0].rdst==dataI_in[i].ra1;
-                    out[i].bypass[0]=dataM2_in[0].rdst==dataI_in[i].ra2;
+                    out[i].bypass[1]=dataM2_in[1].rdst==dataI_in[i].ra1;
+                    out[i].bypass[0]=dataM2_in[1].rdst==dataI_in[i].ra2;
                     out[i].data=dataM2_in[1].data;
                 end 
 
