@@ -20,6 +20,9 @@ module cache_manage (
 );
 
     //TU
+    logic dreq_1_uncache;
+    logic dreq_2_uncache;
+
     ibus_req_t mmu_ireq;
     ibus_resp_t mmu_iresp;
 
@@ -152,10 +155,12 @@ module cache_manage (
     MyArbiter #(
         .NUM_INPUTS(4)
     ) cbus_arbiter (
-        .ireqs{i_cbus_req, d_uncache2_cbus_req, d_cache_cbus_req, d_uncache1_cbus_req},
-        .iresps{i_cbus_resp, d_uncache2_cbus_resp, d_cache_cbus_resp, d_uncache1_cbus_resp},
-        .oreq,
-        .oresp
+        .clk, 
+        .resetn,
+        .ireqs({i_cbus_req, d_uncache2_cbus_req, d_cache_cbus_req, d_uncache1_cbus_req}),
+        .iresps({i_cbus_resp, d_uncache2_cbus_resp, d_cache_cbus_resp, d_uncache1_cbus_resp}),
+        .oreq(creq),
+        .oresp(cresp)
     );
 
 

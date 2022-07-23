@@ -19,17 +19,21 @@ module VTop (
     cbus_resp_t icresp, dcresp;
 
     MyCore core(.*);
-    /* IBusToCBus */ ICache icvt(.*);
-    /* DBusToCBus */ DCache dcvt(.*);
+    /* 
+    IBusToCBus  ICache icvt(.*);
+    DBusToCBus  DCache dcvt(.*);
+    */
 
     /**
      * TODO (Lab2) replace mux with your own arbiter :)
      */
+     /*
     CBusArbiter mux(
         .ireqs({icreq, dcreq}),
         .iresps({icresp, dcresp}),
         .*
     );
+    */
 
     /**
      * TODO (optional) add address translation for oreq.addr :)
