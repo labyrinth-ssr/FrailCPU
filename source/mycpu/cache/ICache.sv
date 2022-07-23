@@ -178,7 +178,7 @@ module ICache (
     //更新meta_ram, plru_ram
     always_comb begin
         meta_w = meta_r;
-        if (ireq_miss) begin
+        if (resetn & ireq_miss) begin
             meta_w[replace_line].valid = 1'b1;
             meta_w[replace_line].tag = ireq_addr.tag;
         end
@@ -187,7 +187,7 @@ module ICache (
     end
 
     always_ff @(posedge clk) begin
-        if (ireq_hit) begin
+        if (resetn & ireq_hit) begin
             plru_ram[ireq_addr.index] <= plru_new;
         end
     end

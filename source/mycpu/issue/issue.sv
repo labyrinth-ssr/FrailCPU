@@ -41,14 +41,23 @@ assign issue_en[1]=bypass_in[1].valid;
 
 decode_data_t candidate1,candidate2;
 assign candidate1=que_empty? dataD[1]:issue_queue[head];
-assign candidate2=que_empty? dataD[0]:issue_queue[pop(head)];
+always_ff begin
+    candidate2='0;
+    if (que_empty) begin
+        candidate2=dataD[0];
+    end else if (pop(head)==tail) begin
+        candidate2=dataD[1];
+    end else begin
+        candidate2=issue_queue[pop(head)];
+    end
+end
 
 always_comb begin
     //不一定是dataD
     issue_en[0]=bypass_in[0].valid;
     if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2))
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
-        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]) begin
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump) begin
         issue_en[0]='0;
     end
     if (candidate2.is_slot) begin
@@ -102,33 +111,45 @@ end
 // for (genvar i=1; i>=0; --i) begin
 
 always_comb begin
-    if (que_empty) begin
-        for (int i=1; i>=0; --i) begin
-            if (dataD[i].valid) begin
-                issue_bypass_out[i].ra1= dataD[i].ra1;
-                issue_bypass_out[i].ra2= dataD[i].ra2;
-                issue_bypass_out[i].cp0ra= dataD[i].cp0ra;
-                issue_bypass_out[i].lo_read= dataD[i].ctl.op==MFLO;
-                issue_bypass_out[i].hi_read= dataD[i].ctl.op==MFHI;
-                issue_bypass_out[i].cp0_read= dataD[i].ctl.op==MFC0;
-            end else begin
-                issue_bypass_out[i]='0;
-            end
-        end
-    end else begin
-            issue_bypass_out[1].ra1= issue_queue[head].ra1;
-            issue_bypass_out[1].ra2= issue_queue[head].ra2;
-            issue_bypass_out[1].cp0ra= issue_queue[head].cp0ra;
-            issue_bypass_out[1].lo_read= issue_queue[head].ctl.op==MFLO;
-            issue_bypass_out[1].hi_read= issue_queue[head].ctl.op==MFHI;
-            issue_bypass_out[1].cp0_read= issue_queue[head].ctl.op==MFC0;
-            issue_bypass_out[0].ra1= issue_queue[pop(head)].ra1;
-            issue_bypass_out[0].ra2= issue_queue[pop(head)].ra2;
-            issue_bypass_out[0].cp0ra= issue_queue[pop(head)].cp0ra;
-            issue_bypass_out[0].lo_read= issue_queue[pop(head)].ctl.op==MFLO;
-            issue_bypass_out[0].hi_read= issue_queue[pop(head)].ctl.op==MFHI;
-            issue_bypass_out[0].cp0_read= issue_queue[pop(head)].ctl.op==MFC0;
-    end
+    issue_bypass_out[1].ra1= candidate1.ra1;
+    issue_bypass_out[1].ra2= candidate1.ra2;
+    issue_bypass_out[1].cp0ra= candidate1.cp0ra;
+    issue_bypass_out[1].lo_read= candidate1.ctl.op==MFLO;
+    issue_bypass_out[1].hi_read= candidate1.ctl.op==MFHI;
+    issue_bypass_out[1].cp0_read= candidate1.ctl.op==MFC0;
+    issue_bypass_out[0].ra1= candidate2.ra1;
+    issue_bypass_out[0].ra2= candidate2.ra2;
+    issue_bypass_out[0].cp0ra= candidate2.cp0ra;
+    issue_bypass_out[0].lo_read= candidate2.ctl.op==MFLO;
+    issue_bypass_out[0].hi_read= candidate2.ctl.op==MFHI;
+    issue_bypass_out[0].cp0_read= candidate2.ctl.op==MFC0;
+    // if (que_empty) begin
+    //     for (int i=1; i>=0; --i) begin
+    //         if (dataD[i].valid) begin
+    //             issue_bypass_out[i].ra1= dataD[i].ra1;
+    //             issue_bypass_out[i].ra2= dataD[i].ra2;
+    //             issue_bypass_out[i].cp0ra= dataD[i].cp0ra;
+    //             issue_bypass_out[i].lo_read= dataD[i].ctl.op==MFLO;
+    //             issue_bypass_out[i].hi_read= dataD[i].ctl.op==MFHI;
+    //             issue_bypass_out[i].cp0_read= dataD[i].ctl.op==MFC0;
+    //         end else begin
+    //             issue_bypass_out[i]='0;
+    //         end
+    //     end
+    // end else begin
+    //         issue_bypass_out[1].ra1= issue_queue[head].ra1;
+    //         issue_bypass_out[1].ra2= issue_queue[head].ra2;
+    //         issue_bypass_out[1].cp0ra= issue_queue[head].cp0ra;
+    //         issue_bypass_out[1].lo_read= issue_queue[head].ctl.op==MFLO;
+    //         issue_bypass_out[1].hi_read= issue_queue[head].ctl.op==MFHI;
+    //         issue_bypass_out[1].cp0_read= issue_queue[head].ctl.op==MFC0;
+    //         issue_bypass_out[0].ra1= issue_queue[pop(head)].ra1;
+    //         issue_bypass_out[0].ra2= issue_queue[pop(head)].ra2;
+    //         issue_bypass_out[0].cp0ra= issue_queue[pop(head)].cp0ra;
+    //         issue_bypass_out[0].lo_read= issue_queue[pop(head)].ctl.op==MFLO;
+    //         issue_bypass_out[0].hi_read= issue_queue[pop(head)].ctl.op==MFHI;
+    //         issue_bypass_out[0].cp0_read= issue_queue[pop(head)].ctl.op==MFC0;
+    // end
 end
 
     always_comb begin
@@ -164,21 +185,21 @@ end
                 dataI[1].raw_instr=issue_queue[head].raw_instr;
                 dataI[1].rdst=issue_queue[head].rdst;
                 if (issue_en[0]) begin
-                    dataI[0].ctl=issue_queue[pop(head)].ctl;
-                    dataI[0].pc=issue_queue[pop(head)].pc;
-                    dataI[0].valid=issue_queue[pop(head)].valid;
-                    dataI[0].imm=issue_queue[pop(head)].imm;
-                    dataI[0].is_slot=issue_queue[pop(head)].is_slot;
-                    dataI[0].rd1=bypass_in[0].bypass[1]? bypass_in[0].data :issue_queue[pop(head)].rd1;
-                    dataI[0].rd2=bypass_in[0].bypass[0]? bypass_in[0].data :issue_queue[pop(head)].rd2;
-                    dataI[0].raw_instr=issue_queue[pop(head)].raw_instr;
-                    dataI[0].cp0ra=issue_queue[pop(head)].cp0ra;
-                    dataI[0].raw_instr=issue_queue[pop(head)].raw_instr;
-                    dataI[0].rdst=issue_queue[pop(head)].rdst;
-                end
+                    dataI[0].ctl=candidate2.ctl;
+                    dataI[0].pc=candidate2.pc;
+                    dataI[0].valid=candidate2.valid;
+                    dataI[0].imm=candidate2.imm;
+                    dataI[0].is_slot=candidate2.is_slot;
+                    dataI[0].rd1=bypass_in[0].bypass[1]? bypass_in[0].data :candidate2.rd1;
+                    dataI[0].rd2=bypass_in[0].bypass[0]? bypass_in[0].data :candidate2.rd2;
+                    dataI[0].raw_instr=candidate2.raw_instr;
+                    dataI[0].cp0ra=candidate2.cp0ra;
+                    dataI[0].raw_instr=candidate2.raw_instr;
+                    dataI[0].rdst=candidate2.rdst;
             end
         end
 end
+    end
 
 endmodule
 

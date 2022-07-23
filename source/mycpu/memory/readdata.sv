@@ -66,8 +66,8 @@ module readdata
 			MSIZE4: begin
 				unique case(addr)
 					2'b00: begin
-						sign_bit = mem_unsigned ? 1'b0 : _rd[31];
-						rd =  _rd[31-:32];
+						// sign_bit = mem_unsigned ? 1'b0 : _rd[31];
+						rd =  _rd;
 					end
 					default: begin
 						load_misalign='1;
