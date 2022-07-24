@@ -23,10 +23,11 @@ module cache_manage (
     input cbus_resp_t cresp
 );
 
-    //TU
+    
     logic dreq_1_uncache;
     logic dreq_2_uncache;
 
+    //TU
     ibus_req_t mmu_ireq;
     ibus_resp_t mmu_iresp;
 
