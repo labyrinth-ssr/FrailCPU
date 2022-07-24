@@ -77,7 +77,7 @@ module MyCore (
     // assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
     // ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
     assign d_wait2=(dreq[1].valid && ( (~(|dreq[1].strobe) && ~get_read[1] && dreq[1].addr[15]==0)))||(dreq[0].valid && ( (~(|dreq[0].strobe) && ~get_read[0] && dreq[0].addr[15]==0))) ;
-assign flushM2 = d_wait2? '0:d_wait;
+assign flushM2 = d_wait;
 
     hazard hazard(
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2
@@ -191,9 +191,9 @@ assign flushM2 = d_wait2? '0:d_wait;
     assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
     assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
     assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
-    assign dataF2_nxt[0].pc= dataP_pc[2]==1? '0: dataF1.pc+4;
+    assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
     assign dataF2_nxt[0].raw_instr=pc_except? '0:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&~(dataP_pc[2]==1)*/dataF1.valid;
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(

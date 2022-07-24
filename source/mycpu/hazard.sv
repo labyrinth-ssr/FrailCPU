@@ -86,16 +86,16 @@ end
             flush_que=branchE;
         end
 
-        if (~i_wait&&excp_iwait) begin
-            flushF2='1;
+        if (~stallF&&excp_iwait) begin
+            flushF2='1;flushD='1;
             excp_iwait_nxt='0;
         end
-        if (~i_wait&&branch_iwait) begin
-            flushF2='1;
+        if (~stallF&&branch_iwait) begin
+            flushF2='1;flushD='1;
             branch_iwait_nxt='0;
         end
-        if (~i_wait&&misalign_iwait) begin
-            flushF2='1;
+        if (~stallF&&~i_wait&&misalign_iwait) begin
+            flushF2='1;flushD='1;
             misalign_iwait_nxt='0;
         end
     end

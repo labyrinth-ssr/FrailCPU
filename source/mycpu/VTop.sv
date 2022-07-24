@@ -16,6 +16,8 @@ module VTop (
     ibus_resp_t iresp;
     dbus_req_t  dreq[1:0];
     dbus_resp_t dresp[1:0];
+    cbus_req_t dcreq[1:0],icreq[1:0];
+    cbus_resp_t dcresp[1:0],icresp[1:0];
 
     MyCore core(.*);
     ireq_interface a (._ireq(ireq),.ireq_1(icreq[1]),.ireq_2(icreq[0]),.iresp_1(icresp[1]),.iresp_2(icresp[0]),._iresp(iresp),.*);
