@@ -171,8 +171,7 @@ module ICache (
     assign hit_avail = state == IDLE 
                     | fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}]
                     | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index};
-    assign miss_avail = state == IDLE
-                    | (state == FETCH & icresp.last);
+    assign miss_avail = state == IDLE;
     assign ireq_hit = ireq.valid & hit_avail & hit;
     assign ireq_miss = ireq.valid & miss_avail & ~hit;
 
