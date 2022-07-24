@@ -69,7 +69,7 @@ module MyCore (
         end
     end
 
-    assign i_wait=ireq.valid && ~iresp.data_ok;
+    assign i_wait=ireq.valid && ~iresp.addr_ok;
     u1 get_read[1:0];
     assign get_read[1]=dresp[1].addr_ok;
     assign get_read[0]=dresp[0].addr_ok;
@@ -83,7 +83,7 @@ assign flushM2 = d_wait2? '0:d_wait;
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2
 	);
 
-    assign vaddr=dataF1_pc;
+    assign vaddr=dataP_pc;
     assign ireq.addr=paddr;
 	assign ireq.valid=pc_except ? '0:1'b1;
     assign reset=~resetn;
@@ -101,18 +101,18 @@ assign flushM2 = d_wait2? '0:d_wait;
     u1 branch_misalign;
     u1 reset;
     u1 pc_except;
-    word_t pc_selected,pc_succ,dataF1_pc;
-    assign pc_except=dataF1_pc[1:0]!=2'b00;
+    word_t pc_selected,pc_succ,dataP_pc;
+    assign pc_except=dataP_pc[1:0]!=2'b00;
 
     always_comb begin
-        pc_succ=dataF1_pc+8;
+        pc_succ=dataP_pc+8;
         if (branch_misalign) begin
             pc_succ=dataD_nxt[0].pc;
-        end else if (dataF1_pc[2]==1) begin
-            pc_succ=dataF1_pc+4;
+        end else if (dataP_pc[2]==1) begin
+            pc_succ=dataP_pc+4;
         end
     end
-    // assign pc_succ=dataF1_pc[2]==1?dataF1_pc+4:dataF1_pc+8;
+    // assign pc_succ=dataP_pc[2]==1?dataP_pc+4:dataP_pc+8;
 
     //跳转且i_wait时保存跳转pc，
     word_t jpc_save,ipc_save,pc_nxt,bpc_save;
@@ -164,33 +164,37 @@ assign flushM2 = d_wait2? '0:d_wait;
         .misaligned_pc(dataD_nxt[0].pc)
     );
     //pipereg between pcselect and fetch1
+    fetch1_data_t dataF1_nxt,dataF1;
+    assign dataF1_nxt.valid='1;
+    assign dataF1_nxt.pc=dataP_pc;
+    u1 dataF1_pc;
     always_ff @( posedge clk ) begin
 		if (reset) begin
-			dataF1_pc<=32'hbfc0_0000;//
+			dataP_pc<=32'hbfc0_0000;//
 		end  else if(~stallF) begin
-			dataF1_pc<=pc_nxt;
+			dataP_pc<=pc_nxt;
 		end
 	end
     word_t pc_f1;
 
-    pipereg #(.T(u32))F1F2reg(
+    pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
         .reset,
-        .in(dataF1_pc),
-        .out(pc_f1),
+        .in(dataF1_nxt),
+        .out(dataF1),
         .en(~stallF2),
         .flush(flushF2)
     );
-
-    assign dataF2_nxt[1].pc=pc_f1;
+    assign dataF2_nxt[1].pc=dataF1.pc;
     assign dataF2_nxt[1].raw_instr=pc_except? '0:iresp.data[31:0];
-    assign dataF2_nxt[1].valid='1;
+    assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
     assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
     assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
-    assign dataF2_nxt[0].pc= dataF1_pc[2]==1? '0: pc_f1+4;
+    assign dataF2_nxt[0].pc= dataP_pc[2]==1? '0: dataF1.pc+4;
     assign dataF2_nxt[0].raw_instr=pc_except? '0:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=~pc_except&&~(dataF1_pc[2]==1);
+    assign dataF2_nxt[0].valid=/*~pc_except&&~(dataP_pc[2]==1)*/dataF1.valid;
+
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
         .clk,
