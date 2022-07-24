@@ -338,9 +338,11 @@ assign flushM2 = d_wait2? '0:d_wait;
 	);
 	
 	memory2 memory2(
+        .clk,
 		.dataE(dataM1),
 		.dataM(dataM2_nxt),
-		.dresp
+		.dresp,
+        .dreq
 	);
 
 	pipereg2 #(.T(memory_data_t)) M2Wreg(
