@@ -87,6 +87,7 @@ module ICache (
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk), 
+        .resetn,
         .en(1),
         .addr(meta_addr),
         .strobe(1),
@@ -178,7 +179,7 @@ module ICache (
     //更新meta_ram, plru_ram
     always_comb begin
         meta_w = meta_r;
-        if (resetn & ireq_miss) begin
+        if (ireq_miss) begin
             meta_w[replace_line].valid = 1'b1;
             meta_w[replace_line].tag = ireq_addr.tag;
         end
@@ -187,7 +188,7 @@ module ICache (
     end
 
     always_ff @(posedge clk) begin
-        if (resetn & ireq_hit) begin
+        if (ireq_hit) begin
             plru_ram[ireq_addr.index] <= plru_new;
         end
     end

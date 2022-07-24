@@ -23,7 +23,7 @@ module RAM_SinglePort #(
 		rbundle_t lanes;
 	}
 ) (
-	input logic clk, en,
+	input logic clk, resetn, en, 
 
 	input  raddr_t   addr,
     input  rstrobe_t strobe,
@@ -58,10 +58,15 @@ module RAM_SinglePort #(
 	end
 
 	always_ff @(posedge clk) begin
-		if (en)
-			for (int i = 0; i < BYTES_PER_WORD; i++)
-				if (strobe[i])
-					mem[addr].lanes[i] <= wdata.lanes[i];
+		if (resetn) begin
+			if (en)
+				for (int i = 0; i < BYTES_PER_WORD; i++)
+					if (strobe[i])
+						mem[addr].lanes[i] <= wdata.lanes[i];
+		end 
+		else begin
+			mem <= '{default:0};
+		end
 	end
 	/* verilator tracing_on */
 `else
