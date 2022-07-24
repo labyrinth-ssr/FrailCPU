@@ -45,7 +45,7 @@ typedef struct packed {
 typedef struct packed {
 	word_t data;
 	u1 valid;
-	u1 [1:0] bypass;
+	u1 bypass;
 } bypass_output_t;
 
 

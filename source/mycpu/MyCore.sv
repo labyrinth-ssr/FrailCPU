@@ -77,7 +77,7 @@ module MyCore (
     // assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
     // ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
     assign d_wait2=(dreq[1].valid && ( (~(|dreq[1].strobe) && ~get_read[1] && dreq[1].addr[15]==0)))||(dreq[0].valid && ( (~(|dreq[0].strobe) && ~get_read[0] && dreq[0].addr[15]==0))) ;
-assign flushM2 = d_wait;
+    assign flushM2 = d_wait;
 
     hazard hazard(
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2
@@ -185,14 +185,44 @@ assign flushM2 = d_wait;
         .en(~stallF2),
         .flush(flushF2)
     );
+    u1 rawinstr_saved;
+    u64 raw_instrf2_save;
+    u1 delay_flushF2;
+
+    always_ff @(posedge clk) begin
+        delay_flushF2 <=flushF2;
+        if (stallF2&&~rawinstr_saved) begin
+            raw_instrf2_save<=iresp.data;
+            rawinstr_saved<='1;
+        end else if (~stallF2) begin
+            {raw_instrf2_save,rawinstr_saved}<='0;
+        end
+    end
+    //前半部分静止，应当不发起ireq
+    always_comb begin
+        dataF2_nxt[1].raw_instr= dataF1.pc[2]==1? iresp.data[63:32]:iresp.data[31:0];
+        if (rawinstr_saved) begin
+            dataF2_nxt[1].raw_instr=dataF1.pc[2]==1? raw_instrf2_save[63:32]:raw_instrf2_save[31:0];
+        end else if (delay_flushF2) begin
+            dataF2_nxt[1].raw_instr='0;
+        end
+    end
+    always_comb begin
+        dataF2_nxt[0].raw_instr=  iresp.data[63:32];
+        if (rawinstr_saved) begin
+            dataF2_nxt[0].raw_instr=raw_instrf2_save[63:32];
+        end else if (delay_flushF2) begin
+            dataF2_nxt[0].raw_instr='0;
+        end
+    end
     assign dataF2_nxt[1].pc=dataF1.pc;
-    assign dataF2_nxt[1].raw_instr=pc_except? '0:iresp.data[31:0];
+    // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
     assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
     assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
     assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
-    assign dataF2_nxt[0].raw_instr=pc_except? '0:iresp.data[63:32];
+    // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
     assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
 
 
@@ -244,14 +274,15 @@ assign flushM2 = d_wait;
     end
 
     bypass_input_t dataE_in[1:0],dataM1_in[1:0],dataM2_in[1:0];
-    bypass_output_t bypass_out [1:0];
+    bypass_output_t bypass_outra1 [1:0],bypass_outra2 [1:0];
 
     issue issue_inst(
         .clk,
         .dataD(readed_dataD),
         .dataI(dataI_nxt),
         .issue_bypass_out,
-        .bypass_in(bypass_out),
+        .bypass_inra1(bypass_outra1),
+        .bypass_inra2(bypass_outra2),
         .flush_que
     );
 
@@ -268,7 +299,8 @@ assign flushM2 = d_wait;
         // .rdstE,
         // .ra1I,.ra2I,
         // .cp0ra,.lo,.hi
-        .out(bypass_out)
+        .outra1(bypass_outra1),
+        .outra2(bypass_outra2)
     );
 
     for (genvar i=0; i<2 ;++i) begin
