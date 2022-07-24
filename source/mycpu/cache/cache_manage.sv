@@ -2,6 +2,10 @@
 `define __CACHE_MANAGE_SV
 
 `include "common.svh"
+`include "ICache.sv"
+`include "DCache.sv"
+`include "CBusArbiter.sv"
+`include "DBusToCBus.sv"
 
 module cache_manage (
     input logic clk, resetn,
@@ -142,17 +146,19 @@ module cache_manage (
         .dreq(dbus_uncache_req_1),
         .dresp(dbus_uncache_resp_1),
         .dcreq(d_uncache1_cbus_req),
-        .dcresp(d_uncache1_cbus_resp)
+        .dcresp(d_uncache1_cbus_resp),
+        .*
     );
 
     DBusToCBus uncache_2 (
         .dreq(dbus_uncache_req_2),
         .dresp(dbus_uncache_resp_2),
         .dcreq(d_uncache2_cbus_req),
-        .dcresp(d_uncache2_cbus_resp)
+        .dcresp(d_uncache2_cbus_resp),
+        .*
     );
 
-    MyArbiter #(
+    CBusArbiter #(
         .NUM_INPUTS(4)
     ) cbus_arbiter (
         .clk, 

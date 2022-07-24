@@ -87,6 +87,7 @@ module ICache (
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk), 
+        .resetn,
         .en(1),
         .addr(meta_addr),
         .strobe(1),

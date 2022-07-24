@@ -28,7 +28,7 @@ WITH {
     // ASSERT(top->dresp == 0);
 } AS("void");
 
-WITH {
+WITH SKIP {
     // NOTE: it depends on your design.
     //       maybe your cache likes to set addr_ok to false.
     //       in that case, change following lines to match your design.
