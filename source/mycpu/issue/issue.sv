@@ -10,7 +10,7 @@ module issue(
     input clk,
     input decode_data_t dataD [1:0],
     output issue_data_t dataI [1:0],
-    // input word_t rd1[1:0],rd2[1:0],
+    input word_t rd1[1:0],rd2[1:0],
     output bypass_issue_t issue_bypass_out[1:0],
     input bypass_output_t bypass_inra1[1:0],
     input bypass_output_t bypass_inra2[1:0],
@@ -42,7 +42,7 @@ assign issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid;
 
 decode_data_t candidate1,candidate2;
 assign candidate1=que_empty? dataD[1]:issue_queue[head];
-always_ff begin
+always_comb begin
     candidate2='0;
     if (que_empty) begin
         candidate2=dataD[0];
@@ -67,11 +67,11 @@ always_comb begin
 end
 
 always_ff @(posedge clk) begin
-    if (flush_que) begin
-        head <= tail;
-    end
 
-    if (que_empty) begin
+    if (flush_que) begin
+        head<=tail;
+    end else begin
+        if (que_empty) begin
         if (~issue_en[1]&&dataD[1].valid) begin
             issue_queue[tail]<=dataD[1];
             tail<=push(tail);
@@ -90,8 +90,13 @@ always_ff @(posedge clk) begin
                 tail<=push(tail);
         end
         if (dataD[0].valid) begin
+            if (pop(head)==tail&&issue_en[0]) begin
+                issue_queue[tail]<=dataD[0];
+                tail<=push(tail);
+            end else begin
                 issue_queue[push(tail)]<=dataD[0];
                 tail<=push(push(tail));
+            end
         end
     end
 
@@ -102,16 +107,9 @@ always_ff @(posedge clk) begin
                 head<=pop(pop(head));
             end
         end
-        // unique case ({issue_en[1],issue_en[0]})
-        //     2'b10:head<=pop(head);
-        //     2'b11:head<=pop(pop(head));
-        //     default: ;
-        // endcase
     end
-    
+    end
 end
-
-// for (genvar i=1; i>=0; --i) begin
 
 always_comb begin
     issue_bypass_out[1].ra1= candidate1.ra1;
@@ -166,8 +164,8 @@ end
                 dataI[i].valid=dataD[i].valid;
                 dataI[i].imm=dataD[i].imm;
                 dataI[i].is_slot=dataD[i].is_slot;
-                dataI[i].rd1= bypass_inra1[i].bypass? bypass_inra1[i].data :dataD[i].rd1;
-                dataI[i].rd2= bypass_inra2[i].bypass? bypass_inra2[i].data :dataD[i].rd2;
+                dataI[i].rd1= bypass_inra1[i].bypass? bypass_inra1[i].data :rd1[i];
+                dataI[i].rd2= bypass_inra2[i].bypass? bypass_inra2[i].data :rd2[i];
                 dataI[i].raw_instr=dataD[i].raw_instr;
                 dataI[i].cp0ra=dataD[i].cp0ra;
                 dataI[i].raw_instr=dataD[i].raw_instr;
@@ -181,8 +179,8 @@ end
                 dataI[1].valid=issue_queue[head].valid;
                 dataI[1].imm=issue_queue[head].imm;
                 dataI[1].is_slot=issue_queue[head].is_slot;
-                dataI[1].rd1=bypass_inra1[1].bypass? bypass_inra1[1].data :issue_queue[head].rd1;
-                dataI[1].rd2=bypass_inra2[1].bypass? bypass_inra2[1].data :issue_queue[head].rd2;
+                dataI[1].rd1=bypass_inra1[1].bypass? bypass_inra1[1].data :rd1[1];
+                dataI[1].rd2=bypass_inra2[1].bypass? bypass_inra2[1].data :rd2[1];
                 dataI[1].raw_instr=issue_queue[head].raw_instr;
                 dataI[1].cp0ra=issue_queue[head].cp0ra;
                 dataI[1].raw_instr=issue_queue[head].raw_instr;
@@ -193,8 +191,8 @@ end
                     dataI[0].valid=candidate2.valid;
                     dataI[0].imm=candidate2.imm;
                     dataI[0].is_slot=candidate2.is_slot;
-                    dataI[0].rd1=bypass_inra1[0].bypass? bypass_inra1[0].data :candidate2.rd1;
-                    dataI[0].rd2=bypass_inra2[0].bypass? bypass_inra2[0].data :candidate2.rd2;
+                    dataI[0].rd1=bypass_inra1[0].bypass? bypass_inra1[0].data :rd1[0];
+                    dataI[0].rd2=bypass_inra2[0].bypass? bypass_inra2[0].data :rd2[0];
                     dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].cp0ra=candidate2.cp0ra;
                     dataI[0].raw_instr=candidate2.raw_instr;
@@ -202,6 +200,7 @@ end
             end
         end
 end
+        
     end
 
 endmodule

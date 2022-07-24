@@ -256,7 +256,7 @@ module MyCore (
 
     regfile regfile_inst(
         .clk,.reset,
-        .ra1({dataD[1].ra1,dataD[0].ra1}),.ra2({dataD[1].ra2,dataD[0].ra2}),
+        .ra1({issue_bypass_out[1].ra1,issue_bypass_out[0].ra1}),.ra2({issue_bypass_out[1].ra2,issue_bypass_out[0].ra2}),
         .wa({dataW[1].wa,dataW[0].wa}),
         .wvalid({dataW[1].ctl.regwrite,dataW[0].ctl.regwrite}),
         .wd({dataW[1].wd,dataW[0].wd}),
@@ -264,21 +264,22 @@ module MyCore (
         .rd2({rd2[1],rd2[0]})
     );
 
-    decode_data_t readed_dataD[1:0];
-    always_comb begin
-        readed_dataD=dataD;
-        for (int i=0; i<2; ++i) begin
-        readed_dataD[i].rd1=rd1[i];
-        readed_dataD[i].rd2=rd2[i];
-        end
-    end
+    // decode_data_t readed_dataD[1:0];
+    // always_comb begin
+    //     readed_dataD=dataD;
+    //     for (int i=0; i<2; ++i) begin
+    //     readed_dataD[i].rd1=rd1[i];
+    //     readed_dataD[i].rd2=rd2[i];
+    //     end
+    // end
 
     bypass_input_t dataE_in[1:0],dataM1_in[1:0],dataM2_in[1:0];
     bypass_output_t bypass_outra1 [1:0],bypass_outra2 [1:0];
 
     issue issue_inst(
         .clk,
-        .dataD(readed_dataD),
+        .dataD,
+        .rd1,.rd2,
         .dataI(dataI_nxt),
         .issue_bypass_out,
         .bypass_inra1(bypass_outra1),
