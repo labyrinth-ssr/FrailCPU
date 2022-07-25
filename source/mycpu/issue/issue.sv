@@ -14,7 +14,8 @@ module issue(
     output bypass_issue_t issue_bypass_out[1:0],
     input bypass_output_t bypass_inra1[1:0],
     input bypass_output_t bypass_inra2[1:0],
-    input u1 flush_que
+    input u1 flush_que,
+    input u1 stallI
 );
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam ISSUE_QUEUE_SIZE = 32;
@@ -70,7 +71,7 @@ always_ff @(posedge clk) begin
 
     if (flush_que) begin
         head<=tail;
-    end else begin
+    end else if (~stallI) begin
         if (que_empty) begin
         if (~issue_en[1]&&dataD[1].valid) begin
             issue_queue[tail]<=dataD[1];

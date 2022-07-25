@@ -34,7 +34,7 @@ module MyCore (
     // assign dresp[0]=dresp1;
     // assign dresp[1]='0;
     // assign dreq1=dreq[0];
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait,d_wait2;
     u1 is_INTEXC;
@@ -77,10 +77,11 @@ module MyCore (
     // assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
     // ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
     assign d_wait2=(dreq[1].valid && ( (~(|dreq[1].strobe) && ~get_read[1] && dreq[1].addr[15]==0)))||(dreq[0].valid && ( (~(|dreq[0].strobe) && ~get_read[0] && dreq[0].addr[15]==0))) ;
-    assign flushM2 = d_wait;
+    // assign flushM2 = d_wait;
+    // u1 flushM2_hazard;
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2
 	);
 
     assign vaddr=dataP_pc;
@@ -117,6 +118,7 @@ module MyCore (
     //跳转且i_wait时保存跳转pc，
     word_t jpc_save,ipc_save,pc_nxt,bpc_save;
     u1 jpc_saved,ipc_saved,bpc_saved;
+    //填入保存信号时确认没有正常进入的替换信号
     always_ff @(posedge clk) begin
 		if ((i_wait||d_wait)&&is_INTEXC) begin
 			ipc_save<=pc_selected;
@@ -142,7 +144,7 @@ module MyCore (
             pc_nxt=ipc_save;
         end else if (jpc_saved) begin
             pc_nxt=jpc_save;
-        end else if (bpc_saved) begin
+        end else if (bpc_saved&&~dataE[1].branch_taken) begin
             pc_nxt=bpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -248,7 +250,7 @@ module MyCore (
         .reset,
         .in(dataD_nxt),
         .out(dataD),
-        .en(1'b1),
+        .en(~stallI),
         .flush(flushI)
     );
     word_t rd1[1:0],rd2[1:0];
@@ -284,7 +286,8 @@ module MyCore (
         .issue_bypass_out,
         .bypass_inra1(bypass_outra1),
         .bypass_inra2(bypass_outra2),
-        .flush_que
+        .flush_que,
+        .stallI
     );
 
     bypass_issue_t dataI_in[1:0],issue_bypass_out[1:0];
