@@ -17,15 +17,15 @@ module issue(
     input u1 flush_que
 );
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
-localparam ISSUE_QUEUE_SIZE = 16;
+localparam ISSUE_QUEUE_SIZE = 32;
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
 
 function index_t push(index_t tail);
-    return tail==0? 4'hf:tail-1;
+    return tail==0? 5'd31:tail-1;
 endfunction
 function index_t pop(index_t head);
-    return head==0? 4'hf:head-1;
+    return head==0? 5'd31:head-1;
 endfunction
 function u1 multi_op(decoded_op_t op);
     return op==DIV||op==DIVU||op==MULT||op==MULTU;
