@@ -9,8 +9,8 @@
         // input u1 clk,reset,
         input memory_data_t dataM [1:0],
         output writeback_data_t dataW [1:0],
-        input word_t hi_rd,lo_rd,cp0_rd,
-        input u1 valid_i,valid_j,valid_k
+        input word_t hi_rd,lo_rd,cp0_rd
+        // input u1 valid_i,valid_j,valid_k
     );
 
     word_t pc[1:0]/* verilator public_flat_rd */,wd[1:0]/* verilator public_flat_rd */;
@@ -56,17 +56,19 @@
                     end else begin
                         dataW[i].wd='0;
                     end
-            end
-
-                if (dataM[valid_i].ctl.cp0toreg) begin
-                    dataW[valid_i].wd=cp0_rd;
+                if (dataM[i].ctl.cp0toreg) begin
+                    dataW[i].wd=cp0_rd;
                 end 
-                if (dataM[valid_j].ctl.lotoreg) begin
-                    dataW[valid_j].wd=lo_rd;
+                if (dataM[i].ctl.lotoreg) begin
+                    dataW[i].wd=lo_rd;
                 end 
-                if (dataM[valid_k].ctl.hitoreg) begin
-                    dataW[valid_k].wd=hi_rd;
+                if (dataM[i].ctl.hitoreg) begin
+                    dataW[i].wd=hi_rd;
                 end
+            end
+            //不需要valid位
+
+                
                 
                 
         end

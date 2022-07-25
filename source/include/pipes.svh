@@ -24,8 +24,8 @@ typedef struct packed {
 	word_t data;
 	creg_addr_t rdst;
 	u8 cp0ra;
-	u1 lowrite,hiwrite,cp0write;
-	u1 memtoreg;
+	// u1 lowrite,hiwrite,cp0write;
+	u1 memtoreg,lotoreg,hitoreg,cp0toreg;
 	u1 regwrite;
 } bypass_input_t;
 
@@ -178,6 +178,7 @@ typedef struct packed {
 	// u64 target;
 	// u64 sextimm;
 	word_t srcb;
+	word_t srca;
 	word_t target;
 	u1 branch_taken;
 	u1 is_slot;
@@ -200,6 +201,8 @@ typedef struct packed {
 	// word_t lo_rd,hi_rd,cp0_rd;
 	cp0_control_t cp0_ctl;
 	word_t srcb;
+	word_t srca;
+
 
 	// u64 target;
 	word_t rd;

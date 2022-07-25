@@ -64,6 +64,7 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].is_slot=dataE[i].is_slot;
     assign dataE2[i].cp0ra=dataE[i].cp0ra;
     assign dataE2[i].srcb=dataE[i].srcb;
+    assign dataE2[i].srca=dataE[i].srca;
     assign dataE2[i].hilo=dataE[i].hilo;
 end
     

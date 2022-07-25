@@ -6,6 +6,7 @@
 `include "pipes.svh"
 `include "regs/pipereg.sv"
 `include "regs/pipereg2.sv"
+`include "regs/hilo.sv"
 `include "regs/regfile.sv"
 `include "fetch/pcselect.sv"
 `include "decode/decode.sv"
@@ -34,7 +35,7 @@ module MyCore (
     // assign dresp[0]=dresp1;
     // assign dresp[1]='0;
     // assign dreq1=dreq[0];
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,overflowI;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,overflowI,stallI_de;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait,d_wait2;
     u1 is_INTEXC;
@@ -81,7 +82,7 @@ module MyCore (
     // u1 flushM2_hazard;
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2,.overflowI
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de
 	);
 
     assign vaddr=dataP_pc;
@@ -288,7 +289,8 @@ module MyCore (
         .bypass_inra2(bypass_outra2),
         .flush_que,
         .stallI,
-        .overflow(overflowI)
+        .overflow(overflowI),
+        .stallI_de
     );
 
     bypass_issue_t dataI_in[1:0],issue_bypass_out[1:0];
@@ -312,16 +314,25 @@ module MyCore (
         assign dataE_in[i].data=dataE[i].alu_out;
         assign dataE_in[i].rdst=dataE[i].rdst;
         assign dataE_in[i].memtoreg=dataE[i].ctl.memtoreg;
+        assign dataE_in[i].lotoreg=dataE[i].ctl.lotoreg;
+        assign dataE_in[i].hitoreg=dataE[i].ctl.hitoreg;
+        assign dataE_in[i].cp0toreg=dataE[i].ctl.cp0toreg;
         assign dataE_in[i].regwrite=dataE[i].ctl.regwrite;
 
         assign dataM1_in[i].data=dataM1[i].alu_out;
         assign dataM1_in[i].rdst=dataM1[i].rdst;
         assign dataM1_in[i].memtoreg=dataM1[i].ctl.memtoreg;
+        assign dataM1_in[i].lotoreg=dataM1[i].ctl.lotoreg;
+        assign dataM1_in[i].hitoreg=dataM1[i].ctl.hitoreg;
+        assign dataM1_in[i].cp0toreg=dataM1[i].ctl.cp0toreg;
         assign dataM1_in[i].regwrite=dataM1[i].ctl.regwrite;
 
-        assign dataM2_in[i].data=dataM2[i].ctl.memtoreg=='0? dataM2[i].alu_out:dataM2[i].rd;
+        assign dataM2_in[i].data=dataW[i].wd;
         assign dataM2_in[i].rdst=dataM2[i].rdst;
         assign dataM2_in[i].memtoreg=dataM2[i].ctl.memtoreg;
+        assign dataM2_in[i].lotoreg=dataM2[i].ctl.lotoreg;
+        assign dataM2_in[i].hitoreg=dataM2[i].ctl.hitoreg;
+        assign dataM2_in[i].cp0toreg=dataM2[i].ctl.cp0toreg;
         assign dataM2_in[i].regwrite=dataM2[i].ctl.regwrite;
 
         assign dataEnxt_in[i].rdst=dataI[i].rdst;
@@ -400,24 +411,25 @@ module MyCore (
         // .clk,.reset,
         .dataM(dataM2),
         .dataW,
-        .lo_rd,.hi_rd,.cp0_rd,
-        .valid_i,.valid_j,.valid_k
+        .lo_rd,.hi_rd,.cp0_rd
+        // .valid_i,.valid_j,.valid_k
     );
 
     // u1 hi_write,lo_write;
 
     u1 valid_j,valid_k;
     word_t hi_data,lo_data;
+    //同时对hilo进行读是允许的
     always_comb begin
         {hi_data,lo_data}='0;
         {valid_j,valid_k}='0;
         for (int i=1; i>=0; --i) begin
             if (dataM2[i].ctl.hiwrite) begin
-                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srcb:dataM2[i].hilo[63:32];
+                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srca:dataM2[i].hilo[63:32];
                 valid_j=i[0];
             end 
             if (dataM2[i].ctl.lowrite) begin
-                lo_data=dataM2[i].ctl.op==MTLO? dataM2[i].srcb:dataM2[i].hilo[31:0];
+                lo_data=dataM2[i].ctl.op==MTLO? dataM2[i].srca:dataM2[i].hilo[31:0];
                 valid_k=i[0];
             end
         end

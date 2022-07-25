@@ -100,6 +100,7 @@
     assign dataE[1].branch_taken=dataI[1].ctl.jump||(dataI[1].ctl.branch&&branch_condition);
     for (genvar i=0; i<2; ++i) begin
     assign dataE[i].srcb=dataI[i].rd2;
+    assign dataE[i].srca=dataI[i].rd1;
     assign dataE[i].rdst=dataI[i].rdst;
     assign dataE[i].pc=dataI[i].pc;
     assign dataE[i].ctl=dataI[i].ctl;
@@ -169,24 +170,26 @@
             lo_data=multi_res[31:0];
         end else if (div_valid) begin
             // {hi_write,lo_write}='1;
-            unique case ({nega,negb})
-            2'b00:begin
-                hi_data= divc[63:32];
-                lo_data=divc[31:0];
-            end
-            2'b10:begin
-                hi_data= multib-divc[63:32];
-                lo_data=-(divc[31:0]+1);
-            end
-            2'b01:begin
-                hi_data= divc[63:32];
-                lo_data=-divc[31:0];
-            end
-            2'b11:begin
-                hi_data= -multib-divc[63:32];
-                lo_data=divc[31:0]+1;
-            end
-        endcase
+            lo_data= nega^negb? -divc[31:0] : divc[31:0];
+            hi_data=nega? -divc[63:32]:divc[63:32];
+        //     unique case ({nega,negb})
+        //     2'b00:begin
+        //         hi_data= divc[63:32];
+        //         lo_data=divc[31:0];
+        //     end
+        //     2'b10:begin
+        //         hi_data= multib-divc[63:32];
+        //         lo_data=-(divc[31:0]+1);
+        //     end
+        //     2'b01:begin
+        //         hi_data= divc[63:32];
+        //         lo_data=-divc[31:0];
+        //     end
+        //     2'b11:begin
+        //         hi_data= -multib-divc[63:32];
+        //         lo_data=divc[31:0]+1;
+        //     end
+        // endcase
         end
     end
 

@@ -9,8 +9,7 @@
 `endif
 
 module hilo 
-    import common::*;
-	import pipes::*;(
+    (
     input u1 clk,
     output i32 hi, lo,
     input i1 hi_write, lo_write,

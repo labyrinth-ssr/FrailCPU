@@ -15,7 +15,7 @@ module issue(
     input bypass_output_t bypass_inra1[1:0],
     input bypass_output_t bypass_inra2[1:0],
     input u1 flush_que,
-    input u1 stallI,
+    input u1 stallI,stallI_de,
     output u1 overflow
 );
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
@@ -60,7 +60,9 @@ always_comb begin
     issue_en[0]=bypass_inra1[0].valid && bypass_inra2[0].valid;
     if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2))
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
-        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump) begin
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump
+        ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)) begin
         issue_en[0]='0;
     end
     if (candidate2.is_slot&&issue_en[1]) begin
@@ -108,7 +110,7 @@ always_ff @(posedge clk) begin
     end
         end
         
-    if (~stallI || stallI && overflow) begin
+    if (~stallI || (stallI && overflow && ~stallI_de)) begin
             if (~que_empty) begin
         if (issue_en[1]) begin
             head<=pop(head);
