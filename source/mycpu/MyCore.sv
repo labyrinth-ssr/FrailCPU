@@ -34,7 +34,7 @@ module MyCore (
     // assign dresp[0]=dresp1;
     // assign dresp[1]='0;
     // assign dreq1=dreq[0];
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,overflowI;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait,d_wait2;
     u1 is_INTEXC;
@@ -81,7 +81,7 @@ module MyCore (
     // u1 flushM2_hazard;
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2,.overflowI
 	);
 
     assign vaddr=dataP_pc;
@@ -287,7 +287,8 @@ module MyCore (
         .bypass_inra1(bypass_outra1),
         .bypass_inra2(bypass_outra2),
         .flush_que,
-        .stallI
+        .stallI,
+        .overflow(overflowI)
     );
 
     bypass_issue_t dataI_in[1:0],issue_bypass_out[1:0];

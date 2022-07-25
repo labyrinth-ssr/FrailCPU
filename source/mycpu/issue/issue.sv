@@ -15,7 +15,8 @@ module issue(
     input bypass_output_t bypass_inra1[1:0],
     input bypass_output_t bypass_inra2[1:0],
     input u1 flush_que,
-    input u1 stallI
+    input u1 stallI,
+    output u1 overflow
 );
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam ISSUE_QUEUE_SIZE = 32;
@@ -39,7 +40,7 @@ index_t head;
 index_t tail;
 
 u1 issue_en[1:0];
-assign issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid;
+assign issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid&& (~((candidate1.ctl.jump||candidate1.ctl.branch)&&(~candidate2.valid)));
 
 decode_data_t candidate1,candidate2;
 assign candidate1=que_empty? dataD[1]:issue_queue[head];
@@ -62,17 +63,22 @@ always_comb begin
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump) begin
         issue_en[0]='0;
     end
-    if (candidate2.is_slot) begin
+    if (candidate2.is_slot&&issue_en[1]) begin
         issue_en[0]='1;
     end
 end
+assign overflow= push(push(tail))==head || push(tail)==head;
+// (((que_empty&&~issue_en[1]&&dataD[1].valid)||(que_empty&&~issue_en[0]&&dataD[0].valid)||( ~que_empty&&dataD[1].valid&&~(pop(head)==tail&&issue_en[0]))||(~que_empty&&dataD[0].valid&&pop(head)==tail&&issue_en[0])) && push(tail)==head)
+//                 || (((que_empty&&~issue_en[1]&&dataD[1].valid&&dataD[0].valid) || (~que_empty && dataD[0].valid&& ~ (pop(head)==tail&&issue_en[0]))) && push(push(tail))==head) ;
+
 
 always_ff @(posedge clk) begin
 
     if (flush_que) begin
         head<=tail;
-    end else if (~stallI) begin
-        if (que_empty) begin
+    end else begin
+        if (~overflow && ~stallI) begin
+            if (que_empty) begin
         if (~issue_en[1]&&dataD[1].valid) begin
             issue_queue[tail]<=dataD[1];
             tail<=push(tail);
@@ -100,8 +106,10 @@ always_ff @(posedge clk) begin
             end
         end
     end
-
-    if (~que_empty) begin
+        end
+        
+    if (~stallI || stallI && overflow) begin
+            if (~que_empty) begin
         if (issue_en[1]) begin
             head<=pop(head);
             if (pop(head)!=tail&&issue_en[0]) begin
@@ -110,6 +118,10 @@ always_ff @(posedge clk) begin
         end
     end
     end
+
+    end
+
+
 end
 
 always_comb begin

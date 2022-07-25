@@ -33,12 +33,12 @@ for (genvar i=0; i<2; ++i) begin
     always_comb begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
-            dreq[i].valid = dataE[i].cp0_ctl.valid|| load_misalign[i]||req_finish[i] ? '0: '1;
+            dreq[i].valid = dataE[i].cp0_ctl.valid|| load_misalign[i]/*||req_finish[i]*/ ? '0: '1;
             dreq[i].strobe = '0;
             dreq[i].addr = paddr[i];
             dreq[i].size=dataE[i].ctl.msize;
         end else if (dataE[i].ctl.memwrite) begin
-            dreq[i].valid =  dataE[i].cp0_ctl.valid||store_misalign[i]||req_finish[i] ? '0:'1;
+            dreq[i].valid =  dataE[i].cp0_ctl.valid||store_misalign[i]/*||req_finish[i]*/ ? '0:'1;
             dreq[i].addr = paddr[i];
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];

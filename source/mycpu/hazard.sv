@@ -9,7 +9,7 @@ module hazard
 (
     output u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushI,flush_que,stallF2,flushF2,stallI,flushM2,
     // input creg_addr_t edst,mdst,wdst,mdst2,
-    input branchE,i_wait,d_wait,e_wait,branch_misalign,
+    input branchE,i_wait,d_wait,e_wait,branch_misalign,overflowI,
     // input creg_addr_t ra1,ra2,ra1E,ra2E,
     // input wrE,wrM,wrW,wrM2,
     // input memwrE,memwrM,memwrM2,
@@ -42,14 +42,16 @@ end
                 excp_iwait_nxt='1;
                 stallF='1;
             end
-        end else if (e_wait) begin
+        end  else if (e_wait) begin
             stallE='1;flushM='1;stallF='1;stallD='1;stallF2='1;stallI='1;
             if (d_wait) begin
                 stallM='1;flushM='0;
             end 
         end else if (d_wait) begin
             stallM='1;stallE='1;stallF='1;stallF2='1;flushM2='1;stallI='1; stallD='1;
-        end  else if (i_wait) begin
+        end else if (overflowI) begin
+            stallF='1;stallF2='1;flushE='1;stallI='1;stallD='1;
+        end else if (i_wait) begin
             stallF='1;flushF2='1;
             if (branchE) begin
                 branch_iwait_nxt=1'b1;
