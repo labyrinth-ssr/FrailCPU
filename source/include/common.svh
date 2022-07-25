@@ -228,14 +228,16 @@ typedef struct packed {
     logic [7:0] asid;
     logic g;
     logic [19:0] pfn0;
-    logic c0;
+    logic [2:0] c0;
     logic d0;
     logic v0;
     logic [19:0] pfn1;
-    logic c1;
+    logic [2:0] c1;
     logic d1;
     logic v1;   
 } tlb_entry_t;
+
+typedef tlb_entry_t [`TLB_NUM-1:0] tlb_t;
 
 typedef struct packed {
     logic found;
