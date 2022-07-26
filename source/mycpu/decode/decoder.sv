@@ -308,7 +308,7 @@ module decoder (
                 case (instr[25:21])
                     `C_ERET:begin
                         cp0_ctl.ctype=ERET;
-                        cp0_ctl.valid='1;
+                        // cp0_ctl.valid='1;
                         ctl.is_eret = 1'b1;
                         srcrega = '0;
                         srcregb = '0;
@@ -598,7 +598,7 @@ module decoder (
                     end	
 					`F_SYSCALL:begin
                         ctl.op = SYSCALL;
-                        cp0_ctl.ctype=INSTR;
+                        cp0_ctl.ctype=EXCEPTION;
                         cp0_ctl.valid='1;
                         cp0_ctl.etype.syscall='1;
                         ctl.alufunc = ALU_PASSA;

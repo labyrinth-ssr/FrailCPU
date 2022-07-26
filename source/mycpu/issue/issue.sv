@@ -57,12 +57,14 @@ end
 
 always_comb begin
     //不一定是dataD
+    //同时读
     issue_en[0]=bypass_inra1[0].valid && bypass_inra2[0].valid;
     if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2))
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump
         ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
-        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)) begin
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)
+        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)&&(candidate2.cp0_ctl.ctype==EXCEPTION||candidate2.cp0_ctl.ctype==ERET)) begin
         issue_en[0]='0;
     end
     if (candidate2.is_slot&&issue_en[1]) begin
@@ -185,6 +187,7 @@ end
                 dataI[i].cp0ra=dataD[i].cp0ra;
                 dataI[i].raw_instr=dataD[i].raw_instr;
                 dataI[i].rdst=dataD[i].rdst;
+                dataI[i].cp0_ctl=dataD[i].cp0_ctl;
                 end
             end
         end else begin
@@ -200,6 +203,7 @@ end
                 dataI[1].cp0ra=issue_queue[head].cp0ra;
                 dataI[1].raw_instr=issue_queue[head].raw_instr;
                 dataI[1].rdst=issue_queue[head].rdst;
+                dataI[1].cp0_ctl=issue_queue[head].cp0_ctl;
                 if (issue_en[0]) begin
                     dataI[0].ctl=candidate2.ctl;
                     dataI[0].pc=candidate2.pc;
@@ -212,6 +216,7 @@ end
                     dataI[0].cp0ra=candidate2.cp0ra;
                     dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].rdst=candidate2.rdst;
+                    dataI[0].cp0_ctl=candidate2.cp0_ctl;
             end
         end
 end

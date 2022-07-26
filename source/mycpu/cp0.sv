@@ -123,6 +123,7 @@ module cp0
 					if (etype.badVaddrF&&code==EXCCODE_ADEL) begin
 						regs_nxt.bad_vaddr=pc;
 					end
+					regs_nxt.cause.exc_code=code;
 					if (~regs.status.exl) begin
 						if (~is_slot) begin
 							regs_nxt.epc= interrupt&&inter_valid&&~int_saved? pc+4:pc;
@@ -134,6 +135,7 @@ module cp0
 					end
 					regs_nxt.status.exl='1;
 		end  else if (int_saved&&inter_valid) begin
+					regs_nxt.cause.exc_code=EXCCODE_INT;
 					if (~regs.status.exl) begin
 						if (~int_save.is_slot) begin
 							regs_nxt.epc=int_save.pc+4;
@@ -147,7 +149,7 @@ module cp0
 					delayed_interupt='1;
 				end
 				 else if (valid) begin
-		if (wa[2:0]==3'b0) begin
+					if (wa[2:0]==3'b0) begin
 
 					case (wa[7:3])
 						5'd0:  regs_nxt.index = wd;
@@ -182,7 +184,8 @@ module cp0
 					endcase
 		end
 			// regs_nxt.mstatus.sd = regs_nxt.mstatus.fs != 0;
-		end else if (is_eret) begin
+		end 
+		if (is_eret) begin
 			regs_nxt.status.exl='0;
 		end 
 	end

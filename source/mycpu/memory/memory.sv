@@ -12,7 +12,8 @@ module memory
     input execute_data_t dataE[1:0],
     output execute_data_t dataE2[1:0],
     output dbus_req_t  dreq[1:0],
-    input u1 [1:0]  req_finish
+    input u1 [1:0]  req_finish,
+    output u1 excpM
     // input u1 exception
 );
 word_t wd[1:0];
@@ -33,12 +34,12 @@ for (genvar i=0; i<2; ++i) begin
     always_comb begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
-            dreq[i].valid = dataE[i].cp0_ctl.valid|| load_misalign[i]/*||req_finish[i]*/ ? '0: '1;
+            dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]/*||req_finish[i]*/ ? '0: '1;
             dreq[i].strobe = '0;
             dreq[i].addr = paddr[i];
             dreq[i].size=dataE[i].ctl.msize;
         end else if (dataE[i].ctl.memwrite) begin
-            dreq[i].valid =  dataE[i].cp0_ctl.valid||store_misalign[i]/*||req_finish[i]*/ ? '0:'1;
+            dreq[i].valid =  dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| load_misalign[i] ||store_misalign[i]/*||req_finish[i]*/ ? '0:'1;
             dreq[i].addr = paddr[i];
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];
@@ -71,7 +72,7 @@ end
 writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.store_misalign(store_misalign[1]));
 writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]),.store_misalign(store_misalign[0]));     
 
-assign load_misalign[1]=dataE[1].ctl.memtoreg&&((dataE[1].ctl.msize==MSIZE2&&dataE[0].alu_out[0]!=1'b0)||(dataE[1].ctl.msize==MSIZE4&&dataE[0].alu_out[1:0]!=2'b00));
+assign load_misalign[1]=dataE[1].ctl.memtoreg&&((dataE[1].ctl.msize==MSIZE2&&dataE[1].alu_out[0]!=1'b0)||(dataE[1].ctl.msize==MSIZE4&&dataE[1].alu_out[1:0]!=2'b00));
 assign load_misalign[0]=dataE[0].ctl.memtoreg&&(dataE[0].ctl.msize==MSIZE2&&dataE[0].alu_out[0]!=1'b0)||(dataE[0].ctl.msize==MSIZE4&&dataE[0].alu_out[1:0]!=2'b00);
 
 // assign mem_misalign1=(dataE[1].ctl.memtoreg||dataE[1].ctl.memwrite)&&((dataE[1].ctl.msize==MSIZE2&&aluout[0]!=1'b0)||(dataE[1].ctl.msize==MSIZE4&&aluout[1:0]!=2'b00));
@@ -112,6 +113,8 @@ always_comb begin//都是双端口
             dataE2[0].cp0_ctl.etype.adelD='1;
         end
     end
+
+assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==INTERUPT||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==INTERUPT||dataE[1].cp0_ctl.ctype==ERET;
 
 endmodule
 

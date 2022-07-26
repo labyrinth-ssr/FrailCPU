@@ -40,6 +40,7 @@ module MyCore (
     u1 i_wait,d_wait,e_wait,d_wait2;
     u1 is_INTEXC;
     word_t epc;
+    u1 excpM;
     
     typedef logic [31:0] paddr_t;
     typedef logic [31:0] vaddr_t;
@@ -82,7 +83,7 @@ module MyCore (
     // u1 flushM2_hazard;
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM
 	);
 
     assign vaddr=dataP_pc;
@@ -121,7 +122,7 @@ module MyCore (
     u1 jpc_saved,ipc_saved,bpc_saved;
     //填入保存信号时确认没有正常进入的替换信号
     always_ff @(posedge clk) begin
-		if ((stallF)&&is_INTEXC) begin
+		if ((stallF)&&(is_INTEXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
         end else if (stallF && dataE[1].branch_taken) begin
@@ -221,9 +222,9 @@ module MyCore (
     assign dataF2_nxt[1].pc=dataF1.pc;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
-    assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
-    assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
-    assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
+    assign dataF2_nxt[1].cp0_ctl.valid='0;
+    assign dataF2_nxt[1].cp0_ctl.ctype=pc_except ? EXCEPTION : NO_EXC;
+    assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF=pc_except ? '1:'0;
     assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
     assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
@@ -372,7 +373,8 @@ module MyCore (
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
 		.dreq,
-        .req_finish({req1_finish,req2_finish})
+        .req_finish({req1_finish,req2_finish}),
+        .excpM
 		// .exception(is_eret||is_INTEXC)
 	);
 
@@ -442,25 +444,27 @@ module MyCore (
     .hi_data , .lo_data
     );
     
-    u1 valid_i;
-    assign valid_i= dataM2[1].cp0_ctl.valid? '1:'0;
-    assign is_eret=dataM2[valid_i].cp0_ctl.ctype==ERET;
+    u1 valid_i,valid_m,valid_n;
+    assign valid_i= dataM2[1].ctl.cp0toreg? '1:'0;
+    assign valid_m= dataM2[1].ctl.cp0write? '1:'0;
+    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET? '1:'0;
+    assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
     word_t cp0_rd;
     cp0 cp0(
         .clk,.reset,
-        .ra(dataM2[1].cp0ra),//直接读写的指令一次发射一条
-        .wa(dataM2[1].cp0ra),
-        .wd(dataM2[1].srcb),
+        .ra(dataM2[valid_i].cp0ra),//直接读写的指令一次发射一条
+        .wa(dataM2[valid_m].cp0ra),
+        .wd(dataM2[valid_m].srcb),
         .rd(cp0_rd),
         .epc,
-        .valid(dataM2[1].cp0_ctl.valid? dataM2[1].cp0_ctl.valid:dataM2[1].cp0_ctl.valid||dataM2[0].cp0_ctl.valid),
+        .valid(dataM2[1].cp0write||dataM2[0].cp0_ctl.valid),
         .is_eret,
         // .regs_out,
-        .ctype(dataM2[valid_i].cp0_ctl.ctype),
-        .pc(dataM2[valid_i].pc),
-        .etype(dataM2[valid_i].cp0_ctl.etype),
+        .ctype(dataM2[valid_n].cp0_ctl.ctype),
+        .pc(dataM2[valid_n].pc),
+        .etype(dataM2[valid_n].cp0_ctl.etype),
         .ext_int,
-        .is_slot(dataM2[valid_i].is_slot),
+        .is_slot(dataM2[valid_n].is_slot),
         .is_INTEXC,
         .inter_valid
     );
