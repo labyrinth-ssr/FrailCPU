@@ -56,6 +56,10 @@ module DCache (
     localparam type state_t = enum logic[2:0] {
         IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2
     };
+
+    function word_t get_mask(input strobe_t strobe);
+        return {{8{strobe[3]}}, {8{strobe[2]}}, {8{strobe[1]}}, {8{strobe[0]}}};
+    endfunction
     
     addr_t dreq_1_addr, dreq_2_addr;
     assign dreq_1_addr = dreq_1.addr;
@@ -169,7 +173,21 @@ module DCache (
     /*
     double miss -> stall forever
     */
+    //W -> W
+    logic w_to_w;
+    word_t w_to_w_data;
+    assign w_to_w = addr_same & |dreq_1.strobe & |dreq_2.strobe;
+    assign w_to_w_data = (get_mask(dreq_2.strobe)
+                        & dreq_2.data)
+                        | (get_mask(dreq_1.strobe ^ dreq_2.strobe)
+                        & dreq_1.data);
 
+    //W -> R
+    logic w_to_r;
+    logic w_to_r_reg;
+    word_t w_to_r_data;
+    strobe_t w_to_r_strobe;
+    assign w_to_r = addr_same & |dreq_1.strobe & ~|dreq_2.strobe;
 
     //Port 1 : dreq_1 
     data_addr_t port_1_addr;
@@ -183,28 +201,18 @@ module DCache (
     data_addr_t port_2_addr;
     word_t port_2_data_w, port_2_data_r;
     assign port_2_en = (state==IDLE) ? dreq_hit_2 : 1;
-    assign port_2_wen = (state==IDLE) ? dreq_2.strobe
+    assign port_2_wen = (state==IDLE) ? (w_to_w ? (dreq_1.strobe | dreq_2.strobe) : dreq_2.strobe)
                                       : (state==FETCH_1|state==FETCH_2) ? {BYTE_PER_DATA{1'b1}}
                                                                         : '0;
     assign port_2_addr = (state==IDLE) ? {hit_line_2, dreq_2_addr.index, dreq_2_addr.offset}
                                        : miss_addr;
-    assign port_2_data_w = (state==IDLE) ? dreq_2.data
+    assign port_2_data_w = (state==IDLE) ? (w_to_w ? w_to_w_data : dreq_2.data)
                                          : dcresp.data;
 
     logic data_ok_reg;
     
     logic addr_same;
-    assign addr_same = (dreq_1_addr == dreq_2_addr) & (dreq_1.valid & dreq_2.valid);
-    //W -> W
-    logic w_to_w;
-    assign w_to_w = addr_same & |dreq_1.strobe & |dreq_2.strobe;
-
-    //W -> R
-    logic w_to_r;
-    logic w_to_r_reg;
-    word_t w_to_r_data;
-    assign w_to_r = addr_same & |dreq_1.strobe & ~|dreq_2.strobe;
-    
+    assign addr_same = (dreq_1_addr[31:2] == dreq_2_addr[31:2]) & (dreq_1.valid & dreq_2.valid);
 
     logic delay_counter;
 
@@ -382,6 +390,7 @@ module DCache (
 
             w_to_r_reg <= w_to_r;
             w_to_r_data <= dreq_1.data;
+            w_to_r_strobe <= dreq_1.strobe;
         end
         else begin
             data_ok_reg <= '0;
@@ -390,6 +399,12 @@ module DCache (
             w_to_r_data <= '0;
         end
     end
+
+    word_t w_to_r_resp_data;
+    assign w_to_r_resp_data = (get_mask(w_to_r_strobe)
+                                & w_to_r_data)
+                                | (get_mask(w_to_r_strobe ^ {4{1'b1}})
+                                & port_1_data_r);
 
 
     BRAM #(
@@ -423,7 +438,7 @@ module DCache (
 
     assign dresp_2.addr_ok = dreq_hit;
     assign dresp_2.data_ok = data_ok_reg;
-    assign dresp_2.data = w_to_r_reg ? w_to_r_data : port_2_data_r;
+    assign dresp_2.data = w_to_r_reg ? w_to_r_resp_data : port_2_data_r;
 
     //CBus
     assign dcreq.valid = state == FETCH_1 | state == FETCH_2 | (state == WRITEBACK_1 & delay_counter) | (state == WRITEBACK_2 & delay_counter);     

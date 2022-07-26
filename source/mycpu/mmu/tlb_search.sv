@@ -18,7 +18,7 @@ module tlb_search (
     tlb_index_t choose_index;
 
     for (genvar i = 0; i < `TLB_NUM; i++) begin
-        assign search_match[i] = (vpn2==tlb_ram[i].vpn2) & (asid==tlb_ram[i].asid|tlb_ram[i].g);
+        assign search_match[i] = (vpn2==tlb_ram[i].vpn2) & (asid==tlb_ram[i].asid|tlb_ram[i].G);
     end
     assign search_result.found = |search_match;
     always_comb begin
@@ -32,9 +32,9 @@ module tlb_search (
     assign choose_entry = tlb_ram[choose_index];
 
     assign search_result.pfn = odd_page ? choose_entry.pfn1 : choose_entry.pfn0;
-    assign search_result.c = odd_page ? choose_entry.c1 : choose_entry.c0;
-    assign search_result.d = odd_page ? choose_entry.d1 : choose_entry.d0;
-    assign search_result.v = odd_page ? choose_entry.v1 : choose_entry.v0;
+    assign search_result.C = odd_page ? choose_entry.C1 : choose_entry.C0;
+    assign search_result.D = odd_page ? choose_entry.D1 : choose_entry.D0;
+    assign search_result.V = odd_page ? choose_entry.V1 : choose_entry.V0;
 
 
 endmodule

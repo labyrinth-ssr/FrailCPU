@@ -5,6 +5,7 @@
 
 module direct_translator (
     input addr_t vaddr,
+    input logic [2:0] config_k0,
     output addr_t paddr,
     output logic is_uncached
 );
@@ -20,7 +21,7 @@ module direct_translator (
         endcase
     end
 
-    assign is_uncached = vaddr[31:29] == 3'b101;
+    assign is_uncached = vaddr[31:29] == 3'b101 | (vaddr[31:29] == 3'b100 & config_k0 != 3'b011);
 
 endmodule
 

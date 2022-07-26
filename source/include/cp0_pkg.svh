@@ -13,6 +13,27 @@ parameter EXCCODE_BP = 5'h9;
 parameter EXCCODE_RI = 5'ha;
 parameter EXCCODE_OV = 5'hc;
 
+typedef struct packed {
+    logic [5:0] zero;     
+    logic [19:0] pfn;        
+    logic [2:0] C;                  
+    logic D;                       
+    logic V;                        
+    logic G;                        
+} cp0_entrylo_t;
+
+typedef struct packed {
+    logic [18:0] vpn2;
+    logic [4:0] zero;
+    logic [7:0] asid;
+} cp0_entryhi_t;
+
+typedef struct packed {
+    logic P;                    
+    logic [30-`TLB_INDEX_BIT:0] zero;  
+    logic [`TLB_INDEX_BIT-1:0] index; 
+} cp0_index_t;
+
 typedef enum u3 { 
 	NO_EXC,EXCEPTION,INTERUPT,ERET,INSTR
  } cp0_type_t;
@@ -65,10 +86,14 @@ typedef struct packed {
 	 prid,      epc;
 	cp0_cause_t  cause;
 	cp0_status_t status;
-	u32
-	 compare,   entry_hi,   count,      bad_vaddr, 
-	 reserved7, wired,      page_mask,  context_,  
-	 entry_lo1, entry_lo0,  random,     index;
+	u32 compare;   
+	cp0_entryhi_t entry_hi;  
+	u32 
+	 count,      bad_vaddr, 
+	 reserved7, wired,      page_mask,  context_;
+	cp0_entrylo_t entry_lo1, entry_lo0;
+	u32 random;     
+	cp0_index_t index;
 } cp0_regs_t;
 	
 
