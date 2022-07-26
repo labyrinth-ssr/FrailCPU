@@ -121,16 +121,16 @@ module MyCore (
     u1 jpc_saved,ipc_saved,bpc_saved;
     //填入保存信号时确认没有正常进入的替换信号
     always_ff @(posedge clk) begin
-		if ((i_wait||d_wait)&&is_INTEXC) begin
+		if ((stallF)&&is_INTEXC) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
-        end else if (i_wait && dataE[1].branch_taken) begin
+        end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
-        end else if (i_wait&& branch_misalign) begin
+        end else if (stallF&& branch_misalign) begin
             bpc_save<=pc_selected;
             bpc_saved<='1;
-        end else if (~i_wait&&~d_wait) begin
+        end else if (~stallF) begin
 			ipc_save<='0;
 			ipc_saved<='0;
             jpc_save<='0;
