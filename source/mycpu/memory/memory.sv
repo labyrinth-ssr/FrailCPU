@@ -21,6 +21,8 @@ strobe_t strobe[1:0];
 u1 store_misalign[1:0];
 u1 load_misalign[1:0];
 word_t paddr[1:0];
+u1 uncache;
+assign uncache=dataE[1].alu_out[29] || dataE[0].alu_out[29];
 // word_t cp0wd;
 pvtrans pvtransd1(
     .vaddr(dataE[1].alu_out),
@@ -38,9 +40,9 @@ for (genvar i=0; i<2; ++i) begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
             if (i==1) begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||~req_finish[1];
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[1] ? '0: '1;
             end else begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||~req_finish[0];
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0] ? '0: '1;
             end
             
             dreq[i].strobe = '0;
@@ -48,9 +50,9 @@ for (genvar i=0; i<2; ++i) begin
             dreq[i].size=dataE[i].ctl.msize;
         end else if (dataE[i].ctl.memwrite) begin
             if (i==1) begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||~req_finish[1];
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[1] ? '0: '1;
             end else begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||~req_finish[0];
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0] ? '0: '1;
             end
             dreq[i].addr = dataE[i].alu_out;
             dreq[i].data=wd[i];

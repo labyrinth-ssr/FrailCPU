@@ -24,16 +24,28 @@ module cp0
 	input u6 ext_int,
 	input u1 is_slot,
 	output is_INTEXC,
-	output is_EXC
+	output is_EXC,
+	input word_t int_pc
+	// input dataM2_save_t dataM2_save[1:0]
 );
 	u1 double;
 	cp0_regs_t regs, regs_nxt;
+	// dataM2_save_t data_save[1:0];
 	// assign regs_out=regs_nxt;
 	// u1 trint,swint,exint;
 	//异常，排除中断
 	u1 interrupt,delayed_interupt;
 	assign is_INTEXC= ctype==EXCEPTION||(interrupt&&inter_valid)||delayed_interupt;
 	assign is_EXC= ctype==EXCEPTION;
+	word_t pc1_save,pc2_save;
+	
+	// always_ff @(posedge clk) begin
+	// 	for (int i=0; i<2; ++i) begin
+	// 		if(dataM2_save[i].valid) begin
+	// 			data_save[i]<=dataM2_save[i];
+	// 		end
+	// 	end
+	// end
 
 	typedef struct packed {
 		word_t pc;
@@ -45,12 +57,12 @@ module cp0
 
 	// write
 	always_ff @(posedge clk) begin
-		if (interrupt&&~inter_valid&&~int_saved) begin
-			int_save.pc<=pc;
-			int_save.is_slot<=is_slot;
+		if (interrupt&&~inter_valid) begin
+			// int_save.pc<=pc;
+			// int_save.is_slot<=is_slot;
 			int_saved<='1;
 		end else if (inter_valid) begin
-			int_save<='0;
+			// int_save<='0;
 			int_saved<='0;
 		end
 	end
@@ -120,6 +132,8 @@ module cp0
 	u1 soft_int;
 	assign interrupt=regs.status.ie&&~regs.status.exl&&(|(({ext_int, 2'b00} | regs.cause.ip| {regs.cause.ti, 7'b0}) & regs.status.im));
 	assign soft_int= |(regs.cause.ip[1:0] & regs.status.im[1:0]);
+	// assign counter_int= regs_nxt.cause.ti & regs.status.im [7];
+	// word_t int_pc;
 
 	assign regs_nxt.cause.ti= regs.count==regs.compare;
 	always_comb begin
@@ -130,7 +144,7 @@ module cp0
 			regs_nxt.count = regs.count + 1;
 		end
 
-		if (ctype==EXCEPTION||(interrupt&&inter_valid&&~int_saved)) begin
+		if (ctype==EXCEPTION||((interrupt||int_saved)&&inter_valid)) begin
 					if ((etype.badVaddrF||etype.adelD)&&code==EXCCODE_ADEL) begin
 						if (etype.badVaddrF) begin
 						regs_nxt.bad_vaddr=pc;
@@ -144,19 +158,15 @@ module cp0
 					regs_nxt.cause.exc_code=code;
 					if (~regs.status.exl) begin
 						if (~is_slot) begin
-							if (soft_int) begin
-								regs_nxt.epc= soft_int_pc+4;
-							end else begin
-							regs_nxt.epc= interrupt? pc+4:pc;
-							end
+							regs_nxt.epc= (interrupt||int_saved)&&inter_valid? int_pc:pc;
 							regs_nxt.cause.bd='0;
 						end else begin
-							regs_nxt.epc=interrupt&&inter_valid&&~int_saved? pc+4:pc-4;
+							regs_nxt.epc=(interrupt||int_saved)&&inter_valid? int_pc:pc-4;
 							regs_nxt.cause.bd='1;
 						end
 					end
 					regs_nxt.status.exl='1;
-		end  else if (int_saved&&inter_valid) begin
+		end  /*else if (int_saved&&inter_valid) begin
 					regs_nxt.cause.exc_code=EXCCODE_INT;
 					if (~regs.status.exl) begin
 						if (~int_save.is_slot) begin
@@ -169,7 +179,7 @@ module cp0
 					end
 					regs_nxt.status.exl='1;
 					delayed_interupt='1;
-				end
+				end*/
 				 else if (valid) begin
 					if (wa[2:0]==3'b0) begin
 

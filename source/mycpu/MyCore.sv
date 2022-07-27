@@ -157,9 +157,9 @@ module MyCore (
     always_comb begin
         if (ipc_saved) begin
             pc_nxt=ipc_save;
-        end else if (jpc_saved) begin
+        end else if (jpc_saved&&~is_INTEXC) begin
             pc_nxt=jpc_save;
-        end else if (bpc_saved&&~dataE[1].branch_taken) begin
+        end else if (bpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
             pc_nxt=bpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -393,10 +393,7 @@ module MyCore (
 		// .exception(is_eret||is_INTEXC)
 	);
 
-    u1 inter_valid;
 
-    // assign is_eret=(dataM2.cp0_ctl.ctype==RET);
-	assign inter_valid=~i_wait;
 
 	pipereg2 #(.T(execute_data_t)) M1M2reg(
 		.clk,.reset,
@@ -467,14 +464,31 @@ module MyCore (
     assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? '1:'0;
     assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
     word_t cp0_pc;
-    always_comb begin
-        if (dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET||dataM2[0].cp0_ctl.ctype==EXCEPTION||dataM2[0].cp0_ctl.ctype==ERET) begin
-            cp0_pc= dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? dataM2[1].pc:dataM2[0].pc;
-        end else begin
-            cp0_pc= dataM2[1].cp0_ctl.valid? dataM2[1].pc:dataM2[0].pc;
-        end
-    end
+    // u1 valid
+    // always_comb begin
+    //     if (dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET||dataM2[0].cp0_ctl.ctype==EXCEPTION||dataM2[0].cp0_ctl.ctype==ERET) begin
+    //         cp0_pc= dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? dataM2[1].pc:dataM2[0].pc;
+    //     end else begin
+    //         cp0_pc= dataM2[1].cp0_ctl.valid? dataM2[1].pc:dataM2[0].pc;
+    //     end
+    // end
     word_t cp0_rd;
+
+   dataM2_save_t dataM2_save1,dataM2_save2;
+   assign dataM2_save1.pc=dataM2[1].pc;
+   assign dataM2_save1.valid=dataM2[1].valid;
+   assign dataM2_save1.is_slot=dataM2[1].is_slot;
+   assign dataM2_save1.jump=dataM2[1].ctl.branch||dataM2[1].ctl.jump;
+   assign dataM2_save2.pc=dataM2[0].pc;
+   assign dataM2_save2.valid=dataM2[0].valid;
+   assign dataM2_save2.is_slot=dataM2[0].is_slot;
+   assign dataM2_save2.jump=dataM2[0].ctl.branch||dataM2[0].ctl.jump;
+    u1 inter_valid;
+
+	assign inter_valid=~i_wait&&dataM2[1].valid;
+
+    u1 intvalid_i;
+    // assign intvalid_i=dataM2[1].valid;
     cp0 cp0(
         .clk,.reset,
         .ra(dataM2[valid_i].cp0ra),//直接读写的指令一次发射一条
@@ -487,13 +501,16 @@ module MyCore (
         .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
         // .regs_out,
         .ctype(dataM2[valid_n].cp0_ctl.ctype),
-        .pc(cp0_pc),
+        .pc(dataM2[valid_n].pc),
         .etype(dataM2[valid_n].cp0_ctl.etype),
         .ext_int,
         .is_slot(dataM2[valid_n].is_slot),
         .is_INTEXC,
         .inter_valid,
-        .is_EXC
+        .is_EXC,
+        .int_pc(dataM2[1].pc)
+        // .pc_valid(dataM2[valid_n].valid)
+        // .dataM2_save({dataM2_save1,dataM2_save2})
     );
 
 endmodule

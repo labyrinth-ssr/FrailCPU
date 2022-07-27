@@ -20,6 +20,13 @@
 // parameter F6_J = 6'b000010;
 // parameter F6_JAL = 6'b000011;
 
+   typedef struct packed {
+    word_t pc;
+    u1 jump;
+    u1 is_slot;
+    u1 valid;
+   } dataM2_save_t;
+
 typedef struct packed {
 	word_t data;
 	creg_addr_t rdst;

@@ -223,7 +223,7 @@ end
         end
 end
 if (have_slot) begin
-    dataI[1].is_slot='1;
+    dataI[0].is_slot='1;
 end
         
     end
