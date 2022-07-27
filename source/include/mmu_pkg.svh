@@ -49,17 +49,17 @@ typedef struct packed {
 	logic is_tlbwi;
     logic is_tlbwr;
 
-	cp0_entryhi_t entryhi;
-    cp0_entrylo_t entrylo0;
-	cp0_entrylo_t entrylo1;
+	cp0_entryhi_t entry_hi;
+    cp0_entrylo_t entry_lo0;
+	cp0_entrylo_t entry_lo1;
 	cp0_index_t index;
     cp0_random_t random;
 } mmu_req_t;
     
 typedef struct packed {
-	cp0_entryhi_t entryhi;
-    cp0_entrylo_t entrylo0;
-	cp0_entrylo_t entrylo1;
+	cp0_entryhi_t entry_hi;
+    cp0_entrylo_t entry_lo0;
+	cp0_entrylo_t entry_lo1;
 	cp0_index_t index;
 } mmu_resp_t;
 

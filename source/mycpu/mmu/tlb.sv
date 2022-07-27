@@ -19,13 +19,13 @@ module tlb (
     //d_search
     // input logic [18:0] d_vpn2,
     // input logic d_odd_page,
-    input vaddr_t d_vaddr[1:0],
-    output tlb_search_t d_search_result[1:0],
+    input vaddr_t [1:0] d_vaddr,
+    output tlb_search_t [1:0] d_search_result,
 
     //TLBP
     input vaddr_t entry_hi,
     output tlb_search_t tlbp_search_result,
-    
+
     //read: for TLBR
     input tlb_index_t r_index,
     output tlb_entry_t r_entry,
