@@ -34,6 +34,11 @@ typedef struct packed {
     logic [`TLB_INDEX_BIT-1:0] index; 
 } cp0_index_t;
 
+typedef struct packed {                 
+    logic [31-`TLB_INDEX_BIT:0] zero;  
+    logic [`TLB_INDEX_BIT-1:0] random; 
+} cp0_random_t;
+
 typedef enum u3 { 
 	NO_EXC,EXCEPTION,INTERUPT,ERET,INSTR
  } cp0_type_t;
@@ -92,7 +97,7 @@ typedef struct packed {
 	 count,      bad_vaddr, 
 	 reserved7, wired,      page_mask,  context_;
 	cp0_entrylo_t entry_lo1, entry_lo0;
-	u32 random;     
+	cp0_random_t random;     
 	cp0_index_t index;
 } cp0_regs_t;
 	
