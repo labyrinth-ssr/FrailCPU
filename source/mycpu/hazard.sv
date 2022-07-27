@@ -39,15 +39,21 @@ end
             flush_que='1;
             if (excpW) begin
                 flushW='1;
-            flushM2='1;
-            end
-            
-            if (i_wait) begin
-                excp_iwait_nxt='1;
-                stallF='1;
+                flushM2='1;
             end
         end  else if (e_wait) begin
             stallE='1;flushM='1;stallF='1;stallD='1;stallF2='1;stallI='1;stallI_de='1;
+            if (branchE) begin
+                flushF2='1;
+                flushD='1;
+                flushI='1;
+                flushE='1;
+                flushM='1;
+                flush_que='1;
+                branch_iwait_nxt=1'b1;
+
+            end
+            
             if (d_wait) begin
                 stallM='1;flushM='0;
             end 

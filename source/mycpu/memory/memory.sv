@@ -80,7 +80,7 @@ assign load_misalign[0]=dataE[0].ctl.memtoreg&&(dataE[0].ctl.msize==MSIZE2&&data
 always_comb begin
         dataE2[1].ctl=dataE[1].ctl;
         dataE2[0].ctl=dataE[0].ctl;
-        if (dataE[1].cp0_ctl.valid) begin
+        if (dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==ERET) begin
             dataE2[0].ctl.regwrite='0;
             dataE2[0].ctl.memtoreg='0;
             dataE2[0].ctl.lowrite='0;
@@ -97,24 +97,28 @@ always_comb begin//都是双端口
             dataE2[1].cp0_ctl.etype.adesD= '1;
             dataE2[0].cp0_ctl.valid='0;
             dataE2[1].cp0_ctl.valid='1;
+            dataE2[1].cp0_ctl.vaddr=dataE[1].alu_out;
         end else if (dataE[0].ctl.memwrite && store_misalign[0]) begin
             dataE2[0].cp0_ctl.ctype=EXCEPTION;
             dataE2[0].cp0_ctl.valid='1;
             dataE2[0].cp0_ctl.etype.adesD='1;
+            dataE2[0].cp0_ctl.vaddr=dataE[0].alu_out;
         end
         if (dataE[1].ctl.memtoreg && load_misalign[1]) begin
             dataE2[1].cp0_ctl.ctype=EXCEPTION;
             dataE2[1].cp0_ctl.valid='1;
             dataE2[1].cp0_ctl.etype.adelD= '1;
+            dataE2[1].cp0_ctl.vaddr=dataE[1].alu_out;
             dataE2[0].cp0_ctl.valid='0;
         end else if (dataE[0].ctl.memtoreg && load_misalign[0]) begin
             dataE2[0].cp0_ctl.ctype=EXCEPTION;
             dataE2[0].cp0_ctl.valid='1;
             dataE2[0].cp0_ctl.etype.adelD='1;
+            dataE2[0].cp0_ctl.vaddr=dataE[0].alu_out;
         end
     end
 
-assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==INTERUPT||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==INTERUPT||dataE[1].cp0_ctl.ctype==ERET;
+assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==INTERUPT||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==INTERUPT||dataE[1].cp0_ctl.ctype==ERET || load_misalign[1]||load_misalign[0]|| store_misalign[1]||store_misalign[0];
 
 endmodule
 

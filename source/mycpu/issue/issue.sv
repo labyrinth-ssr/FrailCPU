@@ -22,6 +22,7 @@ localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam ISSUE_QUEUE_SIZE = 32;
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
+u1 have_slot;
 
 function index_t push(index_t tail);
     return tail==0? 5'd31:tail-1;
@@ -40,7 +41,7 @@ index_t head;
 index_t tail;
 
 u1 issue_en[1:0];
-assign issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid&& (~((candidate1.ctl.jump||candidate1.ctl.branch)&&(~candidate2.valid)));
+// assign 
 
 decode_data_t candidate1,candidate2;
 assign candidate1=que_empty? dataD[1]:issue_queue[head];
@@ -54,21 +55,22 @@ always_comb begin
         candidate2=issue_queue[pop(head)];
     end
 end
+// assign 
+
+//这步特判怎么做啊
 
 always_comb begin
-    //不一定是dataD
-    //同时读
+    // have_slot='0;
     issue_en[0]=bypass_inra1[0].valid && bypass_inra2[0].valid;
-    if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2))
+    issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid&& (~((candidate1.ctl.jump||candidate1.ctl.branch)&&(~candidate2.valid || ~issue_en[0])));
+    have_slot=(candidate1.ctl.branch||candidate1.ctl.jump)&&issue_en[1];
+     if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2)&&~have_slot)
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump
         ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)
         ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)&&(candidate2.cp0_ctl.ctype==EXCEPTION||candidate2.cp0_ctl.ctype==ERET)) begin
         issue_en[0]='0;
-    end
-    if (candidate2.is_slot&&issue_en[1]) begin
-        issue_en[0]='1;
     end
 end
 assign overflow= push(push(tail))==head || push(tail)==head;
@@ -219,6 +221,9 @@ end
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
             end
         end
+end
+if (have_slot) begin
+    dataI[1].is_slot='1;
 end
         
     end

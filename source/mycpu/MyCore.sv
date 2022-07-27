@@ -38,7 +38,7 @@ module MyCore (
     u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,overflowI,stallI_de;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait,d_wait2;
-    u1 is_INTEXC;
+    u1 is_INTEXC,is_EXC;
     word_t epc;
     u1 excpM;
     
@@ -88,7 +88,7 @@ module MyCore (
 
     assign vaddr=dataP_pc;
     assign ireq.addr=paddr;
-	assign ireq.valid=pc_except ? '0:1'b1;
+	assign ireq.valid=(pc_except || is_eret||is_EXC || excpM )? '0:1'b1;
     assign reset=~resetn;
 
     fetch_data_t dataF2_nxt [1:0],dataF2 [1:0];
@@ -171,6 +171,9 @@ module MyCore (
     fetch1_data_t dataF1_nxt,dataF1;
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
+    assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
+    assign dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except ? '1:'0;
+    assign dataF1_nxt.cp0_ctl.valid='0;
     u1 dataF1_pc;
     always_ff @( posedge clk ) begin
 		if (reset) begin
@@ -222,9 +225,8 @@ module MyCore (
     assign dataF2_nxt[1].pc=dataF1.pc;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
-    assign dataF2_nxt[1].cp0_ctl.valid='0;
-    assign dataF2_nxt[1].cp0_ctl.ctype=pc_except ? EXCEPTION : NO_EXC;
-    assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF=pc_except ? '1:'0;
+    assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
+
     assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
     assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
@@ -262,7 +264,7 @@ module MyCore (
         .clk,.reset,
         .ra1({issue_bypass_out[1].ra1,issue_bypass_out[0].ra1}),.ra2({issue_bypass_out[1].ra2,issue_bypass_out[0].ra2}),
         .wa({dataW[1].wa,dataW[0].wa}),
-        .wvalid({dataW[1].ctl.regwrite,dataW[0].ctl.regwrite}),
+        .wvalid({dataW[1].valid,dataW[0].valid}),
         .wd({dataW[1].wd,dataW[0].wd}),
         .rd1({rd1[1],rd1[0]}),
         .rd2({rd2[1],rd2[0]})
@@ -457,8 +459,9 @@ module MyCore (
         .wd(dataM2[valid_m].srcb),
         .rd(cp0_rd),
         .epc,
-        .valid(dataM2[1].cp0write||dataM2[0].cp0_ctl.valid),
+        .valid(dataM2[1].cp0_ctl.valid||dataM2[0].cp0_ctl.valid),
         .is_eret,
+        .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
         // .regs_out,
         .ctype(dataM2[valid_n].cp0_ctl.ctype),
         .pc(dataM2[valid_n].pc),
@@ -466,7 +469,8 @@ module MyCore (
         .ext_int,
         .is_slot(dataM2[valid_n].is_slot),
         .is_INTEXC,
-        .inter_valid
+        .inter_valid,
+        .is_EXC
     );
 
 endmodule

@@ -51,6 +51,7 @@ typedef struct packed {
 	cp0_type_t ctype;
 	excp_type_t etype;
 	u1 valid;
+	word_t vaddr;
 } cp0_control_t;
 
 typedef struct packed {

@@ -40,7 +40,7 @@
             //         dataW[i].wd='0;
             //     end
             // end
-            assign dataW[i].valid=dataM[i].valid;
+            assign dataW[i].valid=(dataM[i].cp0_ctl.ctype==EXCEPTION || dataM[i].cp0_ctl.ctype==ERET) ? '0: dataM[i].ctl.regwrite;
             assign dataW[i].ctl=dataM[i].ctl;
             assign dataW[i].wa=dataM[i].rdst;
             assign dataW[i].pc=dataM[i].pc;
