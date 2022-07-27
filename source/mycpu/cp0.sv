@@ -41,6 +41,8 @@ module cp0
 	} int_save_t;
 	int_save_t int_save;
 	u1 int_saved;
+	word_t soft_int_pc,soft_int_pc_nxt;
+
 	// write
 	always_ff @(posedge clk) begin
 		if (interrupt&&~inter_valid&&~int_saved) begin
@@ -56,11 +58,14 @@ module cp0
 	always_ff @(posedge clk) begin
 		if (reset) begin
 			regs <= '0;
+			soft_int_pc<='0;
 			// regs.mcause[1] <= 1'b1;
 			// regs.epc[31] <= 1'b1;
 		end else begin
 			regs <= regs_nxt;
 			double <= 1'b1-double;
+			soft_int_pc<=soft_int_pc_nxt;
+
 		end
 	end
 
@@ -112,12 +117,14 @@ module cp0
 			code=EXCCODE_ADES;
 		end
 	end
-
+	u1 soft_int;
 	assign interrupt=regs.status.ie&&~regs.status.exl&&(|(({ext_int, 2'b00} | regs.cause.ip| {regs.cause.ti, 7'b0}) & regs.status.im));
+	assign soft_int= |(regs.cause.ip[1:0] & regs.status.im[1:0]);
 
 	assign regs_nxt.cause.ti= regs.count==regs.compare;
 	always_comb begin
 		regs_nxt = regs;
+		soft_int_pc_nxt=soft_int_pc;
 		delayed_interupt='0;
 		if (double&&wa[7:3]!=5'd9) begin
 			regs_nxt.count = regs.count + 1;
@@ -137,7 +144,11 @@ module cp0
 					regs_nxt.cause.exc_code=code;
 					if (~regs.status.exl) begin
 						if (~is_slot) begin
-							regs_nxt.epc= interrupt&&inter_valid&&~int_saved? pc+4:pc;
+							if (soft_int) begin
+								regs_nxt.epc= soft_int_pc+4;
+							end else begin
+							regs_nxt.epc= interrupt? pc+4:pc;
+							end
 							regs_nxt.cause.bd='0;
 						end else begin
 							regs_nxt.epc=interrupt&&inter_valid&&~int_saved? pc+4:pc-4;
@@ -187,6 +198,7 @@ module cp0
 						5'd13: begin
 							regs_nxt.cause.iv = wd[23];
 							regs_nxt.cause.ip[1:0] = wd[9:8];
+							soft_int_pc_nxt=pc;
 						end
 						5'd14: regs_nxt.epc = wd;
 						// 5'd15: regs_nxt.prid=wd;

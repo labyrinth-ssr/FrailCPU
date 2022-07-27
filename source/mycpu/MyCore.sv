@@ -87,7 +87,7 @@ module MyCore (
 	);
 
     assign vaddr=dataP_pc;
-    assign ireq.addr=paddr;
+    assign ireq.addr=vaddr;
 	assign ireq.valid=(pc_except || is_eret||is_EXC || excpM )? '0:1'b1;
     assign reset=~resetn;
 
@@ -449,8 +449,16 @@ module MyCore (
     u1 valid_i,valid_m,valid_n;
     assign valid_i= dataM2[1].ctl.cp0toreg? '1:'0;
     assign valid_m= dataM2[1].ctl.cp0write? '1:'0;
-    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET? '1:'0;
+    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? '1:'0;
     assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
+    word_t cp0_pc;
+    always_comb begin
+        if (dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET||dataM2[0].cp0_ctl.ctype==EXCEPTION||dataM2[0].cp0_ctl.ctype==ERET) begin
+            cp0_pc= dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? dataM2[1].pc:dataM2[0].pc;
+        end else begin
+            cp0_pc= dataM2[1].cp0_ctl.valid? dataM2[1].pc:dataM2[0].pc;
+        end
+    end
     word_t cp0_rd;
     cp0 cp0(
         .clk,.reset,
@@ -464,7 +472,7 @@ module MyCore (
         .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
         // .regs_out,
         .ctype(dataM2[valid_n].cp0_ctl.ctype),
-        .pc(dataM2[valid_n].pc),
+        .pc(cp0_pc),
         .etype(dataM2[valid_n].cp0_ctl.etype),
         .ext_int,
         .is_slot(dataM2[valid_n].is_slot),

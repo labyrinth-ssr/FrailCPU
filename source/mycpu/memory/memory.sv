@@ -30,17 +30,29 @@ pvtrans pvtransd2(
     .vaddr(dataE[0].alu_out),
     .paddr(paddr[0])
 );
+
+
+
 for (genvar i=0; i<2; ++i) begin
     always_comb begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
-            dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]/*||req_finish[i]*/ ? '0: '1;
+            if (i==1) begin
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||(req_finish[1]&&~req_finish[0]) ? '0: '1;
+            end else begin
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0] ? '0: '1;
+            end
+            
             dreq[i].strobe = '0;
-            dreq[i].addr = paddr[i];
+            dreq[i].addr = dataE[i].alu_out;
             dreq[i].size=dataE[i].ctl.msize;
         end else if (dataE[i].ctl.memwrite) begin
-            dreq[i].valid =  dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| load_misalign[i] ||store_misalign[i]/*||req_finish[i]*/ ? '0:'1;
-            dreq[i].addr = paddr[i];
+            if (i==1) begin
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||(req_finish[1]&&~req_finish[2]) ? '0: '1;
+            end else begin
+                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0] ? '0: '1;
+            end
+            dreq[i].addr = dataE[i].alu_out;
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];
             dreq[i].size=dataE[i].ctl.msize;
