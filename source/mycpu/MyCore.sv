@@ -54,23 +54,34 @@ module MyCore (
         .vaddr
     );
 
-        u1 req1_finish,req2_finish;
-        always_ff @(posedge clk) begin
-        if (dreq[1].valid&&dresp[1].addr_ok) begin
-            req1_finish<='1;
-        end else if (req1_finish&&dreq[0].valid) begin
-            req1_finish<='1;
-        end else begin
-            req1_finish<='0;
+    u1 req1_finish,req2_finish;
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (d_wait & dresp[1].addr_ok) begin
+                req1_finish <= 1;
+            end
+            else if (~d_wait) begin
+                req1_finish <= 0;
+            end
         end
+        else begin
+            req1_finish <= 0;
+        end   
     end
+    
 
     always_ff @(posedge clk) begin
-        if (dreq[0].valid&&dresp[0].addr_ok) begin
-            req2_finish<='1;
-        end else begin
-            req2_finish<='0;
+        if (resetn) begin
+            if (d_wait & dresp[0].addr_ok) begin
+                req2_finish <= 1;
+            end
+            else if (~d_wait) begin
+                req2_finish <= 0;
+            end
         end
+        else begin
+            req2_finish <= 0;
+        end   
     end
 
     assign i_wait=ireq.valid && ~iresp.addr_ok;
@@ -400,7 +411,9 @@ module MyCore (
 		.dataE(dataM1),
 		.dataM(dataM2_nxt),
 		.dresp,
-        .dreq
+        .dreq,
+        .d_wait,
+        .resetn
 	);
 
 	pipereg2 #(.T(memory_data_t)) M2Wreg(
