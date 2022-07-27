@@ -2,6 +2,7 @@
 `define __CACHE_MANAGE_SV
 
 `include "common.svh"
+`include "mmu_pkg.svh"
 `include "ICache.sv"
 `include "DCache.sv"
 `include "CBusArbiter.sv"
@@ -20,48 +21,55 @@ module cache_manage (
     output dbus_resp_t dresp_2,
 
     output cbus_req_t  creq,
-    input cbus_resp_t cresp
+    input cbus_resp_t cresp,
+
+    input mmu_req_t mmu_in,
+    output mmu_resp_t mmu_out,
+
+    output mmu_exc_out_t mmu_exc
+
 );
 
-    
+    logic ireq_uncache;
     logic dreq_1_uncache;
     logic dreq_2_uncache;
 
+    
     //TU
     ibus_req_t mmu_ireq;
     ibus_resp_t mmu_iresp;
 
-    always_comb begin
-        mmu_ireq = ireq;
-        mmu_ireq.addr = {3'b0, ireq.addr[28:0]}; //V->P
-
-        iresp = mmu_iresp;
-    end
-
     dbus_req_t mmu_dreq_1;
     dbus_resp_t mmu_dresp_1;
-
-    always_comb begin
-        mmu_dreq_1 = dreq_1;
-        mmu_dreq_1.addr = {3'b0, dreq_1.addr[28:0]};
-
-        dresp_1 = mmu_dresp_1;
-
-        dreq_1_uncache = dreq_1.addr[29];
-    end
 
     dbus_req_t mmu_dreq_2;
     dbus_resp_t mmu_dresp_2;
 
-    always_comb begin
-        mmu_dreq_2 = dreq_2;
-        mmu_dreq_2.addr = {3'b0, dreq_2.addr[28:0]};
+    mmu mmu (
+        .clk,
+        .resetn,
 
-        dresp_2 = mmu_dresp_2;
-        
-        dreq_2_uncache = dreq_2.addr[29];
-    end
+        .config_k0(3'd3),
 
+        .v_ireq(ireq),
+        .ireq(mmu_ireq),
+        .v_dreq({dreq_2, dreq_1}),
+        .dreq({mmu_dreq_2, mmu_dreq_1}),
+
+        //uncache信号
+        .i_uncache(ireq_uncache),
+        .d_uncache({dreq_2_uncache, dreq_1_uncache}),
+
+        //TLB指令相关
+        .mmu_in,
+        .mmu_out,
+
+        //TLB例外
+        .mmu_exc   
+    );
+    assign iresp = mmu_iresp;
+    assign dresp_1 = mmu_dresp_1;
+    assign dresp_2 = mmu_dresp_2;
 
     //ibus cache
     ibus_req_t ibus_cache_req;

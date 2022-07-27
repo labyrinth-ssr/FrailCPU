@@ -14,8 +14,12 @@ module VTop (
 
     ibus_req_t  ireq;
     ibus_resp_t iresp;
-    dbus_req_t  dreq[1:0];
-    dbus_resp_t dresp[1:0];
+    dbus_req_t  dreq [1:0];
+    dbus_resp_t dresp [1:0];
+
+    mmu_exc_out_t mmu_exc;
+    mmu_req_t mmu_req;
+    mmu_resp_t mmu_resp;
 
     MyCore core(.*);
     cache_manage cache_manage(
@@ -27,6 +31,9 @@ module VTop (
 
         .creq(oreq),
         .cresp(oresp),
+
+        .mmu_in(mmu_req),
+        .mmu_out(mmu_resp),
         .*
     );
 

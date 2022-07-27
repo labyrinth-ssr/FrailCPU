@@ -27,7 +27,12 @@ module MyCore (
     input  ibus_resp_t iresp,
     output dbus_req_t  dreq[1:0],
     input  dbus_resp_t dresp[1:0],
-    input logic[5:0] ext_int
+    input logic[5:0] ext_int,
+
+    input mmu_resp_t mmu_resp,
+    output mmu_req_t mmu_req,
+
+    input mmu_exc_out_t mmu_exc
 );
     /**
      * TODO (Lab1) your code here :)
@@ -495,6 +500,9 @@ module MyCore (
         .inter_valid,
         .is_EXC
     );
+
+    //mmu req
+    assign mmu_req = '0;
 
 endmodule
 
