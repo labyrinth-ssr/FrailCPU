@@ -2,8 +2,8 @@
 `define __MMU_SV
 
 `include "common.svh"
-`include "translator_pkg.svh"
 `include "cp0_pkg.svh"
+`include "mmu_pkg.svh"
 
 `include "tlb_search.sv"
 `include "tlb.sv"
@@ -20,12 +20,12 @@ module mmu (
     //地址翻译 
     input ibus_req_t v_ireq,
     output ibus_req_t ireq,
-    input dbus_req_t v_dreq[1:0],
-    output dbus_req_t dreq[1:0],
+    input dbus_req_t [1:0] v_dreq,
+    output dbus_req_t [1:0] dreq,
 
     //uncache信号
     output logic i_uncache,
-    output logic d_uncache [1:0],
+    output logic [1:0] d_uncache,
 
     //TLB指令相关
     input mmu_req_t mmu_in,
@@ -40,7 +40,7 @@ module mmu (
     endfunction
 
     //unmapped : translator
-    function logic unmapped_translator(input vaddr_t vaddr); 
+    function paddr_t unmapped_translator(input vaddr_t vaddr); 
         return {3'b0, vaddr[28:0]};
     endfunction
 
@@ -52,7 +52,7 @@ module mmu (
 
     //mapped : translator
     tlb_search_t i_tlb_result;
-    tlb_search_t d_tlb_result [1:0];
+    tlb_search_t [1:0] d_tlb_result;
 
     //TLBP
     tlb_search_t tlbp_result;
@@ -62,7 +62,7 @@ module mmu (
 
     //TLBWI, TLBWR
     tlb_index_t w_index;
-    assign w_index = is_tlbwi ? mmu_in.index.index : mmu_in.random.random;
+    assign w_index = mmu_in.is_tlbwi ? mmu_in.index.index : mmu_in.random.random;
 
     tlb_entry_t w_entry;
     assign w_entry.vpn2 = mmu_in.entry_hi.vpn2;
@@ -132,9 +132,9 @@ module mmu (
     assign i_paddr = i_is_mapped ? i_tlb_result.paddr : unmapped_translator(v_ireq.addr);
     assign i_is_uncached = unmapped_is_uncached(v_ireq.addr) | (i_is_mapped & i_tlb_result.C != 3'd3);
 
-    logic d_is_mapped[1:0];
-    paddr_t d_paddr[1:0];
-    logic d_is_uncached[1:0];
+    logic [1:0] d_is_mapped;
+    paddr_t [1:0] d_paddr;
+    logic [1:0] d_is_uncached;
 
     for (genvar i = 0; i < 2; i++) begin
         assign d_is_mapped[i] = is_mapped(v_dreq[i].addr);
