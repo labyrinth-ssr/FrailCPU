@@ -2,30 +2,35 @@
 `define __TLB_SV
 
 `include "common.svh"
+`include "cp0_pkg.svh"
 
 module tlb (
     input logic clk,
     input logic resetn,
 
-    //i_search
-    input logic [18:0] i_vpn2,
-    input logic i_odd_page,
-    input logic [7:0] i_asid,
+    input logic [7:0] asid,
 
+    //i_search
+    // input logic [18:0] i_vpn2,
+    // input logic i_odd_page,
+    input vaddr_t i_vaddr,
     output tlb_search_t i_search_result,
 
     //d_search
-    input logic [18:0] d_vpn2,
-    input logic d_odd_page,
-    input logic [7:0] d_asid,
+    // input logic [18:0] d_vpn2,
+    // input logic d_odd_page,
+    input vaddr_t d_vaddr[1:0],
+    output tlb_search_t d_search_result[1:0],
 
-    output tlb_search_t d_search_result,
-
-    //read
+    //TLBP
+    input vaddr_t entry_hi,
+    output tlb_search_t tlbp_search_result,
+    
+    //read: for TLBR
     input tlb_index_t r_index,
     output tlb_entry_t r_entry,
 
-    //write
+    //write: for TLBWI
     input logic we,
     input tlb_index_t w_index,
     input tlb_entry_t w_entry
@@ -35,19 +40,33 @@ module tlb (
 
     tlb_search i_search (
         .tlb_ram,
-        .vpn2(i_vpn2),
-        .odd_page(i_odd_page),
-        .asid(i_asid),
+        // .vpn2(i_vpn2),
+        // .odd_page(i_odd_page),
+        .vaddr(i_vaddr),
+        .asid(asid),
         .search_result(i_search_result)
     );
 
-    tlb_search d_search (
+    for (genvar i = 0; i < 2; i++) begin
+        tlb_search d_search (
+            .tlb_ram,
+            // .vpn2(d_vpn2),
+            // .odd_page(d_odd_page),
+            .vaddr(d_vaddr[i]),
+            .asid(asid),
+            .search_result(d_search_result[i]) 
+        );  
+    end
+
+    tlb_search tlbp_search (
         .tlb_ram,
-        .vpn2(d_vpn2),
-        .odd_page(d_odd_page),
-        .asid(d_asid),
-        .search_result(d_search_result) 
+        // .vpn2(i_vpn2),
+        // .odd_page(i_odd_page),
+        .vaddr(entry_hi),
+        .asid(asid),
+        .search_result(tlbp_search_result)
     );
+    
 
     //inst_search
     // logic [`TLB_NUM-1:0] i_search_match;
