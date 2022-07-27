@@ -15,6 +15,7 @@ module cp0
 	output word_t rd,
 	output word_t epc,
 	input u1 valid,is_eret,
+	input word_t vaddr,
 	// output cp0_regs_t regs_out,
 	input word_t pc,
 	input excp_type_t etype,
@@ -22,14 +23,17 @@ module cp0
 	input u1 inter_valid,
 	input u6 ext_int,
 	input u1 is_slot,
-	output is_INTEXC
+	output is_INTEXC,
+	output is_EXC
 );
 	u1 double;
 	cp0_regs_t regs, regs_nxt;
 	// assign regs_out=regs_nxt;
 	// u1 trint,swint,exint;
+	//异常，排除中断
 	u1 interrupt,delayed_interupt;
 	assign is_INTEXC= ctype==EXCEPTION||(interrupt&&inter_valid)||delayed_interupt;
+	assign is_EXC= ctype==EXCEPTION;
 
 	typedef struct packed {
 		word_t pc;
@@ -120,8 +124,15 @@ module cp0
 		end
 
 		if (ctype==EXCEPTION||(interrupt&&inter_valid&&~int_saved)) begin
-					if (etype.badVaddrF&&code==EXCCODE_ADEL) begin
+					if ((etype.badVaddrF||etype.adelD)&&code==EXCCODE_ADEL) begin
+						if (etype.badVaddrF) begin
 						regs_nxt.bad_vaddr=pc;
+						end else begin
+						regs_nxt.bad_vaddr=vaddr;
+						end
+					end else if (etype.adesD&&code==EXCCODE_ADES) begin
+						regs_nxt.bad_vaddr=vaddr;
+						
 					end
 					regs_nxt.cause.exc_code=code;
 					if (~regs.status.exl) begin

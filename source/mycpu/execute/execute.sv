@@ -59,15 +59,12 @@
     always_comb begin//都是双端口
         dataE[1].cp0_ctl=dataI[1].cp0_ctl;
         dataE[0].cp0_ctl=dataI[0].cp0_ctl;
-        if (dataI[1].ctl.memwrite &&exception_of[1]) begin
+        if (exception_of[1]) begin
             dataE[1].cp0_ctl.ctype=EXCEPTION;
             dataE[1].cp0_ctl.etype.overflow= '1;
-            dataE[0].cp0_ctl.valid='0;
-            dataE[1].cp0_ctl.valid='1;
         end
-        else if (dataI[0].ctl.memwrite && exception_of[0]) begin
+        else if (exception_of[0]) begin
             dataE[0].cp0_ctl.ctype=EXCEPTION;
-            dataE[0].cp0_ctl.valid='1;
             dataE[0].cp0_ctl.etype.overflow= '1;
         end
     end
