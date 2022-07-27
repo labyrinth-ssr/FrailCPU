@@ -4,6 +4,8 @@
 `ifdef VERILATOR
 `include "common.svh"
 `include "pipes.svh"
+`include "mmu_pkg.svh"
+`include "cp0_pkg.svh"
 `include "regs/pipereg.sv"
 `include "regs/pipereg2.sv"
 `include "regs/hilo.sv"

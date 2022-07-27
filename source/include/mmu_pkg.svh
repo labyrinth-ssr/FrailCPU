@@ -3,6 +3,7 @@
 
 `ifdef VERILATOR
 `include "common.svh"
+`include "cp0_pkg.svh"
 `endif
 
 typedef struct packed {
@@ -16,8 +17,6 @@ typedef struct packed {
     logic [11:0] page_offset;    
 } paddr_t;
 
- `define TLB_NUM 16
- `define TLB_INDEX_BIT $clog2(`TLB_NUM)
 typedef logic [`TLB_INDEX_BIT-1:0] tlb_index_t;
 
 typedef struct packed {
@@ -72,7 +71,7 @@ typedef struct packed {
 
 typedef struct packed {
     tlb_exc_t i_tlb_exc;
-    tlb_exc_t d_tlb_exc [1:0];
+    tlb_exc_t [1:0] d_tlb_exc;
 } mmu_exc_out_t;
 
 
