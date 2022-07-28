@@ -62,9 +62,10 @@ for (genvar i=0; i<2; ++i) begin
     end
     assign dataE2[i].pc=dataE[i].pc;
     assign dataE2[i].rdst=dataE[i].rdst;
-    assign dataE2[i].ctl=dataE[i].ctl;
+//    assign dataE2[i].ctl=dataE[i].ctl;
     assign dataE2[i].alu_out=dataE[i].alu_out;
-    assign dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
+    assign dataE2[i].valid=dataE[i].valid;
+//    assign dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
     assign dataE2[i].is_slot=dataE[i].is_slot;
     assign dataE2[i].cp0ra=dataE[i].cp0ra;
     assign dataE2[i].srcb=dataE[i].srcb;
@@ -72,8 +73,8 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].hilo=dataE[i].hilo;
 end
 
-assign dataE2[1].valid=dataE[1].valid;
-assign dataE2[0].valid= load_misalign[1]||store_misalign[1]? '0: dataE[1].valid;
+// assign dataE2[1].valid=dataE[1].valid;
+// assign dataE2[0].valid= load_misalign[1]||store_misalign[1]? '0: dataE[1].valid;
     
 writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.store_misalign(store_misalign[1]));
 writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]),.store_misalign(store_misalign[0]));     
