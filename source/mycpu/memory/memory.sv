@@ -40,19 +40,18 @@ for (genvar i=0; i<2; ++i) begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
             if (i==1) begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[1] ? '0: '1;
+                dreq[i].valid = ~(dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[1])  ;
             end else begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0] ? '0: '1;
+                dreq[i].valid = ~(dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0])  ;
             end
-            
             dreq[i].strobe = '0;
             dreq[i].addr = dataE[i].alu_out;
             dreq[i].size=dataE[i].ctl.msize;
         end else if (dataE[i].ctl.memwrite) begin
             if (i==1) begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[1] ? '0: '1;
+                dreq[i].valid = ~(dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[1])  ;
             end else begin
-                dreq[i].valid = dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0] ? '0: '1;
+                dreq[i].valid = ~(dataE[i].cp0_ctl.ctype==EXCEPTION||dataE[i].cp0_ctl.ctype==ERET|| store_misalign[i] || load_misalign[i]||req_finish[0] ) ;
             end
             dreq[i].addr = dataE[i].alu_out;
             dreq[i].data=wd[i];
@@ -60,16 +59,6 @@ for (genvar i=0; i<2; ++i) begin
             dreq[i].size=dataE[i].ctl.msize;
         end
     end
-    // always_comb begin
-    //     dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
-    //     if (dataE.ctl.memwrite && store_misalign) begin
-    //         dataE2[i].cp0_ctl.ctype=EXCEPTION;
-    //         dataE2[i].cp0_ctl.code=EXCCODE_ADES;
-    //     end else if (dataE.ctl.memtoreg && load_misalign) begin
-    //         dataE2[i].cp0_ctl.ctype=EXCEPTION;
-    //         dataE2[i].cp0_ctl.code=EXCCODE_ADEL;
-    //     end
-    // end
     assign dataE2[i].pc=dataE[i].pc;
     assign dataE2[i].rdst=dataE[i].rdst;
     assign dataE2[i].ctl=dataE[i].ctl;
@@ -88,8 +77,6 @@ writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dat
 
 assign load_misalign[1]=dataE[1].ctl.memtoreg&&((dataE[1].ctl.msize==MSIZE2&&dataE[1].alu_out[0]!=1'b0)||(dataE[1].ctl.msize==MSIZE4&&dataE[1].alu_out[1:0]!=2'b00));
 assign load_misalign[0]=dataE[0].ctl.memtoreg&&(dataE[0].ctl.msize==MSIZE2&&dataE[0].alu_out[0]!=1'b0)||(dataE[0].ctl.msize==MSIZE4&&dataE[0].alu_out[1:0]!=2'b00);
-
-// assign mem_misalign1=(dataE[1].ctl.memtoreg||dataE[1].ctl.memwrite)&&((dataE[1].ctl.msize==MSIZE2&&aluout[0]!=1'b0)||(dataE[1].ctl.msize==MSIZE4&&aluout[1:0]!=2'b00));
 
 always_comb begin
         dataE2[1].ctl=dataE[1].ctl;
@@ -132,7 +119,7 @@ always_comb begin//都是双端口
         end
     end
 
-assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==INTERUPT||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==INTERUPT||dataE[1].cp0_ctl.ctype==ERET || load_misalign[1]||load_misalign[0]|| store_misalign[1]||store_misalign[0];
+assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==ERET || load_misalign[1]||load_misalign[0]|| store_misalign[1]||store_misalign[0];
 
 endmodule
 

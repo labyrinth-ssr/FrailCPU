@@ -33,75 +33,23 @@ module MyCore (
      * TODO (Lab1) your code here :)
      */
     
-    // dbus_req_t dreq[1:0],dresp[1:0];
-    // assign dresp[0]=dresp1;
-    // assign dresp[1]='0;
-    // assign dreq1=dreq[0];
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,overflowI,stallI_de;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de;
     u1 is_eret;
-    u1 i_wait,d_wait,e_wait,d_wait2;
+    u1 i_wait,d_wait,e_wait;
     u1 is_INTEXC,is_EXC;
     word_t epc;
-    u1 excpM;
-    
-    typedef logic [31:0] paddr_t;
-    typedef logic [31:0] vaddr_t;
-    paddr_t paddr; // physical address
-    vaddr_t vaddr; // virtual address
-    
-    pvtrans pvtransi(
-        .paddr,
-        .vaddr
-    );
-
-    u1 req1_finish,req2_finish;
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if (d_wait & dresp[1].addr_ok) begin
-                req1_finish <= 1;
-            end
-            else if (~d_wait) begin
-                req1_finish <= 0;
-            end
-        end
-        else begin
-            req1_finish <= 0;
-        end   
-    end
-    
-
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if (d_wait & dresp[0].addr_ok) begin
-                req2_finish <= 1;
-            end
-            else if (~d_wait) begin
-                req2_finish <= 0;
-            end
-        end
-        else begin
-            req2_finish <= 0;
-        end   
-    end
+    u1 excpM,overflowI;
+    u1 reset;
 
     assign i_wait=ireq.valid && ~iresp.addr_ok;
-    u1 get_read[1:0];
-    assign get_read[1]=dresp[1].addr_ok;
-    assign get_read[0]=dresp[0].addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
-    // assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
-    // ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
-    assign d_wait2=(dreq[1].valid && ( (~(|dreq[1].strobe) && ~get_read[1] && dreq[1].addr[15]==0)))||(dreq[0].valid && ( (~(|dreq[0].strobe) && ~get_read[0] && dreq[0].addr[15]==0))) ;
-    // assign flushM2 = d_wait;
-    // u1 flushM2_hazard;
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM
 	);
 
-    assign vaddr=dataP_pc;
-    assign ireq.addr=vaddr;
-	assign ireq.valid=(pc_except || is_eret||is_EXC || excpM )? '0:1'b1;
+    assign ireq.addr=dataP_pc;
+	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken);
     assign reset=~resetn;
 
     fetch_data_t dataF2_nxt [1:0],dataF2 [1:0];
@@ -110,30 +58,21 @@ module MyCore (
     execute_data_t dataE_nxt[1:0],dataE[1:0];
     execute_data_t dataM1_nxt[1:0],dataM1[1:0];
     memory_data_t dataM2_nxt[1:0],dataM2[1:0];
-    // creg_addr_t ra1I[1:0],ra2I[1:0];
 
     writeback_data_t dataW[1:0];
-	// u32 raw_instr;
-    u1 branch_misalign;
-    u1 reset;
     u1 pc_except;
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
 
     always_comb begin
         pc_succ=dataP_pc+8;
-        if (branch_misalign) begin
-            pc_succ=dataD_nxt[0].pc;
-        end else if (dataP_pc[2]==1) begin
+        if (dataP_pc[2]==1) begin
             pc_succ=dataP_pc+4;
         end
     end
-    // assign pc_succ=dataP_pc[2]==1?dataP_pc+4:dataP_pc+8;
 
-    //跳转且i_wait时保存跳转pc，
     word_t jpc_save,ipc_save,pc_nxt,bpc_save;
     u1 jpc_saved,ipc_saved,bpc_saved;
-    //填入保存信号时确认没有正常进入的替换信号
     always_ff @(posedge clk) begin
 		if ((stallF)&&(is_INTEXC||is_eret)) begin
 			ipc_save<=pc_selected;
@@ -141,9 +80,6 @@ module MyCore (
         end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
-        end else if (stallF&& branch_misalign) begin
-            bpc_save<=pc_selected;
-            bpc_saved<='1;
         end else if (~stallF) begin
 			ipc_save<='0;
 			ipc_saved<='0;
@@ -165,8 +101,6 @@ module MyCore (
             pc_nxt=pc_selected;
         end
     end
-    //can be perf
-    
 
     pcselect pcselect_inst (
         .pc_selected,
@@ -176,9 +110,8 @@ module MyCore (
         .epc,
         .entrance(32'hBFC0_0380),
 		.is_eret,
-		.is_INTEXC,
-        .branch_misalign,
-        .misaligned_pc(dataD_nxt[0].pc)
+		.is_INTEXC
+      
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
@@ -256,8 +189,7 @@ module MyCore (
 
     decode decode_inst(
         .dataF2(dataF2),
-        .dataD(dataD_nxt),
-        .branch_misalign
+        .dataD(dataD_nxt)
         // .rd1,.rd2,
         // .ra1,.ra2
     );
@@ -384,6 +316,35 @@ module MyCore (
         .flush(flushM)
     );
 
+    u1 req1_finish,req2_finish;
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (d_wait & dresp[1].addr_ok) begin
+                req1_finish <= 1;
+            end
+            else if (~d_wait) begin
+                req1_finish <= 0;
+            end
+        end
+        else begin
+            req1_finish <= 0;
+        end   
+    end
+
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (d_wait & dresp[0].addr_ok) begin
+                req2_finish <= 1;
+            end
+            else if (~d_wait) begin
+                req2_finish <= 0;
+            end
+        end
+        else begin
+            req2_finish <= 0;
+        end   
+    end
+
     memory memory(
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
@@ -461,7 +422,7 @@ module MyCore (
     u1 valid_i,valid_m,valid_n;
     assign valid_i= dataM2[1].ctl.cp0toreg? '1:'0;
     assign valid_m= dataM2[1].ctl.cp0write? '1:'0;
-    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? '1:'0;
+    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET;
     assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
     word_t cp0_pc;
     // u1 valid
@@ -499,7 +460,6 @@ module MyCore (
         .valid(dataM2[1].cp0_ctl.valid||dataM2[0].cp0_ctl.valid),
         .is_eret,
         .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
-        // .regs_out,
         .ctype(dataM2[valid_n].cp0_ctl.ctype),
         .pc(dataM2[valid_n].pc),
         .etype(dataM2[valid_n].cp0_ctl.etype),
