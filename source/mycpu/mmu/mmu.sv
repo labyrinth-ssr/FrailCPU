@@ -4,9 +4,11 @@
 `include "common.svh"
 `include "cp0_pkg.svh"
 `include "mmu_pkg.svh"
+`ifdef VERILATOR
 
 `include "tlb_search.sv"
 `include "tlb.sv"
+`endif
 
 //地址翻译 
 //TLB指令执行: TLBR, TLBWI, TLBWR, TLBP

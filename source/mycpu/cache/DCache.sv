@@ -2,8 +2,10 @@
 `define __DCACHE_SV
 
 `include "common.svh"
-`include "../plru.sv"
+`ifdef VERILATOR
 
+`include "../plru.sv"
+`endif 
 module DCache (
     input logic clk, resetn,
 

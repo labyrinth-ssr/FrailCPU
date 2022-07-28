@@ -1,10 +1,7 @@
 `ifndef __WRITEBACK_SV
 `define __WRITEBACK_SV
 
-`ifdef VERILATOR
 `include "common.svh"
-`include "cp0.sv"
-`endif 
     module writeback(
         // input u1 clk,reset,
         input memory_data_t dataM [1:0],

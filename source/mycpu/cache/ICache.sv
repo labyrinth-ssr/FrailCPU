@@ -2,8 +2,10 @@
 `define __ICACHE_SV
 
 `include "common.svh"
-`include "../plru.sv"
+`ifdef VERILATOR
 
+`include "../plru.sv"
+`endif 
 module ICache (
     input logic clk, resetn,
 

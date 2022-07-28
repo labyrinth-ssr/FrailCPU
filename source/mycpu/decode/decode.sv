@@ -1,7 +1,7 @@
 `ifndef __DECODE_SV
 `define __DECODE_SV
-`ifdef VERILATOR
 `include "common.svh"
+`ifdef VERILATOR
 `include "decoder.sv"
 `else
 

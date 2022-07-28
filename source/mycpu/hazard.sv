@@ -1,9 +1,7 @@
 `ifndef __HAZARD_SV
 `define __HAZARD_SV
 
-`ifdef VERILATOR
 `include "common.svh"
-`endif 
 
 module hazard
 (

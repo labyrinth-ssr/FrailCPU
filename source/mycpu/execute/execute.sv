@@ -4,10 +4,12 @@
 
 `include "common.svh"
 `include "pipes.svh"
+`ifdef VERILATOR
 `include "alu.sv"
 `include "pcbranch.sv"
 `include "alu/multi.sv"
 `include "alu/div.sv"
+`endif 
 
     module execute(
         input clk,resetn,

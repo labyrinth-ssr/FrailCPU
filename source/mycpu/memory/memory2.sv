@@ -4,7 +4,9 @@
 
 `include "common.svh"
 `include "pipes.svh"
+`ifdef VERILATOR
 `include "readdata.sv"
+`endif
 
 
 module memory2

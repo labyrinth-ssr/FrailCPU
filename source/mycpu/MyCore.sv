@@ -6,6 +6,8 @@
 `include "pipes.svh"
 `include "mmu_pkg.svh"
 `include "cp0_pkg.svh"
+
+`ifdef VERILATOR
 `include "regs/pipereg.sv"
 `include "regs/pipereg2.sv"
 `include "regs/hilo.sv"
@@ -19,6 +21,7 @@
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
+`endif 
 
 
 module MyCore (
