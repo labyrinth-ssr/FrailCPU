@@ -23,9 +23,25 @@ module cache_manage (
     input cbus_resp_t cresp
 );
 
-    
     logic dreq_1_uncache;
     logic dreq_2_uncache;
+
+    addr_t mmu_ireq_addr;
+    addr_t mmu_dreq_1_addr;
+    addr_t mmu_dreq_2_addr;
+
+    pvtrans i_pvtrans(
+        .vaddr(ireq.addr),
+        .paddr(mmu_ireq_addr)
+    );
+    pvtrans d_1_pvtrans(
+        .vaddr(dreq_1.addr),
+        .paddr(mmu_dreq_1_addr)
+    );
+    pvtrans d_2_pvtrans(
+        .vaddr(dreq_2.addr),
+        .paddr(mmu_dreq_2_addr)
+    );
 
     //TU
     ibus_req_t mmu_ireq;
@@ -33,7 +49,7 @@ module cache_manage (
 
     always_comb begin
         mmu_ireq = ireq;
-        mmu_ireq.addr = {3'b0, ireq.addr[28:0]}; //V->P
+        mmu_ireq.addr = mmu_ireq_addr; //V->P
 
         iresp = mmu_iresp;
     end
@@ -43,7 +59,7 @@ module cache_manage (
 
     always_comb begin
         mmu_dreq_1 = dreq_1;
-        mmu_dreq_1.addr = {3'b0, dreq_1.addr[28:0]};
+        mmu_dreq_1.addr = mmu_dreq_1_addr;
 
         dresp_1 = mmu_dresp_1;
 
@@ -55,7 +71,7 @@ module cache_manage (
 
     always_comb begin
         mmu_dreq_2 = dreq_2;
-        mmu_dreq_2.addr = {3'b0, dreq_2.addr[28:0]};
+        mmu_dreq_2.addr = mmu_dreq_2_addr;
 
         dresp_2 = mmu_dresp_2;
         
