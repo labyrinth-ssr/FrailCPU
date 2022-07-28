@@ -2,7 +2,7 @@
 `define __ICACHE_SV
 
 `include "common.svh"
-`include "plru.sv"
+`include "../plru.sv"
 
 module ICache (
     input logic clk, resetn,
@@ -238,7 +238,8 @@ module ICache (
     BRAM #(
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(DATA_ADDR_BITS),
-        .WRITE_MODE("read_first"),
+        .RESET_VALUE("00000000"),
+        .WRITE_MODE("read_first")
     ) data_bram(
         .clk, 
         .resetn,

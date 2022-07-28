@@ -1,7 +1,7 @@
 `ifndef MYCORE_SV
 `define MYCORE_SV
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "pipes.svh"
 `include "mmu_pkg.svh"
@@ -19,7 +19,7 @@
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
-`endif 
+
 
 module MyCore (
     input logic clk, resetn,

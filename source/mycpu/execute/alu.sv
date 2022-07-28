@@ -1,4 +1,5 @@
 `include "pipes.svh"
+`include "../decode/decode.svh"
 
 module alu (
         input word_t a, 

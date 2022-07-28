@@ -1,10 +1,11 @@
 `ifndef ISSUE_SV
 `define ISSUE_SV
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "pipes.svh"
-`endif 
+`include "cp0_pkg.svh"
+
 
 module issue(
     input clk,

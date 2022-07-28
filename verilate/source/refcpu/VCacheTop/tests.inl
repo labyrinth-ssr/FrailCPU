@@ -28,7 +28,11 @@ WITH {
     // ASSERT(top->dresp == 0);
 } AS("void");
 
+<<<<<<< HEAD
+WITH {
+=======
 WITH SKIP {
+>>>>>>> d0a6d11f90ea05493fdc61cc2a317401fa9ba10f
     // NOTE: it depends on your design.
     //       maybe your cache likes to set addr_ok to false.
     //       in that case, change following lines to match your design.

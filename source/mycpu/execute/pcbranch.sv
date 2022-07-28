@@ -1,12 +1,11 @@
 `ifndef __PCBRANCH_SV
 `define __PCBRANCH_SV
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "pipes.svh"
-`else
+`include "../decode/decode.svh"
 
-`endif
 
 module pcbranch
 	(
