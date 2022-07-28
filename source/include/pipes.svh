@@ -45,7 +45,7 @@ typedef struct packed {
 typedef struct packed {
 	word_t data;
 	u1 valid;
-	u1 [1:0] bypass;
+	u1 bypass;
 } bypass_output_t;
 
 
@@ -118,6 +118,14 @@ typedef struct packed {
 // 	u5 zimm;
 // 	u64 rs1rd;
 // } cp0_control_t;
+
+typedef struct packed {
+	u1 valid;
+	u32 pc;
+	// cp0_control_t cp0_ctl;
+	// int_type_t int_type;
+    } fetch1_data_t;//
+
 
 typedef struct packed {
 	u1 valid;

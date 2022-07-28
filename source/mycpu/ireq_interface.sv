@@ -47,8 +47,17 @@ module ireq_interface(
     assign ireq_2.data = 0;      
     assign ireq_2.len = MLEN1;
 
+    // word_t delay_data [1:0];
+    // u1 delay_datatok[1:0];
+    // for (genvar i=0; i<2; ++i) begin
+    //     always_ff @(posedge clk) begin
+    //     delay_data[i]<=dcresp[i].data;
+    //     delay_datatok[i]<=dcresp[i].last;
+    // end
+    // end
+
     assign _iresp.data_ok = _ireq.valid ? (state == 2'b10) : 1'b0;
-    assign _iresp.addr_ok = _ireq.valid ? (state == 2'b10) : 1'b0;
+    assign _iresp.addr_ok = _ireq.valid ? (state_nxt == 2'b10) : 1'b0;
     assign _iresp.data = data;
 
     i64 data,data_nxt;

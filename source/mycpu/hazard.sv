@@ -50,14 +50,15 @@ end
         end else if (d_wait) begin
             stallM='1;stallE='1;stallF='1;stallD='1;stallF2='1;
         end  else if (i_wait) begin
-            stallF='1;flushD='1;
+            stallF='1;flushF2='1;
             if (branchE) begin
                 branch_iwait_nxt=1'b1;
                 flushF2='1;
-            flushI='1;
-            flushE='1;
-            flushM='1;
-            flush_que='1;
+                flushD='1;
+                flushI='1;
+                flushE='1;
+                flushM='1;
+                flush_que='1;
             end 
             if (branch_misalign) begin
                 misalign_iwait_nxt=1'b1;
@@ -85,16 +86,16 @@ end
             flush_que=branchE;
         end
 
-        if (~i_wait&&excp_iwait) begin
-            flushD='1;
+        if (~stallF&&excp_iwait) begin
+            flushF2='1;flushD='1;
             excp_iwait_nxt='0;
         end
-        if (~i_wait&&branch_iwait) begin
-            flushD='1;
+        if (~stallF&&branch_iwait) begin
+            flushF2='1;flushD='1;
             branch_iwait_nxt='0;
         end
-        if (~i_wait&&misalign_iwait) begin
-            flushD='1;
+        if (~stallF&&~i_wait&&misalign_iwait) begin
+            flushF2='1;flushD='1;
             misalign_iwait_nxt='0;
         end
     end

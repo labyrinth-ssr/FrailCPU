@@ -23,16 +23,17 @@ module cache_manage (
     input cbus_resp_t cresp
 );
 
-    //TU
+    
     logic dreq_1_uncache;
     logic dreq_2_uncache;
 
+    //TU
     ibus_req_t mmu_ireq;
     ibus_resp_t mmu_iresp;
 
     always_comb begin
         mmu_ireq = ireq;
-        mmu_ireq.addr = {3'b0, ireq.addr[28:0]};
+        // mmu_ireq.addr = {3'b0, ireq.addr[28:0]}; //V->P
 
         iresp = mmu_iresp;
     end
@@ -42,7 +43,7 @@ module cache_manage (
 
     always_comb begin
         mmu_dreq_1 = dreq_1;
-        mmu_dreq_1.addr = {3'b0, dreq_1.addr[28:0]};
+        // mmu_dreq_1.addr = {3'b0, dreq_1.addr[28:0]};
 
         dresp_1 = mmu_dresp_1;
 
@@ -54,7 +55,7 @@ module cache_manage (
 
     always_comb begin
         mmu_dreq_2 = dreq_2;
-        mmu_dreq_2.addr = {3'b0, dreq_2.addr[28:0]};
+        // mmu_dreq_2.addr = {3'b0, dreq_2.addr[28:0]};
 
         dresp_2 = mmu_dresp_2;
         
@@ -95,13 +96,33 @@ module cache_manage (
 
     assign dbus_uncache_req_2 = dreq_2_uncache ? mmu_dreq_2 : '0;
 
+    logic uncache_1_valid_reg;
+    logic uncache_2_valid_reg;
+    logic cache_1_valid_reg;
+    logic cache_2_valid_reg;
+
     //resp用处不大
-    assign mmu_dresp_1 = dbus_uncache_req_1.valid ? dbus_uncache_resp_1 
-                                                  : dbus_cache_req_1.valid ? dbus_cache_resp_1
+    assign mmu_dresp_1.addr_ok = dbus_uncache_req_1.valid ? dbus_uncache_resp_1.addr_ok
+                                                  : dbus_cache_req_1.valid ? dbus_cache_resp_1.addr_ok
                                                                            : '0;
-    assign mmu_dresp_2 = dbus_uncache_req_2.valid ? dbus_uncache_resp_2 
-                                                  : dbus_cache_req_2.valid ? dbus_cache_resp_2
-                                                                           : dbus_cache_req_1.valid ? dbus_cache_resp_1
+    assign mmu_dresp_2.addr_ok = dbus_uncache_req_2.valid ? dbus_uncache_resp_2.addr_ok
+                                                  : dbus_cache_req_2.valid ? dbus_cache_resp_2.addr_ok
+                                                                           : dbus_cache_req_1.valid ? dbus_cache_resp_1.addr_ok
+                                                                                                    : '0;
+    
+    always_ff @(posedge clk) begin
+        uncache_1_valid_reg <= dbus_uncache_req_1.valid;
+        uncache_2_valid_reg <= dbus_uncache_req_2.valid;
+        cache_1_valid_reg <= dbus_cache_req_1.valid;
+        cache_2_valid_reg <= dbus_cache_req_2.valid;
+    end
+
+    assign {mmu_dresp_1.data_ok, mmu_dresp_1.data} = uncache_1_valid_reg ? {dbus_uncache_resp_1.data_ok, dbus_uncache_resp_1.data}
+                                                  : cache_1_valid_reg ? {dbus_cache_resp_1.data_ok, dbus_cache_resp_1.data}
+                                                                           : '0;
+    assign {mmu_dresp_2.data_ok, mmu_dresp_2.data} = uncache_2_valid_reg ? {dbus_uncache_resp_2.data_ok, dbus_uncache_resp_2.data}
+                                                  : cache_2_valid_reg ? {dbus_cache_resp_2.data_ok, dbus_cache_resp_2.data}
+                                                                     : cache_1_valid_reg ? {dbus_cache_resp_1.data_ok, dbus_cache_resp_1.data}
                                                                                                     : '0;
 
 

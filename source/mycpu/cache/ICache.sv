@@ -87,6 +87,7 @@ module ICache (
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk), 
+        .resetn,
         .en(1),
         .addr(meta_addr),
         .strobe(1),
@@ -170,15 +171,14 @@ module ICache (
     assign hit_avail = state == IDLE 
                     | fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}]
                     | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index};
-    assign miss_avail = state == IDLE
-                    | (state == FETCH & icresp.last);
+    assign miss_avail = state == IDLE;
     assign ireq_hit = ireq.valid & hit_avail & hit;
     assign ireq_miss = ireq.valid & miss_avail & ~hit;
 
     //更新meta_ram, plru_ram
     always_comb begin
         meta_w = meta_r;
-        if (resetn & ireq_miss) begin
+        if (ireq_miss) begin
             meta_w[replace_line].valid = 1'b1;
             meta_w[replace_line].tag = ireq_addr.tag;
         end
@@ -187,7 +187,7 @@ module ICache (
     end
 
     always_ff @(posedge clk) begin
-        if (resetn & ireq_hit) begin
+        if (ireq_hit) begin
             plru_ram[ireq_addr.index] <= plru_new;
         end
     end
