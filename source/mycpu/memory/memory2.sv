@@ -13,24 +13,37 @@ module memory2
     input execute_data_t dataE[1:0],
     output memory_data_t dataM[1:0],
     input  dbus_resp_t dresp[1:0],
-    input dbus_req_t dreq[1:0]
+    input dbus_req_t dreq[1:0],
+    input logic d_wait,
+    input logic resetn
 );
+u1 uncache;
+assign uncache=dreq[1].addr[29] || dreq[0].addr[29];
 // u64 wd;
 // u8 strobe;
 // u1 load_misalign;
 word_t data1_save;
 u1 data1_saved;
+
 always_ff @(posedge clk) begin
-    if (dresp[1].data_ok&&dreq[0].valid) begin
-        data1_save<=dresp[1].data;
-        data1_saved<='1;
-    end else if (~dreq[0].valid) begin
+    if (resetn) begin
+        if (d_wait & dresp[1].data_ok) begin
+            data1_save<=dresp[1].data;
+            data1_saved<='1;
+        end
+        else if (~d_wait) begin
+            data1_save<='0;
+            data1_saved<='0;
+        end
+    end
+    else begin
         data1_save<='0;
         data1_saved<='0;
-    end
+    end   
 end
+    
 
-readdata readdata1(._rd( data1_saved ?  data1_save:dresp[1].data),.rd(dataM[1].rd),.addr(dataE[1].alu_out[1:0]),.msize(dataE[1].ctl.msize),.mem_unsigned(~dataE[1].ctl.memsext));
+readdata readdata1(._rd( data1_saved? data1_save:dresp[1].data),.rd(dataM[1].rd),.addr(dataE[1].alu_out[1:0]),.msize(dataE[1].ctl.msize),.mem_unsigned(~dataE[1].ctl.memsext));
 readdata readdata2(._rd(dresp[0].data),.rd(dataM[0].rd),.addr(dataE[0].alu_out[1:0]),.msize(dataE[0].ctl.msize),.mem_unsigned(~dataE[0].ctl.memsext));
 
     // always_comb begin
@@ -51,6 +64,7 @@ for (genvar i=0; i<2; ++i) begin
     assign dataM[i].ctl=dataE[i].ctl;
     assign dataM[i].cp0ra=dataE[i].cp0ra;
     assign dataM[i].srcb=dataE[i].srcb;
+    assign dataM[i].srca=dataE[i].srca;
     assign dataM[i].hilo=dataE[i].hilo;
 end
 

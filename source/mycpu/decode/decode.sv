@@ -36,7 +36,7 @@ module decode(
         .instr(dataF2[0].raw_instr),
         .ctl(dataD[0].ctl),
         .cp0_ctl_old(dataF2[0].cp0_ctl),
-        .cp0_ctl(dataD[1].cp0_ctl),
+        .cp0_ctl(dataD[0].cp0_ctl),
         .srcrega(dataD[0].ra1), 
         .srcregb(dataD[0].ra2), 
         .destreg(dataD[0].rdst),

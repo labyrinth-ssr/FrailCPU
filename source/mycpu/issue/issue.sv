@@ -14,12 +14,15 @@ module issue(
     output bypass_issue_t issue_bypass_out[1:0],
     input bypass_output_t bypass_inra1[1:0],
     input bypass_output_t bypass_inra2[1:0],
-    input u1 flush_que
+    input u1 flush_que,
+    input u1 stallI,stallI_de,
+    output u1 overflow
 );
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam ISSUE_QUEUE_SIZE = 32;
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
+u1 have_slot;
 
 function index_t push(index_t tail);
     return tail==0? 5'd31:tail-1;
@@ -38,7 +41,7 @@ index_t head;
 index_t tail;
 
 u1 issue_en[1:0];
-assign issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid;
+// assign 
 
 decode_data_t candidate1,candidate2;
 assign candidate1=que_empty? dataD[1]:issue_queue[head];
@@ -52,26 +55,36 @@ always_comb begin
         candidate2=issue_queue[pop(head)];
     end
 end
+// assign 
+
+//这步特判怎么做啊
 
 always_comb begin
-    //不一定是dataD
+    // have_slot='0;
     issue_en[0]=bypass_inra1[0].valid && bypass_inra2[0].valid;
-    if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2))
+    issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid&& (~((candidate1.ctl.jump||candidate1.ctl.branch)&&(~candidate2.valid || ~issue_en[0])));
+    have_slot=(candidate1.ctl.branch||candidate1.ctl.jump)&&issue_en[1];
+     if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2)&&~have_slot)
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
-        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump) begin
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump
+        ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)
+        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)&&(candidate2.cp0_ctl.ctype==EXCEPTION||candidate2.cp0_ctl.ctype==ERET)) begin
         issue_en[0]='0;
     end
-    if (candidate2.is_slot) begin
-        issue_en[0]='1;
-    end
 end
+assign overflow= push(push(tail))==head || push(tail)==head;
+// (((que_empty&&~issue_en[1]&&dataD[1].valid)||(que_empty&&~issue_en[0]&&dataD[0].valid)||( ~que_empty&&dataD[1].valid&&~(pop(head)==tail&&issue_en[0]))||(~que_empty&&dataD[0].valid&&pop(head)==tail&&issue_en[0])) && push(tail)==head)
+//                 || (((que_empty&&~issue_en[1]&&dataD[1].valid&&dataD[0].valid) || (~que_empty && dataD[0].valid&& ~ (pop(head)==tail&&issue_en[0]))) && push(push(tail))==head) ;
+
 
 always_ff @(posedge clk) begin
 
     if (flush_que) begin
         head<=tail;
     end else begin
-        if (que_empty) begin
+        if (~overflow && ~stallI) begin
+            if (que_empty) begin
         if (~issue_en[1]&&dataD[1].valid) begin
             issue_queue[tail]<=dataD[1];
             tail<=push(tail);
@@ -99,8 +112,10 @@ always_ff @(posedge clk) begin
             end
         end
     end
-
-    if (~que_empty) begin
+        end
+        
+    if (~stallI || (stallI && overflow && ~stallI_de)) begin
+            if (~que_empty) begin
         if (issue_en[1]) begin
             head<=pop(head);
             if (pop(head)!=tail&&issue_en[0]) begin
@@ -109,6 +124,10 @@ always_ff @(posedge clk) begin
         end
     end
     end
+
+    end
+
+
 end
 
 always_comb begin
@@ -170,6 +189,7 @@ end
                 dataI[i].cp0ra=dataD[i].cp0ra;
                 dataI[i].raw_instr=dataD[i].raw_instr;
                 dataI[i].rdst=dataD[i].rdst;
+                dataI[i].cp0_ctl=dataD[i].cp0_ctl;
                 end
             end
         end else begin
@@ -185,6 +205,7 @@ end
                 dataI[1].cp0ra=issue_queue[head].cp0ra;
                 dataI[1].raw_instr=issue_queue[head].raw_instr;
                 dataI[1].rdst=issue_queue[head].rdst;
+                dataI[1].cp0_ctl=issue_queue[head].cp0_ctl;
                 if (issue_en[0]) begin
                     dataI[0].ctl=candidate2.ctl;
                     dataI[0].pc=candidate2.pc;
@@ -197,8 +218,12 @@ end
                     dataI[0].cp0ra=candidate2.cp0ra;
                     dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].rdst=candidate2.rdst;
+                    dataI[0].cp0_ctl=candidate2.cp0_ctl;
             end
         end
+end
+if (have_slot) begin
+    dataI[0].is_slot='1;
 end
         
     end

@@ -4,8 +4,11 @@
 `ifdef VERILATOR
 `include "common.svh"
 `include "pipes.svh"
+`include "mmu_pkg.svh"
+`include "cp0_pkg.svh"
 `include "regs/pipereg.sv"
 `include "regs/pipereg2.sv"
+`include "regs/hilo.sv"
 `include "regs/regfile.sv"
 `include "fetch/pcselect.sv"
 `include "decode/decode.sv"
@@ -34,11 +37,12 @@ module MyCore (
     // assign dresp[0]=dresp1;
     // assign dresp[1]='0;
     // assign dreq1=dreq[0];
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,overflowI,stallI_de;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait,d_wait2;
-    u1 is_INTEXC;
+    u1 is_INTEXC,is_EXC;
     word_t epc;
+    u1 excpM;
     
     typedef logic [31:0] paddr_t;
     typedef logic [31:0] vaddr_t;
@@ -50,23 +54,34 @@ module MyCore (
         .vaddr
     );
 
-        u1 req1_finish,req2_finish;
-        always_ff @(posedge clk) begin
-        if (dreq[1].valid&&dresp[1].addr_ok) begin
-            req1_finish<='1;
-        end else if (req1_finish&&dreq[0].valid) begin
-            req1_finish<='1;
-        end else begin
-            req1_finish<='0;
+    u1 req1_finish,req2_finish;
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (d_wait & dresp[1].addr_ok) begin
+                req1_finish <= 1;
+            end
+            else if (~d_wait) begin
+                req1_finish <= 0;
+            end
         end
+        else begin
+            req1_finish <= 0;
+        end   
     end
+    
 
     always_ff @(posedge clk) begin
-        if (dreq[0].valid&&dresp[0].addr_ok) begin
-            req2_finish<='1;
-        end else begin
-            req2_finish<='0;
+        if (resetn) begin
+            if (d_wait & dresp[0].addr_ok) begin
+                req2_finish <= 1;
+            end
+            else if (~d_wait) begin
+                req2_finish <= 0;
+            end
         end
+        else begin
+            req2_finish <= 0;
+        end   
     end
 
     assign i_wait=ireq.valid && ~iresp.addr_ok;
@@ -77,15 +92,16 @@ module MyCore (
     // assign d_wait=(dreq[1].valid && ((|dreq[1].strobe && ~dresp[1].addr_ok) || (~(|dreq[1].strobe) && ~get_read[1] )))
     // ||(dreq[0].valid && ((|dreq[0].strobe && ~dresp[0].addr_ok) || (~(|dreq[0].strobe) && ~get_read[0] ))) ;//写请求
     assign d_wait2=(dreq[1].valid && ( (~(|dreq[1].strobe) && ~get_read[1] && dreq[1].addr[15]==0)))||(dreq[0].valid && ( (~(|dreq[0].strobe) && ~get_read[0] && dreq[0].addr[15]==0))) ;
-    assign flushM2 = d_wait;
+    // assign flushM2 = d_wait;
+    // u1 flushM2_hazard;
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchE(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.branch_misalign,.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM
 	);
 
     assign vaddr=dataP_pc;
-    assign ireq.addr=paddr;
-	assign ireq.valid=pc_except ? '0:1'b1;
+    assign ireq.addr=vaddr;
+	assign ireq.valid=(pc_except || is_eret||is_EXC || excpM )? '0:1'b1;
     assign reset=~resetn;
 
     fetch_data_t dataF2_nxt [1:0],dataF2 [1:0];
@@ -117,17 +133,18 @@ module MyCore (
     //跳转且i_wait时保存跳转pc，
     word_t jpc_save,ipc_save,pc_nxt,bpc_save;
     u1 jpc_saved,ipc_saved,bpc_saved;
+    //填入保存信号时确认没有正常进入的替换信号
     always_ff @(posedge clk) begin
-		if ((i_wait||d_wait)&&is_INTEXC) begin
+		if ((stallF)&&(is_INTEXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
-        end else if (i_wait && dataE[1].branch_taken) begin
+        end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
-        end else if (i_wait&& branch_misalign) begin
+        end else if (stallF&& branch_misalign) begin
             bpc_save<=pc_selected;
             bpc_saved<='1;
-        end else if (~i_wait&&~d_wait) begin
+        end else if (~stallF) begin
 			ipc_save<='0;
 			ipc_saved<='0;
             jpc_save<='0;
@@ -140,9 +157,9 @@ module MyCore (
     always_comb begin
         if (ipc_saved) begin
             pc_nxt=ipc_save;
-        end else if (jpc_saved) begin
+        end else if (jpc_saved&&~is_INTEXC) begin
             pc_nxt=jpc_save;
-        end else if (bpc_saved) begin
+        end else if (bpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
             pc_nxt=bpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -167,6 +184,9 @@ module MyCore (
     fetch1_data_t dataF1_nxt,dataF1;
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
+    assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
+    assign dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except ? '1:'0;
+    assign dataF1_nxt.cp0_ctl.valid='0;
     u1 dataF1_pc;
     always_ff @( posedge clk ) begin
 		if (reset) begin
@@ -218,9 +238,8 @@ module MyCore (
     assign dataF2_nxt[1].pc=dataF1.pc;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
-    assign dataF2_nxt[1].cp0_ctl.valid=pc_except;
-    assign dataF2_nxt[1].cp0_ctl.ctype=EXCEPTION;
-    assign dataF2_nxt[1].cp0_ctl.etype.badVaddrF='1;
+    assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
+
     assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
     assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
@@ -248,7 +267,7 @@ module MyCore (
         .reset,
         .in(dataD_nxt),
         .out(dataD),
-        .en(1'b1),
+        .en(~stallI),
         .flush(flushI)
     );
     word_t rd1[1:0],rd2[1:0];
@@ -258,7 +277,7 @@ module MyCore (
         .clk,.reset,
         .ra1({issue_bypass_out[1].ra1,issue_bypass_out[0].ra1}),.ra2({issue_bypass_out[1].ra2,issue_bypass_out[0].ra2}),
         .wa({dataW[1].wa,dataW[0].wa}),
-        .wvalid({dataW[1].ctl.regwrite,dataW[0].ctl.regwrite}),
+        .wvalid({dataW[1].valid,dataW[0].valid}),
         .wd({dataW[1].wd,dataW[0].wd}),
         .rd1({rd1[1],rd1[0]}),
         .rd2({rd2[1],rd2[0]})
@@ -284,7 +303,10 @@ module MyCore (
         .issue_bypass_out,
         .bypass_inra1(bypass_outra1),
         .bypass_inra2(bypass_outra2),
-        .flush_que
+        .flush_que,
+        .stallI,
+        .overflow(overflowI),
+        .stallI_de
     );
 
     bypass_issue_t dataI_in[1:0],issue_bypass_out[1:0];
@@ -308,16 +330,25 @@ module MyCore (
         assign dataE_in[i].data=dataE[i].alu_out;
         assign dataE_in[i].rdst=dataE[i].rdst;
         assign dataE_in[i].memtoreg=dataE[i].ctl.memtoreg;
+        assign dataE_in[i].lotoreg=dataE[i].ctl.lotoreg;
+        assign dataE_in[i].hitoreg=dataE[i].ctl.hitoreg;
+        assign dataE_in[i].cp0toreg=dataE[i].ctl.cp0toreg;
         assign dataE_in[i].regwrite=dataE[i].ctl.regwrite;
 
         assign dataM1_in[i].data=dataM1[i].alu_out;
         assign dataM1_in[i].rdst=dataM1[i].rdst;
         assign dataM1_in[i].memtoreg=dataM1[i].ctl.memtoreg;
+        assign dataM1_in[i].lotoreg=dataM1[i].ctl.lotoreg;
+        assign dataM1_in[i].hitoreg=dataM1[i].ctl.hitoreg;
+        assign dataM1_in[i].cp0toreg=dataM1[i].ctl.cp0toreg;
         assign dataM1_in[i].regwrite=dataM1[i].ctl.regwrite;
 
-        assign dataM2_in[i].data=dataM2[i].ctl.memtoreg=='0? dataM2[i].alu_out:dataM2[i].rd;
+        assign dataM2_in[i].data=dataW[i].wd;
         assign dataM2_in[i].rdst=dataM2[i].rdst;
         assign dataM2_in[i].memtoreg=dataM2[i].ctl.memtoreg;
+        assign dataM2_in[i].lotoreg=dataM2[i].ctl.lotoreg;
+        assign dataM2_in[i].hitoreg=dataM2[i].ctl.hitoreg;
+        assign dataM2_in[i].cp0toreg=dataM2[i].ctl.cp0toreg;
         assign dataM2_in[i].regwrite=dataM2[i].ctl.regwrite;
 
         assign dataEnxt_in[i].rdst=dataI[i].rdst;
@@ -357,14 +388,12 @@ module MyCore (
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
 		.dreq,
-        .req_finish({req1_finish,req2_finish})
+        .req_finish({req1_finish,req2_finish}),
+        .excpM
 		// .exception(is_eret||is_INTEXC)
 	);
 
-    u1 inter_valid;
 
-    // assign is_eret=(dataM2.cp0_ctl.ctype==RET);
-	assign inter_valid=~i_wait;
 
 	pipereg2 #(.T(execute_data_t)) M1M2reg(
 		.clk,.reset,
@@ -379,7 +408,9 @@ module MyCore (
 		.dataE(dataM1),
 		.dataM(dataM2_nxt),
 		.dresp,
-        .dreq
+        .dreq,
+        .d_wait,
+        .resetn
 	);
 
 	pipereg2 #(.T(memory_data_t)) M2Wreg(
@@ -396,24 +427,25 @@ module MyCore (
         // .clk,.reset,
         .dataM(dataM2),
         .dataW,
-        .lo_rd,.hi_rd,.cp0_rd,
-        .valid_i,.valid_j,.valid_k
+        .lo_rd,.hi_rd,.cp0_rd
+        // .valid_i,.valid_j,.valid_k
     );
 
     // u1 hi_write,lo_write;
 
     u1 valid_j,valid_k;
     word_t hi_data,lo_data;
+    //同时对hilo进行读是允许的
     always_comb begin
         {hi_data,lo_data}='0;
         {valid_j,valid_k}='0;
         for (int i=1; i>=0; --i) begin
             if (dataM2[i].ctl.hiwrite) begin
-                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srcb:dataM2[i].hilo[63:32];
+                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srca:dataM2[i].hilo[63:32];
                 valid_j=i[0];
             end 
             if (dataM2[i].ctl.lowrite) begin
-                lo_data=dataM2[i].ctl.op==MTLO? dataM2[i].srcb:dataM2[i].hilo[31:0];
+                lo_data=dataM2[i].ctl.op==MTLO? dataM2[i].srca:dataM2[i].hilo[31:0];
                 valid_k=i[0];
             end
         end
@@ -426,27 +458,59 @@ module MyCore (
     .hi_data , .lo_data
     );
     
-    u1 valid_i;
-    assign valid_i= dataM2[1].cp0_ctl.valid? '1:'0;
-    assign is_eret=dataM2[valid_i].cp0_ctl.ctype==ERET;
+    u1 valid_i,valid_m,valid_n;
+    assign valid_i= dataM2[1].ctl.cp0toreg? '1:'0;
+    assign valid_m= dataM2[1].ctl.cp0write? '1:'0;
+    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? '1:'0;
+    assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
+    word_t cp0_pc;
+    // u1 valid
+    // always_comb begin
+    //     if (dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET||dataM2[0].cp0_ctl.ctype==EXCEPTION||dataM2[0].cp0_ctl.ctype==ERET) begin
+    //         cp0_pc= dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? dataM2[1].pc:dataM2[0].pc;
+    //     end else begin
+    //         cp0_pc= dataM2[1].cp0_ctl.valid? dataM2[1].pc:dataM2[0].pc;
+    //     end
+    // end
     word_t cp0_rd;
+
+   dataM2_save_t dataM2_save1,dataM2_save2;
+   assign dataM2_save1.pc=dataM2[1].pc;
+   assign dataM2_save1.valid=dataM2[1].valid;
+   assign dataM2_save1.is_slot=dataM2[1].is_slot;
+   assign dataM2_save1.jump=dataM2[1].ctl.branch||dataM2[1].ctl.jump;
+   assign dataM2_save2.pc=dataM2[0].pc;
+   assign dataM2_save2.valid=dataM2[0].valid;
+   assign dataM2_save2.is_slot=dataM2[0].is_slot;
+   assign dataM2_save2.jump=dataM2[0].ctl.branch||dataM2[0].ctl.jump;
+    u1 inter_valid;
+
+	assign inter_valid=~i_wait&&dataM2[1].valid;
+
+    u1 intvalid_i;
+    // assign intvalid_i=dataM2[1].valid;
     cp0 cp0(
         .clk,.reset,
-        .ra(dataM2[1].cp0ra),//直接读写的指令一次发射一条
-        .wa(dataM2[1].cp0ra),
-        .wd(dataM2[1].srcb),
+        .ra(dataM2[valid_i].cp0ra),//直接读写的指令一次发射一条
+        .wa(dataM2[valid_m].cp0ra),
+        .wd(dataM2[valid_m].srcb),
         .rd(cp0_rd),
         .epc,
-        .valid(dataM2[1].cp0_ctl.valid? dataM2[1].cp0_ctl.valid:dataM2[1].cp0_ctl.valid||dataM2[0].cp0_ctl.valid),
+        .valid(dataM2[1].cp0_ctl.valid||dataM2[0].cp0_ctl.valid),
         .is_eret,
+        .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
         // .regs_out,
-        .ctype(dataM2[valid_i].cp0_ctl.ctype),
-        .pc(dataM2[valid_i].pc),
-        .etype(dataM2[valid_i].cp0_ctl.etype),
+        .ctype(dataM2[valid_n].cp0_ctl.ctype),
+        .pc(dataM2[valid_n].pc),
+        .etype(dataM2[valid_n].cp0_ctl.etype),
         .ext_int,
-        .is_slot(dataM2[valid_i].is_slot),
+        .is_slot(dataM2[valid_n].is_slot),
         .is_INTEXC,
-        .inter_valid
+        .inter_valid,
+        .is_EXC,
+        .int_pc(dataM2[1].pc)
+        // .pc_valid(dataM2[valid_n].valid)
+        // .dataM2_save({dataM2_save1,dataM2_save2})
     );
 
 endmodule

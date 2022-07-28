@@ -15,6 +15,7 @@ module cp0
 	output word_t rd,
 	output word_t epc,
 	input u1 valid,is_eret,
+	input word_t vaddr,
 	// output cp0_regs_t regs_out,
 	input word_t pc,
 	input excp_type_t etype,
@@ -22,14 +23,29 @@ module cp0
 	input u1 inter_valid,
 	input u6 ext_int,
 	input u1 is_slot,
-	output is_INTEXC
+	output is_INTEXC,
+	output is_EXC,
+	input word_t int_pc
+	// input dataM2_save_t dataM2_save[1:0]
 );
 	u1 double;
 	cp0_regs_t regs, regs_nxt;
+	// dataM2_save_t data_save[1:0];
 	// assign regs_out=regs_nxt;
 	// u1 trint,swint,exint;
+	//异常，排除中断
 	u1 interrupt,delayed_interupt;
 	assign is_INTEXC= ctype==EXCEPTION||(interrupt&&inter_valid)||delayed_interupt;
+	assign is_EXC= ctype==EXCEPTION;
+	word_t pc1_save,pc2_save;
+	
+	// always_ff @(posedge clk) begin
+	// 	for (int i=0; i<2; ++i) begin
+	// 		if(dataM2_save[i].valid) begin
+	// 			data_save[i]<=dataM2_save[i];
+	// 		end
+	// 	end
+	// end
 
 	typedef struct packed {
 		word_t pc;
@@ -37,14 +53,16 @@ module cp0
 	} int_save_t;
 	int_save_t int_save;
 	u1 int_saved;
+	word_t soft_int_pc,soft_int_pc_nxt;
+
 	// write
 	always_ff @(posedge clk) begin
-		if (interrupt&&~inter_valid&&~int_saved) begin
-			int_save.pc<=pc;
-			int_save.is_slot<=is_slot;
+		if (interrupt&&~inter_valid) begin
+			// int_save.pc<=pc;
+			// int_save.is_slot<=is_slot;
 			int_saved<='1;
 		end else if (inter_valid) begin
-			int_save<='0;
+			// int_save<='0;
 			int_saved<='0;
 		end
 	end
@@ -52,11 +70,14 @@ module cp0
 	always_ff @(posedge clk) begin
 		if (reset) begin
 			regs <= '0;
+			soft_int_pc<='0;
 			// regs.mcause[1] <= 1'b1;
 			// regs.epc[31] <= 1'b1;
 		end else begin
 			regs <= regs_nxt;
 			double <= 1'b1-double;
+			soft_int_pc<=soft_int_pc_nxt;
+
 		end
 	end
 
@@ -108,32 +129,45 @@ module cp0
 			code=EXCCODE_ADES;
 		end
 	end
-
+	u1 soft_int;
 	assign interrupt=regs.status.ie&&~regs.status.exl&&(|(({ext_int, 2'b00} | regs.cause.ip| {regs.cause.ti, 7'b0}) & regs.status.im));
+	assign soft_int= |(regs.cause.ip[1:0] & regs.status.im[1:0]);
+	// assign counter_int= regs_nxt.cause.ti & regs.status.im [7];
+	// word_t int_pc;
 
 	assign regs_nxt.cause.ti= regs.count==regs.compare;
 	always_comb begin
 		regs_nxt = regs;
+		soft_int_pc_nxt=soft_int_pc;
 		delayed_interupt='0;
 		if (double&&wa[7:3]!=5'd9) begin
 			regs_nxt.count = regs.count + 1;
 		end
 
-		if (ctype==EXCEPTION||(interrupt&&inter_valid&&~int_saved)) begin
-					if (etype.badVaddrF&&code==EXCCODE_ADEL) begin
+		if (ctype==EXCEPTION||((interrupt||int_saved)&&inter_valid)) begin
+					if ((etype.badVaddrF||etype.adelD)&&code==EXCCODE_ADEL) begin
+						if (etype.badVaddrF) begin
 						regs_nxt.bad_vaddr=pc;
+						end else begin
+						regs_nxt.bad_vaddr=vaddr;
+						end
+					end else if (etype.adesD&&code==EXCCODE_ADES) begin
+						regs_nxt.bad_vaddr=vaddr;
+						
 					end
+					regs_nxt.cause.exc_code=code;
 					if (~regs.status.exl) begin
 						if (~is_slot) begin
-							regs_nxt.epc= interrupt&&inter_valid&&~int_saved? pc+4:pc;
+							regs_nxt.epc= (interrupt||int_saved)&&inter_valid? int_pc:pc;
 							regs_nxt.cause.bd='0;
 						end else begin
-							regs_nxt.epc=interrupt&&inter_valid&&~int_saved? pc+4:pc-4;
+							regs_nxt.epc=(interrupt||int_saved)&&inter_valid? int_pc:pc-4;
 							regs_nxt.cause.bd='1;
 						end
 					end
 					regs_nxt.status.exl='1;
-		end  else if (int_saved&&inter_valid) begin
+		end  /*else if (int_saved&&inter_valid) begin
+					regs_nxt.cause.exc_code=EXCCODE_INT;
 					if (~regs.status.exl) begin
 						if (~int_save.is_slot) begin
 							regs_nxt.epc=int_save.pc+4;
@@ -145,9 +179,9 @@ module cp0
 					end
 					regs_nxt.status.exl='1;
 					delayed_interupt='1;
-				end
+				end*/
 				 else if (valid) begin
-		if (wa[2:0]==3'b0) begin
+					if (wa[2:0]==3'b0) begin
 
 					case (wa[7:3])
 						5'd0:  regs_nxt.index = wd;
@@ -174,6 +208,7 @@ module cp0
 						5'd13: begin
 							regs_nxt.cause.iv = wd[23];
 							regs_nxt.cause.ip[1:0] = wd[9:8];
+							soft_int_pc_nxt=pc;
 						end
 						5'd14: regs_nxt.epc = wd;
 						// 5'd15: regs_nxt.prid=wd;
@@ -182,7 +217,8 @@ module cp0
 					endcase
 		end
 			// regs_nxt.mstatus.sd = regs_nxt.mstatus.fs != 0;
-		end else if (is_eret) begin
+		end 
+		if (is_eret) begin
 			regs_nxt.status.exl='0;
 		end 
 	end

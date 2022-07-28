@@ -59,15 +59,12 @@
     always_comb begin//都是双端口
         dataE[1].cp0_ctl=dataI[1].cp0_ctl;
         dataE[0].cp0_ctl=dataI[0].cp0_ctl;
-        if (dataI[1].ctl.memwrite &&exception_of[1]) begin
+        if (exception_of[1]) begin
             dataE[1].cp0_ctl.ctype=EXCEPTION;
             dataE[1].cp0_ctl.etype.overflow= '1;
-            dataE[0].cp0_ctl.valid='0;
-            dataE[1].cp0_ctl.valid='1;
         end
-        else if (dataI[0].ctl.memwrite && exception_of[0]) begin
+        else if (exception_of[0]) begin
             dataE[0].cp0_ctl.ctype=EXCEPTION;
-            dataE[0].cp0_ctl.valid='1;
             dataE[0].cp0_ctl.etype.overflow= '1;
         end
     end
@@ -100,6 +97,7 @@
     assign dataE[1].branch_taken=dataI[1].ctl.jump||(dataI[1].ctl.branch&&branch_condition);
     for (genvar i=0; i<2; ++i) begin
     assign dataE[i].srcb=dataI[i].rd2;
+    assign dataE[i].srca=dataI[i].rd1;
     assign dataE[i].rdst=dataI[i].rdst;
     assign dataE[i].pc=dataI[i].pc;
     assign dataE[i].ctl=dataI[i].ctl;
@@ -169,24 +167,26 @@
             lo_data=multi_res[31:0];
         end else if (div_valid) begin
             // {hi_write,lo_write}='1;
-            unique case ({nega,negb})
-            2'b00:begin
-                hi_data= divc[63:32];
-                lo_data=divc[31:0];
-            end
-            2'b10:begin
-                hi_data= multib-divc[63:32];
-                lo_data=-(divc[31:0]+1);
-            end
-            2'b01:begin
-                hi_data= divc[63:32];
-                lo_data=-divc[31:0];
-            end
-            2'b11:begin
-                hi_data= -multib-divc[63:32];
-                lo_data=divc[31:0]+1;
-            end
-        endcase
+            lo_data= nega^negb? -divc[31:0] : divc[31:0];
+            hi_data=nega? -divc[63:32]:divc[63:32];
+        //     unique case ({nega,negb})
+        //     2'b00:begin
+        //         hi_data= divc[63:32];
+        //         lo_data=divc[31:0];
+        //     end
+        //     2'b10:begin
+        //         hi_data= multib-divc[63:32];
+        //         lo_data=-(divc[31:0]+1);
+        //     end
+        //     2'b01:begin
+        //         hi_data= divc[63:32];
+        //         lo_data=-divc[31:0];
+        //     end
+        //     2'b11:begin
+        //         hi_data= -multib-divc[63:32];
+        //         lo_data=divc[31:0]+1;
+        //     end
+        // endcase
         end
     end
 

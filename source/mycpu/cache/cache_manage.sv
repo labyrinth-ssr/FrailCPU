@@ -33,7 +33,7 @@ module cache_manage (
 
     always_comb begin
         mmu_ireq = ireq;
-        // mmu_ireq.addr = {3'b0, ireq.addr[28:0]}; //V->P
+        mmu_ireq.addr = {3'b0, ireq.addr[28:0]}; //V->P
 
         iresp = mmu_iresp;
     end
@@ -43,7 +43,7 @@ module cache_manage (
 
     always_comb begin
         mmu_dreq_1 = dreq_1;
-        // mmu_dreq_1.addr = {3'b0, dreq_1.addr[28:0]};
+        mmu_dreq_1.addr = {3'b0, dreq_1.addr[28:0]};
 
         dresp_1 = mmu_dresp_1;
 
@@ -55,7 +55,7 @@ module cache_manage (
 
     always_comb begin
         mmu_dreq_2 = dreq_2;
-        // mmu_dreq_2.addr = {3'b0, dreq_2.addr[28:0]};
+        mmu_dreq_2.addr = {3'b0, dreq_2.addr[28:0]};
 
         dresp_2 = mmu_dresp_2;
         
@@ -179,7 +179,7 @@ module cache_manage (
         .*
     );
 
-    CBusArbiter #(
+    MyArbiter #(
         .NUM_INPUTS(4)
     ) cbus_arbiter (
         .clk, 

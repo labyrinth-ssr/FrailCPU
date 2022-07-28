@@ -183,6 +183,7 @@ module decoder (
                         srcrega = '0;
                         srcregb = '0;
                         destreg = '0;
+                cp0_ctl.ctype=EXCEPTION;
                     end
                 endcase
             end
@@ -308,7 +309,7 @@ module decoder (
                 case (instr[25:21])
                     `C_ERET:begin
                         cp0_ctl.ctype=ERET;
-                        cp0_ctl.valid='1;
+                        // cp0_ctl.valid='1;
                         ctl.is_eret = 1'b1;
                         srcrega = '0;
                         srcregb = '0;
@@ -341,6 +342,7 @@ module decoder (
                         srcrega = '0;
                         srcregb = '0;
                         destreg = '0;
+                cp0_ctl.ctype=EXCEPTION;
                     end
                 endcase
             end
@@ -588,7 +590,7 @@ module decoder (
 					`F_BREAK:begin
                         ctl.op = BREAK;
                         ctl.alufunc = ALU_PASSA;
-                        cp0_ctl.ctype=INSTR;
+                        cp0_ctl.ctype=EXCEPTION;
                         cp0_ctl.valid='1;
                         cp0_ctl.etype.trap='1;
                         ctl.is_bp = 1'b1;
@@ -598,7 +600,7 @@ module decoder (
                     end	
 					`F_SYSCALL:begin
                         ctl.op = SYSCALL;
-                        cp0_ctl.ctype=INSTR;
+                        cp0_ctl.ctype=EXCEPTION;
                         cp0_ctl.valid='1;
                         cp0_ctl.etype.syscall='1;
                         ctl.alufunc = ALU_PASSA;
@@ -614,6 +616,7 @@ module decoder (
                         srcrega = 'b0;
                         srcregb = 'b0;
                         destreg = 'b0;
+                cp0_ctl.ctype=EXCEPTION;
                     end
                 endcase
             end
@@ -624,6 +627,7 @@ module decoder (
                 srcrega = 'b0;
                 srcregb = 'b0;
                 destreg = 'b0;
+                cp0_ctl.ctype=EXCEPTION;
             end
         endcase
         end

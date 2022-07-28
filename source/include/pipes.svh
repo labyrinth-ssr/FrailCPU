@@ -20,12 +20,19 @@
 // parameter F6_J = 6'b000010;
 // parameter F6_JAL = 6'b000011;
 
+   typedef struct packed {
+    word_t pc;
+    u1 jump;
+    u1 is_slot;
+    u1 valid;
+   } dataM2_save_t;
+
 typedef struct packed {
 	word_t data;
 	creg_addr_t rdst;
 	u8 cp0ra;
-	u1 lowrite,hiwrite,cp0write;
-	u1 memtoreg;
+	// u1 lowrite,hiwrite,cp0write;
+	u1 memtoreg,lotoreg,hitoreg,cp0toreg;
 	u1 regwrite;
 } bypass_input_t;
 
@@ -120,9 +127,9 @@ typedef struct packed {
 // } cp0_control_t;
 
 typedef struct packed {
+	cp0_control_t cp0_ctl;
 	u1 valid;
 	u32 pc;
-	// cp0_control_t cp0_ctl;
 	// int_type_t int_type;
     } fetch1_data_t;//
 
@@ -178,6 +185,7 @@ typedef struct packed {
 	// u64 target;
 	// u64 sextimm;
 	word_t srcb;
+	word_t srca;
 	word_t target;
 	u1 branch_taken;
 	u1 is_slot;
@@ -200,6 +208,8 @@ typedef struct packed {
 	// word_t lo_rd,hi_rd,cp0_rd;
 	cp0_control_t cp0_ctl;
 	word_t srcb;
+	word_t srca;
+
 
 	// u64 target;
 	word_t rd;

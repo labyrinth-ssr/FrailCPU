@@ -21,10 +21,12 @@ module bypass(
 );
     // u1 no_relate_[1:0][1:0];
     // u1 invalid[1:0];
-
+function u1 delay_toreg(bypass_input_t a);
+    return a.memtoreg||a.lotoreg||a.hitoreg||a.cp0toreg;
+endfunction
     for (genvar i=0; i<2; ++i) begin//针对issue head的对应端口
         always_comb begin
-                outra1[i].valid='1;
+                    outra1[i].valid='1;
                     outra1[i].data='0;
                     outra1[i].bypass='0;
                 if ((dataEnxt_in[0].rdst==dataI_in[i].ra1)&&dataEnxt_in[0].regwrite) begin
@@ -32,20 +34,20 @@ module bypass(
                 end else if ((dataEnxt_in[1].rdst==dataI_in[i].ra1)&&dataEnxt_in[1].regwrite) begin
                     outra1[i].valid='0;
                 end else if ((dataE_in[0].rdst==dataI_in[i].ra1)&&dataE_in[0].regwrite) begin
-                    outra1[i].valid=dataE_in[0].memtoreg=='0;
-                    outra1[i].bypass=dataE_in[0].memtoreg=='0;;
+                    outra1[i].valid=~delay_toreg(dataE_in[0]);
+                    outra1[i].bypass=~delay_toreg(dataE_in[0]);
                     outra1[i].data=dataE_in[0].data;
                 end else if ((dataE_in[1].rdst==dataI_in[i].ra1)&&dataE_in[1].regwrite) begin
-                    outra1[i].valid=dataE_in[1].memtoreg=='0;
-                    outra1[i].bypass=dataE_in[1].memtoreg=='0;
+                    outra1[i].valid=~delay_toreg(dataE_in[1]);
+                    outra1[i].bypass=~delay_toreg(dataE_in[1]);
                     outra1[i].data=dataE_in[1].data;
                 end else if (dataM1_in[0].regwrite&&(dataM1_in[0].rdst==dataI_in[i].ra1)) begin
-                    outra1[i].valid=dataM1_in[0].memtoreg=='0;
-                    outra1[i].bypass=dataM1_in[0].memtoreg=='0;
+                    outra1[i].valid=~delay_toreg(dataM1_in[0]);
+                    outra1[i].bypass=~delay_toreg(dataM1_in[0]);
                     outra1[i].data=dataM1_in[0].data;
                 end else if (dataM1_in[1].regwrite&&(dataM1_in[1].rdst==dataI_in[i].ra1)) begin
-                    outra1[i].valid=dataM1_in[1].memtoreg=='0;
-                    outra1[i].bypass=dataM1_in[1].memtoreg=='0;
+                    outra1[i].valid=~delay_toreg(dataM1_in[1]);
+                    outra1[i].bypass=~delay_toreg(dataM1_in[1]);
                     outra1[i].data=dataM1_in[1].data;
                 end else if (dataM2_in[0].regwrite&&(dataM2_in[0].rdst==dataI_in[i].ra1)) begin
                     outra1[i].valid='1;
@@ -63,7 +65,7 @@ module bypass(
 
      for (genvar i=0; i<2; ++i) begin//针对issue head的对应端口
         always_comb begin
-                outra2[i].valid='1;
+                    outra2[i].valid='1;
                     outra2[i].data='0;
                     outra2[i].bypass='0;
                 if ((dataEnxt_in[0].rdst==dataI_in[i].ra2)&&dataEnxt_in[0].regwrite) begin
@@ -71,20 +73,20 @@ module bypass(
                 end else if ((dataEnxt_in[1].rdst==dataI_in[i].ra2)&&dataEnxt_in[1].regwrite) begin
                     outra2[i].valid='0;
                 end else if ((dataE_in[0].rdst==dataI_in[i].ra2)&&dataE_in[0].regwrite) begin
-                    outra2[i].valid=dataE_in[0].memtoreg=='0;
-                    outra2[i].bypass=dataE_in[0].memtoreg=='0;;
+                    outra2[i].valid=~delay_toreg(dataE_in[0]);
+                    outra2[i].bypass=~delay_toreg(dataE_in[0]);;
                     outra2[i].data=dataE_in[0].data;
                 end else if ((dataE_in[1].rdst==dataI_in[i].ra2)&&dataE_in[1].regwrite) begin
-                    outra2[i].valid=dataE_in[1].memtoreg=='0;
-                    outra2[i].bypass=dataE_in[1].memtoreg=='0;
+                    outra2[i].valid=~delay_toreg(dataE_in[1]);
+                    outra2[i].bypass=~delay_toreg(dataE_in[1]);
                     outra2[i].data=dataE_in[1].data;
                 end else if (dataM1_in[0].regwrite&&(dataM1_in[0].rdst==dataI_in[i].ra2)) begin
-                    outra2[i].valid=dataM1_in[0].memtoreg=='0;
-                    outra2[i].bypass=dataM1_in[0].memtoreg=='0;
+                    outra2[i].valid=~delay_toreg(dataM1_in[0]);
+                    outra2[i].bypass=~delay_toreg(dataM1_in[0]);
                     outra2[i].data=dataM1_in[0].data;
                 end else if (dataM1_in[1].regwrite&&(dataM1_in[1].rdst==dataI_in[i].ra2)) begin
-                    outra2[i].valid=dataM1_in[1].memtoreg=='0;
-                    outra2[i].bypass=dataM1_in[1].memtoreg=='0;
+                    outra2[i].valid=~delay_toreg(dataM1_in[1]);
+                    outra2[i].bypass=~delay_toreg(dataM1_in[1]);
                     outra2[i].data=dataM1_in[1].data;
                 end else if (dataM2_in[0].regwrite&&(dataM2_in[0].rdst==dataI_in[i].ra2)) begin
                     outra2[i].valid='1;
