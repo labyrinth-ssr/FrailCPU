@@ -74,10 +74,12 @@ module BRAM #(
 
     always_comb begin
         if (resetn_reg) begin
-            data_out_1 = hazard_reg_1 ?
-                DEADBEEF : /*mem[addr_reg_1].word*/ data_out_reg_1;
-            data_out_2 = hazard_reg_2 ?
-                DEADBEEF : /*mem[addr_reg_2].word*/ data_out_reg_2;
+            // data_out_1 = hazard_reg_1 ?
+            //     DEADBEEF : /*mem[addr_reg_1].word*/ data_out_reg_1;
+            data_out_1 = data_out_reg_1;
+            // data_out_2 = hazard_reg_2 ?
+            //     DEADBEEF : /*mem[addr_reg_2].word*/ data_out_reg_2;
+            data_out_2 = data_out_reg_2;
         end else begin
             data_out_1 = _RESET_VALUE;
             data_out_2 = _RESET_VALUE;
