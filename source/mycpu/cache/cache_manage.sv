@@ -4,8 +4,8 @@
 `include "common.svh"
 `include "ICache.sv"
 `include "DCache.sv"
-`include "CBusArbiter.sv"
-`include "DBusToCBus.sv"
+`include "../../util/CBusArbiter.sv"
+`include "../../util/DBusToCBus.sv"
 
 module cache_manage (
     input logic clk, resetn,

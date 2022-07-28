@@ -1,11 +1,11 @@
 `ifndef __M2_SV
 `define __M2_SV
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "pipes.svh"
-`include "memory/readdata.sv"
-`endif 
+`include "readdata.sv"
+
 
 module memory2
     (

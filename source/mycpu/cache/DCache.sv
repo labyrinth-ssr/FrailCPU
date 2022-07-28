@@ -2,7 +2,7 @@
 `define __DCACHE_SV
 
 `include "common.svh"
-`include "plru.sv"
+`include "../plru.sv"
 
 module DCache (
     input logic clk, resetn,
@@ -410,6 +410,7 @@ module DCache (
     BRAM #(
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(DATA_ADDR_BITS),
+        .RESET_VALUE("00000000"),
         .WRITE_MODE("read_first")
     ) data_bram(
         .clk, 

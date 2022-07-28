@@ -1,6 +1,6 @@
 `include "access.svh"
 `include "common.svh"
-`include "cache_manage.sv"
+`include "cache/cache_manage.sv"
 
 module VTop (
     input logic clk, resetn,

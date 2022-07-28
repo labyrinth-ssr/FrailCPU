@@ -1,15 +1,13 @@
 `ifndef EXECUTE_SV
 `define EXECUTE_SV
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "pipes.svh"
 `include "alu.sv"
 `include "pcbranch.sv"
-`include "multi.sv"
-`include "div.sv"
-
-`endif 
+`include "alu/multi.sv"
+`include "alu/div.sv"
 
     module execute(
         input clk,resetn,
@@ -146,9 +144,18 @@
 
     // u1 hi_write,lo_write;
     word_t hi_data,lo_data;
-    assign dataE[valid_i].hilo={hi_data,lo_data};
-
     u1 valid_i;
+
+    always_comb begin
+        if(valid_i == 1'b1) begin
+            dataE[1].hilo={hi_data,lo_data};
+            dataE[0].hilo='0;
+        end else begin
+            dataE[0].hilo={hi_data,lo_data};
+            dataE[1].hilo='0;
+        end
+    end
+
     always_comb begin
         valid_i='0;
         if (dataI[1].ctl.op==MULT||dataI[1].ctl.op==MULTU||dataI[1].ctl.op==DIV||dataI[1].ctl.op==DIVU) begin

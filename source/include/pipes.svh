@@ -2,13 +2,11 @@
 `define __PIPES_SV
 
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "decode.svh"
 `include "cp0_pkg.svh"
 
-
-`endif 
 
 /* Define instrucion decoding rules here */
 

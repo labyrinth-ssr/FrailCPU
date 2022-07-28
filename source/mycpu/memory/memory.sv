@@ -1,11 +1,12 @@
 `ifndef __MEMORY_SV
 `define __MEMORY_SV
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "pipes.svh"
-`include "memory/writedata.sv"
-`endif 
+`include "cp0_pkg.svh"
+`include "writedata.sv"
+
 
 module memory
     (

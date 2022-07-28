@@ -135,8 +135,9 @@ module cp0
 	// assign counter_int= regs_nxt.cause.ti & regs.status.im [7];
 	// word_t int_pc;
 
-	assign regs_nxt.cause.ti= regs.count==regs.compare;
+
 	always_comb begin
+		regs_nxt.cause.ti= regs.count==regs.compare;
 		regs_nxt = regs;
 		soft_int_pc_nxt=soft_int_pc;
 		delayed_interupt='0;
