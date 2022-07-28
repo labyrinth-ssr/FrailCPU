@@ -43,6 +43,9 @@ module MyCore (
     word_t epc;
     u1 excpM,overflowI;
     u1 reset;
+    u1 pc_except;
+    word_t pc_selected,pc_succ,dataP_pc;
+
 
     assign i_wait=ireq.valid && ~iresp.addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
@@ -63,8 +66,6 @@ module MyCore (
     memory_data_t dataM2_nxt[1:0],dataM2[1:0];
 
     writeback_data_t dataW[1:0];
-    u1 pc_except;
-    word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
 
     always_comb begin

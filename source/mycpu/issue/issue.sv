@@ -19,8 +19,9 @@ module issue(
     input u1 stallI,stallI_de,
     output u1 overflow
 );
-localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam ISSUE_QUEUE_SIZE = 32;
+localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
+
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
 u1 have_slot;
