@@ -35,7 +35,6 @@ module cp0
 	// u1 trint,swint,exint;
 	//异常，排除中断
 	u1 interrupt,delayed_interupt;
-	assign is_INTEXC= ctype==EXCEPTION||((interrupt||int_saved) &&inter_valid);
 	assign is_EXC= ctype==EXCEPTION;
 	word_t pc1_save,pc2_save;
 	
@@ -57,6 +56,9 @@ module cp0
 
 	// write
 	always_ff @(posedge clk) begin
+		if (reset) begin
+			int_saved<='0;
+		end else
 		if (interrupt&&~inter_valid) begin
 			// int_save.pc<=pc;
 			// int_save.is_slot<=is_slot;
@@ -224,6 +226,8 @@ module cp0
 		end 
 	end
 	assign epc = regs.epc;
+	assign is_INTEXC= ctype==EXCEPTION||((interrupt||int_saved) &&inter_valid);
+
 	
 endmodule
 

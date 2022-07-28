@@ -2,8 +2,10 @@
 `define __ICACHE_SV
 
 `include "common.svh"
-`include "../plru.sv"
+`ifdef VERILATOR
 
+`include "../plru.sv"
+`endif 
 module ICache (
     input logic clk, resetn,
 
@@ -138,6 +140,15 @@ module ICache (
     data_addr_t miss_data_addr; //内存->Cache
     data_t data_w;
     data_t unused_data_r;
+    //fetch finish
+    record_t fetch_finish;
+    record_t part_fetch_finish;
+    cbus_num_t fetch_count;
+     //cbus_state
+    cbus_state_t state;
+
+    //cbus
+    addr_t cbus_addr;   //内存->Cache
     /*
     改动！！
     */
@@ -148,16 +159,6 @@ module ICache (
                             ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
                             : '0;
 
-    //cbus_state
-    cbus_state_t state;
-
-    //cbus
-    addr_t cbus_addr;   //内存->Cache
-
-    //fetch finish
-    record_t fetch_finish;
-    record_t part_fetch_finish;
-    cbus_num_t fetch_count;
 
     for (genvar i = 0; i < WORD_PER_LINE; i = i + 2) begin
         assign fetch_finish[i] = part_fetch_finish[i] & part_fetch_finish[i+1];

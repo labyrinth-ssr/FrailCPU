@@ -1,9 +1,7 @@
 `ifndef __PVTRANS_SV
 `define __PVTRANS_SV
 
-`ifdef VERILATOR
 `include "common.svh"
-`endif 
 
 module pvtrans(
     input word_t vaddr,

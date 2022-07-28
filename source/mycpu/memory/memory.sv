@@ -5,8 +5,9 @@
 `include "common.svh"
 `include "pipes.svh"
 `include "cp0_pkg.svh"
+`ifdef VERILATOR
 `include "writedata.sv"
-
+`endif 
 
 module memory
     (

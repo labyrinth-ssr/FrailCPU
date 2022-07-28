@@ -2,11 +2,12 @@
 `define __CACHE_MANAGE_SV
 
 `include "common.svh"
+`ifdef VERILATOR
 `include "ICache.sv"
 `include "DCache.sv"
 `include "../../util/CBusArbiter.sv"
 `include "../../util/DBusToCBus.sv"
-
+`endif 
 module cache_manage (
     input logic clk, resetn,
 

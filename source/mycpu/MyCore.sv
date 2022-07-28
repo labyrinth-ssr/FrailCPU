@@ -6,6 +6,8 @@
 `include "pipes.svh"
 `include "mmu_pkg.svh"
 `include "cp0_pkg.svh"
+
+`ifdef VERILATOR
 `include "regs/pipereg.sv"
 `include "regs/pipereg2.sv"
 `include "regs/hilo.sv"
@@ -19,6 +21,7 @@
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
+`endif 
 
 
 module MyCore (
@@ -40,6 +43,9 @@ module MyCore (
     word_t epc;
     u1 excpM,overflowI;
     u1 reset;
+    u1 pc_except;
+    word_t pc_selected,pc_succ,dataP_pc;
+
 
     assign i_wait=ireq.valid && ~iresp.addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
@@ -60,8 +66,6 @@ module MyCore (
     memory_data_t dataM2_nxt[1:0],dataM2[1:0];
 
     writeback_data_t dataW[1:0];
-    u1 pc_except;
-    word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
 
     always_comb begin
@@ -74,6 +78,10 @@ module MyCore (
     word_t jpc_save,pc_nxt;
     u1 jpc_saved;
     always_ff @(posedge clk) begin
+        if (reset) begin
+            jpc_save<='0;
+			jpc_saved<='0;
+        end else
 		if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
@@ -133,6 +141,9 @@ module MyCore (
 
     always_ff @(posedge clk) begin
         delay_flushF2 <=flushF2;
+        if (reset) begin
+            {raw_instrf2_save,rawinstr_saved}<='0;
+        end
         if (stallF2&&~rawinstr_saved) begin
             raw_instrf2_save<=iresp.data;
             rawinstr_saved<='1;
@@ -220,7 +231,7 @@ module MyCore (
     bypass_output_t bypass_outra1 [1:0],bypass_outra2 [1:0];
 
     issue issue_inst(
-        .clk,
+        .clk,.reset,
         .dataD,
         .rd1,.rd2,
         .dataI(dataI_nxt),
@@ -405,7 +416,7 @@ module MyCore (
     end
     word_t hi_rd,lo_rd;
     hilo hilo(
-    .clk,
+    .clk,.reset,
     .hi(hi_rd), .lo(lo_rd),
     .hi_write(dataM2[1].ctl.hiwrite||dataM2[0].ctl.hiwrite), .lo_write(dataM2[1].ctl.lowrite||dataM2[0].ctl.lowrite),
     .hi_data , .lo_data

@@ -2,8 +2,10 @@
 `define __DCACHE_SV
 
 `include "common.svh"
-`include "../plru.sv"
+`ifdef VERILATOR
 
+`include "../plru.sv"
+`endif 
 module DCache (
     input logic clk, resetn,
 
@@ -167,6 +169,9 @@ module DCache (
         .plru_new(plru_new_2),
         .replace_line(replace_line_2)
     );
+    
+    logic addr_same;
+    assign addr_same = (dreq_1_addr[31:2] == dreq_2_addr[31:2]) & (dreq_1.valid & dreq_2.valid);
 
     //plru_r -> replace_line
     //hit_line + plru_r -> plru_new
@@ -211,8 +216,6 @@ module DCache (
 
     logic data_ok_reg;
     
-    logic addr_same;
-    assign addr_same = (dreq_1_addr[31:2] == dreq_2_addr[31:2]) & (dreq_1.valid & dreq_2.valid);
 
     logic delay_counter;
 

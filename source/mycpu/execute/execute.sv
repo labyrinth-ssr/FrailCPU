@@ -4,10 +4,12 @@
 
 `include "common.svh"
 `include "pipes.svh"
+`ifdef VERILATOR
 `include "alu.sv"
 `include "pcbranch.sv"
 `include "alu/multi.sv"
 `include "alu/div.sv"
+`endif 
 
     module execute(
         input clk,resetn,
@@ -110,7 +112,9 @@
 
     u1 mult_done,div_done,nega,negb;
     word_t multia,multib;
-    u64 multc,divc,multi_res;
+    u64 multc,divc,multi_res;    
+    u1 valid_i;
+
     assign multia=dataI[valid_i].rd1;
     assign multib=dataI[valid_i].rd2;
     // assign diva=dataI[1].rd1;
@@ -145,7 +149,6 @@
 
     // u1 hi_write,lo_write;
     word_t hi_data,lo_data;
-    u1 valid_i;
 
     always_comb begin
         if(valid_i == 1'b1) begin

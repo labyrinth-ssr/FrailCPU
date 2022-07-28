@@ -8,7 +8,7 @@
 
 
 module issue(
-    input clk,
+    input u1 clk,reset,
     input decode_data_t dataD [1:0],
     output issue_data_t dataI [1:0],
     input word_t rd1[1:0],rd2[1:0],
@@ -19,8 +19,9 @@ module issue(
     input u1 stallI,stallI_de,
     output u1 overflow
 );
-localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam ISSUE_QUEUE_SIZE = 32;
+localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
+
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
 u1 have_slot;
@@ -82,6 +83,11 @@ assign overflow= push(push(tail))==head || push(tail)==head;
 
 
 always_ff @(posedge clk) begin
+    if (reset) begin
+        head<='0;
+        tail<='0;
+        // issue_queue<='0;
+    end else
 
     if (flush_que) begin
         head<=tail;
@@ -129,7 +135,6 @@ always_ff @(posedge clk) begin
     end
 
     end
-
 
 end
 

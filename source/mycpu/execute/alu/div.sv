@@ -1,12 +1,9 @@
 `ifndef __DIV_SV
 `define __DIV_SV
 
-`ifdef VERILATOR
 `include "common.svh"
 `include "pipes.svh"
-`else
 
-`endif
 
 module div (
     input logic clk, resetn, valid,
