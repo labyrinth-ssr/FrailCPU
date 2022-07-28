@@ -73,10 +73,10 @@ for (genvar i=0; i<2; ++i) begin
     // end
     assign dataE2[i].pc=dataE[i].pc;
     assign dataE2[i].rdst=dataE[i].rdst;
-    assign dataE2[i].ctl=dataE[i].ctl;
+//    assign dataE2[i].ctl=dataE[i].ctl;
     assign dataE2[i].alu_out=dataE[i].alu_out;
     assign dataE2[i].valid=dataE[i].valid;
-    assign dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
+//    assign dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
     assign dataE2[i].is_slot=dataE[i].is_slot;
     assign dataE2[i].cp0ra=dataE[i].cp0ra;
     assign dataE2[i].srcb=dataE[i].srcb;
