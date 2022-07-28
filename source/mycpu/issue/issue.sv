@@ -8,7 +8,7 @@
 
 
 module issue(
-    input clk,
+    input u1 clk,reset,
     input decode_data_t dataD [1:0],
     output issue_data_t dataI [1:0],
     input word_t rd1[1:0],rd2[1:0],
@@ -82,6 +82,11 @@ assign overflow= push(push(tail))==head || push(tail)==head;
 
 
 always_ff @(posedge clk) begin
+    if (reset) begin
+        head<='0;
+        tail<='0;
+        // issue_queue<='0;
+    end else
 
     if (flush_que) begin
         head<=tail;
@@ -129,7 +134,6 @@ always_ff @(posedge clk) begin
     end
 
     end
-
 
 end
 

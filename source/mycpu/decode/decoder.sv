@@ -30,6 +30,7 @@ module decoder (
         ctl = '0;
         cp0_ctl=cp0_ctl_old;
         jump='0;
+        {srcrega,srcregb,destreg}='0;
         if (valid) begin
             case (op_)
             `OP_MUL: begin
