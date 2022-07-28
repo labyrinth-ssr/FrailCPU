@@ -71,32 +71,21 @@ module MyCore (
         end
     end
 
-    word_t jpc_save,ipc_save,pc_nxt,bpc_save;
-    u1 jpc_saved,ipc_saved,bpc_saved;
+    word_t jpc_save,pc_nxt;
+    u1 jpc_saved;
     always_ff @(posedge clk) begin
-		if ((stallF)&&(is_INTEXC||is_eret)) begin
-			ipc_save<=pc_selected;
-			ipc_saved<='1;
-        end else if (stallF && dataE[1].branch_taken) begin
+		if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (~stallF) begin
-			ipc_save<='0;
-			ipc_saved<='0;
             jpc_save<='0;
 			jpc_saved<='0;
-            bpc_save<='0;
-			bpc_saved<='0;
 		end
 	end
 
     always_comb begin
-        if (ipc_saved) begin
-            pc_nxt=ipc_save;
-        end else if (jpc_saved&&~is_INTEXC) begin
+        if (jpc_saved&&~is_INTEXC) begin
             pc_nxt=jpc_save;
-        end else if (bpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
-            pc_nxt=bpc_save;
         end else begin
             pc_nxt=pc_selected;
         end
@@ -423,19 +412,10 @@ module MyCore (
     );
     
     u1 valid_i,valid_m,valid_n;
-    assign valid_i= dataM2[1].ctl.cp0toreg? '1:'0;
-    assign valid_m= dataM2[1].ctl.cp0write? '1:'0;
+    assign valid_i= dataM2[1].ctl.cp0toreg;
+    assign valid_m= dataM2[1].ctl.cp0write;
     assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET;
     assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
-    word_t cp0_pc;
-    // u1 valid
-    // always_comb begin
-    //     if (dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET||dataM2[0].cp0_ctl.ctype==EXCEPTION||dataM2[0].cp0_ctl.ctype==ERET) begin
-    //         cp0_pc= dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET ? dataM2[1].pc:dataM2[0].pc;
-    //     end else begin
-    //         cp0_pc= dataM2[1].cp0_ctl.valid? dataM2[1].pc:dataM2[0].pc;
-    //     end
-    // end
     word_t cp0_rd;
 
    dataM2_save_t dataM2_save1,dataM2_save2;
@@ -447,12 +427,9 @@ module MyCore (
    assign dataM2_save2.valid=dataM2[0].valid;
    assign dataM2_save2.is_slot=dataM2[0].is_slot;
    assign dataM2_save2.jump=dataM2[0].ctl.branch||dataM2[0].ctl.jump;
-    u1 inter_valid;
+   u1 inter_valid;
 
 	assign inter_valid=~i_wait&&dataM2[1].valid;
-
-    u1 intvalid_i;
-    // assign intvalid_i=dataM2[1].valid;
     cp0 cp0(
         .clk,.reset,
         .ra(dataM2[valid_i].cp0ra),//直接读写的指令一次发射一条
@@ -460,7 +437,7 @@ module MyCore (
         .wd(dataM2[valid_m].srcb),
         .rd(cp0_rd),
         .epc,
-        .valid(dataM2[1].cp0_ctl.valid||dataM2[0].cp0_ctl.valid),
+        .valid(dataM2[valid_m].ctl.cp0write),
         .is_eret,
         .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
         .ctype(dataM2[valid_n].cp0_ctl.ctype),
