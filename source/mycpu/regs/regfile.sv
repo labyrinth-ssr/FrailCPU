@@ -38,7 +38,7 @@ module regfile
 	for (genvar i = 1; i < 32; i++) begin
 		always_comb begin
 			regs_nxt[i] = regs[i];
-			for (int j = 0; j < WRITE_PORTS; j++) begin
+			for (int j = WRITE_PORTS-1; j >= 0; j--) begin
 				if (i == wa[j] && wvalid[j]) begin
 					regs_nxt[i] = wd[j];
 				end

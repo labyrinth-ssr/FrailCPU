@@ -154,11 +154,14 @@ module MyCore (
     //前半部分静止，应当不发起ireq
     always_comb begin
         dataF2_nxt[1].raw_instr= dataF1.pc[2]==1? iresp.data[63:32]:iresp.data[31:0];
+        if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
+            dataF2_nxt[1].raw_instr='0;
+        end else
         if (rawinstr_saved) begin
             dataF2_nxt[1].raw_instr=dataF1.pc[2]==1? raw_instrf2_save[63:32]:raw_instrf2_save[31:0];
         end else if (delay_flushF2) begin
             dataF2_nxt[1].raw_instr='0;
-        end
+        end 
     end
     always_comb begin
         dataF2_nxt[0].raw_instr=  iresp.data[63:32];

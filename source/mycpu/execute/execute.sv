@@ -99,9 +99,10 @@
     assign dataE[i].rdst=dataI[i].rdst;
     assign dataE[i].pc=dataI[i].pc;
     assign dataE[i].ctl=dataI[i].ctl;
-    assign dataE[i].valid=dataI[i].valid;
-        
     end
+    assign dataE[1].valid=dataI[1].valid;
+    assign dataE[0].valid= exception_of[1]? '0 : dataI[0].valid;
+
     assign dataE[0].is_slot=dataI[0].is_slot;
     
     assign dataE[0].cp0ra=dataI[0].cp0ra;

@@ -58,8 +58,10 @@ always_comb begin
 end
 // assign 
 
-//这步特判怎么做啊
-
+//cp0两个写，不能同时发射（因为可能有wa不同）
+//cp0两个读，不可同时
+//一读一写，若读在写前，可以；读在写后，不行（可能是同一wa）
+//
 always_comb begin
     // have_slot='0;
     issue_en[0]=bypass_inra1[0].valid && bypass_inra2[0].valid;
@@ -69,8 +71,8 @@ always_comb begin
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump
         ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
-        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)
-        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)&&(candidate2.cp0_ctl.ctype==EXCEPTION||candidate2.cp0_ctl.ctype==ERET)) begin
+        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)||(candidate1.ctl.cp0toreg&&candidate2.ctl.cp0toreg)
+        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)) begin
         issue_en[0]='0;
     end
 end

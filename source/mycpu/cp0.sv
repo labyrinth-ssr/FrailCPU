@@ -35,7 +35,7 @@ module cp0
 	// u1 trint,swint,exint;
 	//异常，排除中断
 	u1 interrupt,delayed_interupt;
-	assign is_INTEXC= ctype==EXCEPTION||(interrupt&&inter_valid)||delayed_interupt;
+	assign is_INTEXC= ctype==EXCEPTION||((interrupt||int_saved) &&inter_valid);
 	assign is_EXC= ctype==EXCEPTION;
 	word_t pc1_save,pc2_save;
 	
