@@ -79,59 +79,59 @@ assign overflow= push(push(tail))==head || push(tail)==head;
 //                 || (((que_empty&&~issue_en[1]&&dataD[1].valid&&dataD[0].valid) || (~que_empty && dataD[0].valid&& ~ (pop(head)==tail&&issue_en[0]))) && push(push(tail))==head) ;
 
 
-always_ff @(posedge clk) begin
-    if (reset) begin
-        head<='0;
-        tail<='0;
-        // issue_queue<='0;
-    end else
+// always_ff @(posedge clk) begin
+//     if (reset) begin
+//         head<='0;
+//         tail<='0;
+//         // issue_queue<='0;
+//     end else
 
-    if (flush_que) begin
-        head<=tail;
-    end else begin
-        if (~overflow && ~stallI) begin
-            if (que_empty) begin
-                if (~issue_en[1]&&dataD[1].valid) begin
-                    // issue_queue[tail]<=dataD[1];
-                    tail<=push(tail);
-                    if (dataD[0].valid) begin
-                        // issue_queue[push(tail)]<=dataD[0];
-                        tail<=push(push(tail));
-                    end
-                end else if (~issue_en[0]&&dataD[0].valid) begin
-                    // issue_queue[tail]<=dataD[0];
-                    tail<=push(tail);
-                end
-            end else begin
-                //不存在有1无0的情况
-                if (dataD[1].valid&&~(pop(head)==tail&&issue_en[0])) begin
-                        // issue_queue[tail]<=dataD[1];
-                        tail<=push(tail);
-                end
-                if (dataD[0].valid) begin
-                    if (pop(head)==tail&&issue_en[0]) begin
-                        // issue_queue[tail]<=dataD[0];
-                        tail<=push(tail);
-                    end else begin
-                        // issue_queue[push(tail)]<=dataD[0];
-                        tail<=push(push(tail));
-                    end
-                end
-            end
-        end
+//     if (flush_que) begin
+//         head<=tail;
+//     end else begin
+//         if (~overflow && ~stallI) begin
+//             if (que_empty) begin
+//                 if (~issue_en[1]&&dataD[1].valid) begin
+//                     // issue_queue[tail]<=dataD[1];
+//                     tail<=push(tail);
+//                     if (dataD[0].valid) begin
+//                         // issue_queue[push(tail)]<=dataD[0];
+//                         tail<=push(push(tail));
+//                     end
+//                 end else if (~issue_en[0]&&dataD[0].valid) begin
+//                     // issue_queue[tail]<=dataD[0];
+//                     tail<=push(tail);
+//                 end
+//             end else begin
+//                 //不存在有1无0的情况
+//                 if (dataD[1].valid&&~(pop(head)==tail&&issue_en[0])) begin
+//                         // issue_queue[tail]<=dataD[1];
+//                         tail<=push(tail);
+//                 end
+//                 if (dataD[0].valid) begin
+//                     if (pop(head)==tail&&issue_en[0]) begin
+//                         // issue_queue[tail]<=dataD[0];
+//                         tail<=push(tail);
+//                     end else begin
+//                         // issue_queue[push(tail)]<=dataD[0];
+//                         tail<=push(push(tail));
+//                     end
+//                 end
+//             end
+//         end
         
-        if (~stallI || (stallI && overflow && ~stallI_de)) begin
-                if (~que_empty) begin
-            if (issue_en[1]) begin
-                head<=pop(head);
-                if (pop(head)!=tail&&issue_en[0]) begin
-                    head<=pop(pop(head));
-                end
-            end
-        end
-        end
-    end
-end
+//         if (~stallI || (stallI && overflow && ~stallI_de)) begin
+//                 if (~que_empty) begin
+//             if (issue_en[1]) begin
+//                 head<=pop(head);
+//                 if (pop(head)!=tail&&issue_en[0]) begin
+//                     head<=pop(pop(head));
+//                 end
+//             end
+//         end
+//         end
+//     end
+// end
 u1 last1;
 assign last1=pop(head)==tail;
 // ||issue_en[1]&&~issue_en[0]&&dataD[0].valid
@@ -139,6 +139,7 @@ always_ff @(posedge clk) begin
     if(~flush_que&&~overflow&&~stallI) begin
         if ((que_empty&&~issue_en[1]&&dataD[1].valid)
         ||(~que_empty&&dataD[1].valid&&~(last1&&issue_en[0]))) begin
+            tail<=push(tail);
             for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
                 if (i[ISSUE_QUEUE_WIDTH-1:0]==tail) begin
                     issue_queue[i]<=dataD[1];
@@ -146,18 +147,32 @@ always_ff @(posedge clk) begin
             end
         end else if ((que_empty&&issue_en[1]&&dataD[0].valid&&~issue_en[0])
         ||(~que_empty&&last1&&issue_en[0])) begin
+            tail<=push(tail);
             for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
                 if (i[ISSUE_QUEUE_WIDTH-1:0]==tail) begin
                     issue_queue[i]<=dataD[0];
                 end
             end
         end
-
         if (que_empty&&~issue_en[1]&&dataD[1].valid&&dataD[0].valid
         ||(~que_empty&&dataD[0].valid&&~(last1&&issue_en[0]))) begin
+            tail<=push(push(tail));
             for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
                 if (i[ISSUE_QUEUE_WIDTH-1:0]==push(tail)) begin
                     issue_queue[i]<=dataD[0];
+                end
+            end
+        end
+    end
+
+    if (flush_que||reset) begin
+        head<=tail;
+    end else if (~stallI || (stallI && overflow && ~stallI_de)) begin
+        if (~que_empty) begin
+            if (issue_en[1]) begin
+                head<=pop(head);
+                if (pop(head)!=tail&&issue_en[0]) begin
+                    head<=pop(pop(head));
                 end
             end
         end
