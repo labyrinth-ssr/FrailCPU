@@ -90,9 +90,9 @@ module ICache (
     ) meta_ram(
         .clk(clk), 
         .resetn,
-        .en(1),
+        .en(1'b1),
         .addr(meta_addr),
-        .strobe(1),
+        .strobe(1'b1),
         .wdata(meta_w),
         .rdata(meta_r)
     );
