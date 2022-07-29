@@ -95,7 +95,7 @@ void MyCPU::reset() {
     clk = 0;
     resetn = 0;
     oresp = 0;
-    ticks(10);  // 10 cycles to reset
+    ticks(1000);  // 10 cycles to reset
 }
 
 void MyCPU::tick() {
