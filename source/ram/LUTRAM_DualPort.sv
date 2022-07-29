@@ -23,7 +23,7 @@ module LUTRAM_DualPort #(
 	}
 )(
 	input logic clk, en_1, en_2,
-	input logic resetn,
+
 	input  raddr_t   addr_1, addr_2,
     input  rstrobe_t strobe,
     input  rview_t   wdata,
@@ -70,15 +70,10 @@ module LUTRAM_DualPort #(
 	end
 
 	always_ff @(posedge clk) begin
-		if (resetn) begin
-			if (en_1)
-				for (int i = 0; i < BYTES_PER_WORD; i++)
-					if (strobe[i])
-						mem[addr_1].lanes[i] <= wdata.lanes[i];
-		end 
-		else begin
-			mem <= '{default:0};
-		end
+		if (en_1)
+			for (int i = 0; i < BYTES_PER_WORD; i++)
+				if (strobe[i])
+					mem[addr_1].lanes[i] <= wdata.lanes[i];
 	end
 	/* verilator tracing_on */
 `else

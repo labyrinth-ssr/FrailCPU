@@ -69,6 +69,11 @@ module ICache (
     addr_t ireq_addr;
     assign ireq_addr = ireq.addr;
 
+    u64 reset_counter;
+    always_ff @(posedge clk) begin
+        reset_counter <= reset_counter + 1;
+    end
+
     //meta_ram
     typedef struct packed {
         logic valid;
@@ -79,7 +84,7 @@ module ICache (
 
     index_t meta_addr;
     meta_t meta_r, meta_w;
-    assign meta_addr = ireq_addr.index;
+    assign meta_addr = resetn ? ireq_addr.index : reset_counter[INDEX_BITS-1:0];
 
     RAM_SinglePort #(
         .ADDR_WIDTH(INDEX_BITS),
@@ -89,7 +94,6 @@ module ICache (
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk), 
-        .resetn,
         .en(1'b1),
         .addr(meta_addr),
         .strobe(1'b1),
@@ -113,7 +117,7 @@ module ICache (
     end
 
     //plru_ram
-    plru_t plru_ram [SET_NUM-1 : 0];
+    plru_t [SET_NUM-1 : 0] plru_ram;
 
     //plru_r -> replace_line
     //hit_line + plru_r -> plru_new
@@ -153,12 +157,11 @@ module ICache (
     /*
     改动！！
     */
-    assign miss_write_en = (state == FETCH && icresp.ready) 
-                            ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
-                            : '0;
-    assign data_w = (state == FETCH && icresp.ready) 
-                            ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
-                            : '0;
+    assign miss_write_en = resetn ? ((state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
+                                                                     : '0)
+                                  : {BYTE_PER_DATA{1'b1}};
+    assign data_w = (resetn & state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
+                                                            : '0;
 
 
     for (genvar i = 0; i < WORD_PER_LINE; i = i + 2) begin
@@ -180,34 +183,36 @@ module ICache (
     //更新meta_ram, plru_ram
     always_comb begin
         meta_w = meta_r;
-        if (ireq_miss) begin
-            for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                if (replace_line == associativity_t'(i)) begin
-                    meta_w[i].tag = ireq_addr.tag;
-                    meta_w[i].valid = 1'b1;
-                end
-                else begin
+        if (resetn) begin
+            if (ireq_miss) begin
+                for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                    if (replace_line == associativity_t'(i)) begin
+                        meta_w[i].tag = ireq_addr.tag;
+                        meta_w[i].valid = 1'b1;
+                    end
+                    else begin
+                    end
                 end
             end
         end
         else begin
+            meta_w = '0;
         end
     end
-
-    initial begin
-        for (int i = 0; i < SET_NUM; i++) begin
-            plru_ram[i] = '0;
-        end
-    end
-
 
     always_ff @(posedge clk) begin
-       if (ireq_hit) begin
-            for (int i = 0; i < SET_NUM; i++) begin
-                plru_ram[i] <= (ireq_addr.index == index_t'(i)) ? plru_new
-                                                                : plru_ram[i];
-            end
+        if (resetn) begin
+            if (ireq_hit) begin
+                for (int i = 0; i < SET_NUM; i++) begin
+                    plru_ram[i] <= (ireq_addr.index == index_t'(i)) ? plru_new
+                                                                    : plru_ram[i];
+                end
+            end    
         end
+        else begin
+            plru_ram <= '0;                                            
+        end
+        
     end
 
     always_ff @(posedge clk) begin
@@ -244,6 +249,7 @@ module ICache (
         end
         else begin
             state <= IDLE;
+            miss_data_addr <= miss_data_addr + 1;
         end
     end
 
@@ -256,29 +262,31 @@ module ICache (
         end
     end
 
-    BRAM #(
-        .DATA_WIDTH(DATA_WIDTH),
+
+    RAM_TrueDualPort #(
         .ADDR_WIDTH(DATA_ADDR_BITS),
-        .RESET_VALUE("00000000"),
-        .WRITE_MODE("read_first")
+        .DATA_WIDTH(DATA_WIDTH),
+        .BYTE_WIDTH(BYTE_WIDTH),
+        .MEM_TYPE(0),
+	    .READ_LATENCY(1)
     ) data_bram(
         .clk, 
-        .resetn,
 
         // port 1 : ibus
-        .en_1(ireq_hit),
-        .write_en_1(0),
-        .addr_1(data_addr),
-        .data_in_1(0),
-        .data_out_1(data_r),
-
+        .en_1(ireq_hit), 
+        .addr_1(data_addr), 
+        .strobe_1(0), 
+        .wdata_1(0), 
+        .rdata_1(data_r),
+        
         // port 2 : cbus 
         .en_2(1),
-        .write_en_2(miss_write_en),
         .addr_2(miss_data_addr),
-        .data_in_2(data_w),
-        .data_out_2(unused_data_r)
+        .strobe_2(miss_write_en),
+        .wdata_2(data_w),
+        .rdata_2(unused_data_r)
     );
+
 
 
     //DBus
