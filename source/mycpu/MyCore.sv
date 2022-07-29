@@ -65,8 +65,6 @@ module MyCore (
     execute_data_t dataM1_nxt[1:0],dataM1[1:0];
     memory_data_t dataM2_nxt[1:0],dataM2[1:0];
 
-   
-
     always_comb begin
         pc_succ=dataP_pc+8;
         if (dataP_pc[2]==1) begin

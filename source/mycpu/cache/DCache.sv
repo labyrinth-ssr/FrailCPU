@@ -39,6 +39,9 @@ module DCache (
     localparam type associativity_t = logic [ASSOCIATIVITY_BITS-1:0];
     localparam type index_t = logic [INDEX_BITS-1:0];
     localparam type tag_t = logic [TAG_BITS-1:0];
+
+    localparam type dirty_t = logic [INDEX_BITS+ASSOCIATIVITY_BITS-1:0];
+
     localparam type data_addr_t = struct packed {
         associativity_t line;
         index_t index;
@@ -113,7 +116,11 @@ module DCache (
     );
 
     //dirty_ram
-    logic dirty_ram [ASSOCIATIVITY*SET_NUM-1:0];
+    logic [ASSOCIATIVITY*SET_NUM-1:0] dirty_ram;
+    logic [ASSOCIATIVITY*SET_NUM-1:0] dirty_ram_new;
+    dirty_t dirty_addr_1, dirty_addr_2;
+    assign dirty_addr_1 = {hit_line_1, dreq_1_addr.index};
+    assign dirty_addr_2 = {hit_line_2, dreq_2_addr.index};
 
     //计算hit
     logic hit_1, hit_2;
@@ -156,7 +163,7 @@ module DCache (
     addr_t cbus_addr;
 
     //plru_ram
-    plru_t plru_ram [SET_NUM-1 : 0];
+    plru_t [SET_NUM-1 : 0] plru_ram;
     plru_t plru_r_1, plru_r_2;
     associativity_t replace_line_1, replace_line_2;
     plru_t plru_new_1, plru_new_2;
@@ -228,37 +235,51 @@ module DCache (
 
     logic delay_counter;
 
-    //更新dirty_ram
-    always_ff @(posedge clk) begin
-        unique case (state)
-            IDLE: begin
-            if (dreq_hit & |dreq_1.strobe) begin
-                    dirty_ram[{hit_line_1, dreq_1_addr.index}] <= |dreq_1.strobe;
-                    if (dreq_2.valid & |dreq_2.strobe) begin
-                        dirty_ram[{hit_line_2, dreq_2_addr.index}] <= |dreq_2.strobe;
+    always_comb begin
+        dirty_ram_new = dirty_ram;
+        for (int i = 0; i < ASSOCIATIVITY*SET_NUM; i++) begin
+            unique case (state)
+                IDLE: begin
+                    if (dreq_hit & |dreq_1.strobe) begin
+                        dirty_ram_new[i] = (dirty_addr_1 == dirty_t'(i)) ? |dreq_1.strobe : dirty_ram[i];
+                        if (dreq_2.valid & |dreq_2.strobe) begin
+                            dirty_ram_new[i] = (dirty_addr_2 == dirty_t'(i)) ? |dreq_2.strobe : dirty_ram[i];
+                        end
                     end
                 end
-            end
 
-            FETCH_1: begin
-                dirty_ram[{replace_line_1, dreq_1_addr.index}] <= '0;
-            end
-        
-            FETCH_2: begin
-                dirty_ram[{replace_line_2, dreq_2_addr.index}] <= '0;
-            end
-            default: begin   
-            end
-        endcase 
+                FETCH_1: begin
+                    dirty_ram_new[i] = (dirty_addr_1 == dirty_t'(i)) ? '0 : dirty_ram[i];
+                end
+            
+                FETCH_2: begin
+                    dirty_ram_new[i] = (dirty_addr_2 == dirty_t'(i)) ? '0 : dirty_ram[i];
+                end
+
+                default: begin   
+                end
+            endcase
+        end
+         
+    end
+
+    always_ff @(posedge clk) begin
+        dirty_ram <= dirty_ram_new;
     end
 
     //hit时更新plru_ram
     always_ff @(posedge clk) begin
         if (dreq_hit) begin
-            plru_ram[dreq_1_addr.index] <= (dreq_1_addr.index == dreq_2_addr.index & dreq_2.valid) ? plru_new_2
-                                                                                                    : plru_new_1;
+            for (int i = 0; i < SET_NUM; i++) begin
+                plru_ram[i] <= (dreq_1_addr.index == index_t'(i)) ? ((dreq_1_addr.index == dreq_2_addr.index & dreq_2.valid) ? plru_new_2
+                                                                                                                             : plru_new_1)
+                                                                  : plru_ram[i];
+            end
             if (dreq_1_addr.index != dreq_2_addr.index & dreq_2.valid) begin
-                plru_ram[dreq_2_addr.index] <= plru_new_2;
+                for (int i = 0; i < SET_NUM; i++) begin
+                    plru_ram[i] <= (dreq_2_addr.index == index_t'(i)) ? plru_new_2
+                                                                      : plru_ram[i];
+                end
             end
         end
     end
@@ -310,8 +331,11 @@ module DCache (
 
                     miss_addr.offset <= miss_addr.offset + 1;  
                     buffer_offset <= miss_addr.offset;
-                    buffer[buffer_offset] <= port_2_data_r;
 
+                    for (int i = 0; i < DATA_PER_LINE; i++) begin
+                        buffer[i] <= (buffer_offset == offset_t'(i)) ? port_2_data_r : buffer[i];
+                    end
+                    
                     if (dcresp.last) begin
                         miss_addr.offset <= dreq_1_addr.offset;  
                     end
@@ -334,7 +358,9 @@ module DCache (
 
                     miss_addr.offset <= miss_addr.offset + 1;  
                     buffer_offset <= miss_addr.offset;
-                    buffer[buffer_offset] <= port_2_data_r;
+                    for (int i = 0; i < DATA_PER_LINE; i++) begin
+                        buffer[i] <= (buffer_offset == offset_t'(i)) ? port_2_data_r : buffer[i];
+                    end
 
                     if (dcresp.last) begin
                         miss_addr.offset <= dreq_2_addr.offset;  
@@ -382,13 +408,26 @@ module DCache (
         meta_w = meta_r_1;
         unique case (state)
             FETCH_1: begin
-                meta_w[replace_line_1].tag = dreq_1_addr.tag;
-                meta_w[replace_line_1].valid = 1'b1;
+                for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                    if (replace_line_1 == associativity_t'(i)) begin
+                        meta_w[i].tag = dreq_1_addr.tag;
+                        meta_w[i].valid = 1'b1;
+                    end
+                    else begin
+                    end
+                end
+                
             end
 
             FETCH_2: begin
-                meta_w[replace_line_2].tag = dreq_2_addr.tag;
-                meta_w[replace_line_2].valid = 1'b1;
+                for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                    if (replace_line_2 == associativity_t'(i)) begin
+                        meta_w[i].tag = dreq_2_addr.tag;
+                        meta_w[i].valid = 1'b1;
+                    end
+                    else begin
+                    end
+                end
             end
             
             default: begin   
