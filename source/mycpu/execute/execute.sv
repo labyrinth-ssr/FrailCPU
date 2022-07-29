@@ -169,7 +169,6 @@
             valid_i='1;
         end else if (dataI[0].ctl.op==MULT||dataI[0].ctl.op==MULTU||dataI[0].ctl.op==DIV||dataI[0].ctl.op==DIVU) begin
             valid_i='0;
-            
         end
     end
 
