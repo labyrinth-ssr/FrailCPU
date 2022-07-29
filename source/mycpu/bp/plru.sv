@@ -4,8 +4,8 @@
 `include "common.svh"
 
 //七位PLRU值
-module plru #(
-    parameter int ASSOCIATIVITY = 8,
+module PLRU #(
+    parameter int ASSOCIATIVITY = 4,
 
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
     localparam type plru_t = logic [ASSOCIATIVITY-2:0],
@@ -22,16 +22,9 @@ module plru #(
 
     always_comb begin
         plru_new = plru_old;
-
         plru_new[0] = ~hit_line[2];
-        //plru_new[hit_line[2] + 1] = ~hit_line[1];
-        if (hit_line[2]) plru_new[2] = ~hit_line[1];
-	else plru_new[1] = ~hit_line[1];
-	// should be plru_new[loop variable]
-        // plru_new[hit_line[2] * 2 + 3 + hit_line[1]] = ~hit_line[0];
-
-        for (int i = 0; i < $bits(plru_new); i++) if (i == hit_line[2] * 2 + 3 + hit_line[1])
-            plru_new[i] = ~hit_line[0];
+        plru_new[hit_line[2] + 1] = ~hit_line[1];
+        plru_new[hit_line[2] * 2 + 3 + hit_line[1]] = ~hit_line[0];
     end
    
 
