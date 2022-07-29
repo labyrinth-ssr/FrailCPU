@@ -181,8 +181,14 @@ module ICache (
     always_comb begin
         meta_w = meta_r;
         if (ireq_miss) begin
-            meta_w[replace_line].valid = 1'b1;
-            meta_w[replace_line].tag = ireq_addr.tag;
+            for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                if (replace_line == associativity_t'(i)) begin
+                    meta_w[i].tag = ireq_addr.tag;
+                    meta_w[i].valid = 1'b1;
+                end
+                else begin
+                end
+            end
         end
         else begin
         end
@@ -190,7 +196,10 @@ module ICache (
 
     always_ff @(posedge clk) begin
         if (ireq_hit) begin
-            plru_ram[ireq_addr.index] <= plru_new;
+            for (int i = 0; i < SET_NUM; i++) begin
+                plru_ram[i] <= (ireq_addr.index == index_t'(i)) ? plru_new
+                                                                : plru_ram[i];
+            end
         end
     end
 
@@ -213,7 +222,10 @@ module ICache (
                             miss_data_addr.offset <= miss_data_addr.offset + 1;
                         end
 
-                        part_fetch_finish[fetch_count] <= 1'b1;
+                        for (int i = 0; i < WORD_PER_LINE; i++) begin
+                            part_fetch_finish[i] <= (fetch_count == cbus_num_t'(i)) ? 1'b1 : part_fetch_finish[i];
+                        end
+                        
                         fetch_count <= fetch_count + 1;
 
                         state <= icresp.last ? IDLE : FETCH;
