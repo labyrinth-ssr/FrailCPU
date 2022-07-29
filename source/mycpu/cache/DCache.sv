@@ -117,20 +117,29 @@ module DCache (
 
     //计算hit
     logic hit_1, hit_2;
+    logic [ASSOCIATIVITY-1:0] hit_1_bits, hit_2_bits;
     associativity_t hit_line_1, hit_line_2;
+
+    for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
+        assign hit_1_bits[i] = meta_r_1[i].valid && meta_r_1[i].tag == dreq_1_addr.tag;
+    end
+    assign hit_1 = |hit_1_bits;
     always_comb begin
-        {hit_1, hit_2} = '0;
-        {hit_line_1, hit_line_2} = '0;
+        hit_line_1 = 0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (meta_r_1[i].valid && meta_r_1[i].tag == dreq_1_addr.tag) begin
-                hit_1 = 1'b1;
-                hit_line_1 = associativity_t'(i);
-            end
-            if (meta_r_2[i].valid && meta_r_2[i].tag == dreq_2_addr.tag) begin
-                hit_2 = 1'b1;
-                hit_line_2 = associativity_t'(i);
-            end
-        end 
+            hit_line_1 |= hit_1_bits[i] ? associativity_t'(i) : 0;
+        end
+    end
+
+    for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
+        assign hit_2_bits[i] = meta_r_2[i].valid && meta_r_2[i].tag == dreq_2_addr.tag;
+    end
+    assign hit_2 = |hit_2_bits;
+    always_comb begin
+        hit_line_2 = 0;
+        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+            hit_line_2 |= hit_2_bits[i] ? associativity_t'(i) : 0;
+        end
     end
 
     //hit && miss
