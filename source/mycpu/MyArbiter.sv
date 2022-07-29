@@ -82,16 +82,19 @@ module MyArbiter #(
     //iresps
     always_comb begin
         iresps = '0;
-        unique case (state)
-            BUSY: begin
-                iresps[index] = oresp;
-            end
-            JUDGE: begin
-                iresps[select] = oresp;
-            end
-            default: begin
-            end
-        endcase
+        for (int i = 0; i < NUM_INPUTS; i++) begin
+            unique case (state)
+                BUSY: begin
+                    iresps[i] = (index == index_t'(i)) ? oresp : 0;
+                end
+                JUDGE: begin
+                    iresps[i] = (select == index_t'(i)) ? oresp : 0;
+                end
+                default: begin
+                end
+            endcase    
+        end
+        
     end
 
 endmodule
