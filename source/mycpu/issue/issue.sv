@@ -25,12 +25,15 @@ localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
 u1 have_slot;
+decode_data_t issue_queue [ISSUE_QUEUE_SIZE-1:0];
+index_t head;
+index_t tail;
 
-function index_t push(index_t tail);
-    return tail==0? 5'd31:tail-1;
+function index_t push(index_t tail_in);
+    return tail_in==0? 5'd31:tail_in-1;
 endfunction
-function index_t pop(index_t head);
-    return head==0? 5'd31:head-1;
+function index_t pop(index_t head_in);
+    return head_in==0? 5'd31:head_in-1;
 endfunction
 function u1 multi_op(decoded_op_t op);
     return op==DIV||op==DIVU||op==MULT||op==MULTU;
@@ -38,13 +41,7 @@ endfunction
 u1 que_empty;
 assign que_empty=head==tail;
 
-decode_data_t issue_queue [ISSUE_QUEUE_SIZE-1:0];
-index_t head;
-index_t tail;
-
 u1 issue_en[1:0];
-// assign 
-
 decode_data_t candidate1,candidate2;
 assign candidate1=que_empty? dataD[1]:issue_queue[head];
 always_comb begin
@@ -138,19 +135,19 @@ always_ff @(posedge clk) begin
 
 end
 
-always_comb begin
-    issue_bypass_out[1].ra1= candidate1.ra1;
-    issue_bypass_out[1].ra2= candidate1.ra2;
-    issue_bypass_out[1].cp0ra= candidate1.cp0ra;
-    issue_bypass_out[1].lo_read= candidate1.ctl.op==MFLO;
-    issue_bypass_out[1].hi_read= candidate1.ctl.op==MFHI;
-    issue_bypass_out[1].cp0_read= candidate1.ctl.op==MFC0;
-    issue_bypass_out[0].ra1= candidate2.ra1;
-    issue_bypass_out[0].ra2= candidate2.ra2;
-    issue_bypass_out[0].cp0ra= candidate2.cp0ra;
-    issue_bypass_out[0].lo_read= candidate2.ctl.op==MFLO;
-    issue_bypass_out[0].hi_read= candidate2.ctl.op==MFHI;
-    issue_bypass_out[0].cp0_read= candidate2.ctl.op==MFC0;
+// always_comb begin
+  assign  issue_bypass_out[1].ra1= candidate1.ra1;
+  assign  issue_bypass_out[1].ra2= candidate1.ra2;
+//   assign  issue_bypass_out[1].cp0ra= candidate1.cp0ra;
+//   assign  issue_bypass_out[1].lo_read= candidate1.ctl.op==MFLO;
+//   assign  issue_bypass_out[1].hi_read= candidate1.ctl.op==MFHI;
+//   assign  issue_bypass_out[1].cp0_read= candidate1.ctl.op==MFC0;
+  assign  issue_bypass_out[0].ra1= candidate2.ra1;
+  assign  issue_bypass_out[0].ra2= candidate2.ra2;
+//   assign  issue_bypass_out[0].cp0ra= candidate2.cp0ra;
+//   assign  issue_bypass_out[0].lo_read= candidate2.ctl.op==MFLO;
+//   assign  issue_bypass_out[0].hi_read= candidate2.ctl.op==MFHI;
+//   assign  issue_bypass_out[0].cp0_read= candidate2.ctl.op==MFC0;
     // if (que_empty) begin
     //     for (int i=1; i>=0; --i) begin
     //         if (dataD[i].valid) begin
@@ -178,7 +175,7 @@ always_comb begin
     //         issue_bypass_out[0].hi_read= issue_queue[pop(head)].ctl.op==MFHI;
     //         issue_bypass_out[0].cp0_read= issue_queue[pop(head)].ctl.op==MFC0;
     // end
-end
+// end
 
     always_comb begin
         {dataI[1],dataI[0]}='0; 
@@ -190,7 +187,7 @@ end
                 dataI[i].pc=dataD[i].pc;
                 dataI[i].valid=dataD[i].valid;
                 dataI[i].imm=dataD[i].imm;
-                dataI[i].is_slot=dataD[i].is_slot;
+                // dataI[i].is_slot=dataD[i].is_slot;
                 dataI[i].rd1= bypass_inra1[i].bypass? bypass_inra1[i].data :rd1[i];
                 dataI[i].rd2= bypass_inra2[i].bypass? bypass_inra2[i].data :rd2[i];
                 dataI[i].raw_instr=dataD[i].raw_instr;
@@ -206,7 +203,7 @@ end
                 dataI[1].pc=issue_queue[head].pc;
                 dataI[1].valid=issue_queue[head].valid;
                 dataI[1].imm=issue_queue[head].imm;
-                dataI[1].is_slot=issue_queue[head].is_slot;
+                // dataI[1].is_slot=issue_queue[head].is_slot;
                 dataI[1].rd1=bypass_inra1[1].bypass? bypass_inra1[1].data :rd1[1];
                 dataI[1].rd2=bypass_inra2[1].bypass? bypass_inra2[1].data :rd2[1];
                 dataI[1].raw_instr=issue_queue[head].raw_instr;
@@ -219,7 +216,7 @@ end
                     dataI[0].pc=candidate2.pc;
                     dataI[0].valid=candidate2.valid;
                     dataI[0].imm=candidate2.imm;
-                    dataI[0].is_slot=candidate2.is_slot;
+                    // dataI[0].is_slot=candidate2.is_slot;
                     dataI[0].rd1=bypass_inra1[0].bypass? bypass_inra1[0].data :rd1[0];
                     dataI[0].rd2=bypass_inra2[0].bypass? bypass_inra2[0].data :rd2[0];
                     dataI[0].raw_instr=candidate2.raw_instr;

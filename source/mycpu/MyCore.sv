@@ -43,10 +43,10 @@ module MyCore (
     word_t epc;
     u1 excpM,overflowI;
     u1 reset;
+    writeback_data_t dataW[1:0];
     u1 pc_except;
     word_t pc_selected,pc_succ,dataP_pc;
-
-
+    assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
 
@@ -65,8 +65,7 @@ module MyCore (
     execute_data_t dataM1_nxt[1:0],dataM1[1:0];
     memory_data_t dataM2_nxt[1:0],dataM2[1:0];
 
-    writeback_data_t dataW[1:0];
-    assign pc_except=dataP_pc[1:0]!=2'b00;
+   
 
     always_comb begin
         pc_succ=dataP_pc+8;
@@ -115,7 +114,11 @@ module MyCore (
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
-    assign dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except ? '1:'0;
+    always_comb begin
+        dataF1_nxt.cp0_ctl.etype='0;
+        dataF1_nxt.cp0_ctl.vaddr='0;
+        dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except;
+    end
     assign dataF1_nxt.cp0_ctl.valid='0;
     u1 dataF1_pc;
     always_ff @( posedge clk ) begin
@@ -175,6 +178,7 @@ module MyCore (
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
+    assign dataF2_nxt[0].cp0_ctl='0;
 
     assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
@@ -287,10 +291,10 @@ module MyCore (
         assign dataM2_in[i].regwrite=dataM2[i].ctl.regwrite;
 
         assign dataEnxt_in[i].rdst=dataI[i].rdst;
-        assign dataEnxt_in[i].lowrite=dataI[i].ctl.lowrite;
-        assign dataEnxt_in[i].hiwrite=dataI[i].ctl.hiwrite;
-        assign dataEnxt_in[i].cp0write=dataI[i].ctl.cp0write;
-        assign dataEnxt_in[i].cp0ra=dataI[i].cp0ra;
+        // assign dataEnxt_in[i].lowrite=dataI[i].ctl.lowrite;
+        // assign dataEnxt_in[i].hiwrite=dataI[i].ctl.hiwrite;
+        // assign dataEnxt_in[i].cp0write=dataI[i].ctl.cp0write;
+        // assign dataEnxt_in[i].cp0ra=dataI[i].cp0ra;
         assign dataEnxt_in[i].regwrite=dataI[i].ctl.regwrite;
     end
 
@@ -381,7 +385,7 @@ module MyCore (
 		.clk,.reset,
 		.in(dataM2_nxt),
 		.out(dataM2),
-		.en(1),
+		.en(1'b1),
 		.flush(flushW)
 	);
 
@@ -429,15 +433,14 @@ module MyCore (
     assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
     word_t cp0_rd;
 
-   dataM2_save_t dataM2_save1,dataM2_save2;
-   assign dataM2_save1.pc=dataM2[1].pc;
-   assign dataM2_save1.valid=dataM2[1].valid;
-   assign dataM2_save1.is_slot=dataM2[1].is_slot;
-   assign dataM2_save1.jump=dataM2[1].ctl.branch||dataM2[1].ctl.jump;
-   assign dataM2_save2.pc=dataM2[0].pc;
-   assign dataM2_save2.valid=dataM2[0].valid;
-   assign dataM2_save2.is_slot=dataM2[0].is_slot;
-   assign dataM2_save2.jump=dataM2[0].ctl.branch||dataM2[0].ctl.jump;
+//   assign dataM2_save1.pc=dataM2[1].pc;
+//   assign dataM2_save1.valid=dataM2[1].valid;
+//   assign dataM2_save1.is_slot=dataM2[1].is_slot;
+//   assign dataM2_save1.jump=dataM2[1].ctl.branch||dataM2[1].ctl.jump;
+//   assign dataM2_save2.pc=dataM2[0].pc;
+//   assign dataM2_save2.valid=dataM2[0].valid;
+//   assign dataM2_save2.is_slot=dataM2[0].is_slot;
+//   assign dataM2_save2.jump=dataM2[0].ctl.branch||dataM2[0].ctl.jump;
    u1 inter_valid;
 
 	assign inter_valid=~i_wait&&dataM2[1].valid;

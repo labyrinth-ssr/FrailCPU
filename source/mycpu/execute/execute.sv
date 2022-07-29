@@ -84,6 +84,8 @@
             dataE[1].target={slot_pc[31:28],raw_instr[25:0],2'b00};
         end
     end
+    assign dataE[0].target='0;
+    assign dataE[0].branch_taken='0;
 
     assign target_offset={{15{raw_instr[15]}},raw_instr[14:0],2'b00};
 
@@ -106,7 +108,8 @@
     assign dataE[0].valid= exception_of[1]? '0 : dataI[0].valid;
 
     assign dataE[0].is_slot=dataI[0].is_slot;
-    
+    assign dataE[1].is_slot='0;
+
     assign dataE[0].cp0ra=dataI[0].cp0ra;
     assign dataE[1].cp0ra=dataI[1].cp0ra;
 

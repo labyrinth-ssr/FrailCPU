@@ -103,10 +103,10 @@ module DCache (
         .clk(clk), 
         .resetn,
         .en_1(meta_en), 
-        .en_2(0),
+        .en_2(1'b0),
         .addr_1(meta_addr_1), 
         .addr_2(meta_addr_2),
-        .strobe(1),  
+        .strobe(1'b1),  
         .wdata(meta_w), 
         .rdata_1(meta_r_1), 
         .rdata_2(meta_r_2)
