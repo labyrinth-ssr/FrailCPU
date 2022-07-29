@@ -99,16 +99,17 @@ module ICache (
 
     //计算hit
     logic hit;
+    logic [ASSOCIATIVITY-1:0] hit_bits;
     associativity_t hit_line;
+    for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
+        assign hit_bits[i] = meta_r[i].valid && meta_r[i].tag == ireq_addr.tag;
+    end
+    assign hit = |hit_bits;
     always_comb begin
-        {hit, hit_line} = '0;
+        hit_line = 0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (meta_r[i].valid && meta_r[i].tag == ireq_addr.tag) begin
-                hit = 1'b1;
-                hit_line = associativity_t'(i);
-                break;
-            end
-        end 
+            hit_line |= hit_bits[i] ? associativity_t'(i) : 0;
+        end
     end
 
     //plru_ram
