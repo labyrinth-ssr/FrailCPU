@@ -194,8 +194,15 @@ module ICache (
         end
     end
 
+    initial begin
+        for (int i = 0; i < SET_NUM; i++) begin
+            plru_ram[i] = '0;
+        end
+    end
+
+
     always_ff @(posedge clk) begin
-        if (ireq_hit) begin
+       if (ireq_hit) begin
             for (int i = 0; i < SET_NUM; i++) begin
                 plru_ram[i] <= (ireq_addr.index == index_t'(i)) ? plru_new
                                                                 : plru_ram[i];

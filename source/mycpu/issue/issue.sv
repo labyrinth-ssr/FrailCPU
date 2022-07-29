@@ -166,7 +166,11 @@ always_ff @(posedge clk) begin
     end
 
     if (flush_que||reset) begin
-        head<=tail;
+        head <= '0;
+        tail <= '0;
+        for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
+            issue_queue[i]<='0;
+        end
     end else if (~stallI || (stallI && overflow && ~stallI_de)) begin
         if (~que_empty) begin
             if (issue_en[1]) begin

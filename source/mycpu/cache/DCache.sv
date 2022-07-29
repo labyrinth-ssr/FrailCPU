@@ -119,8 +119,7 @@ module DCache (
     logic [ASSOCIATIVITY*SET_NUM-1:0] dirty_ram;
     logic [ASSOCIATIVITY*SET_NUM-1:0] dirty_ram_new;
     dirty_t dirty_addr_1, dirty_addr_2;
-    assign dirty_addr_1 = {hit_line_1, dreq_1_addr.index};
-    assign dirty_addr_2 = {hit_line_2, dreq_2_addr.index};
+    
 
     //计算hit
     logic hit_1, hit_2;
@@ -148,7 +147,10 @@ module DCache (
             hit_line_2 |= hit_2_bits[i] ? associativity_t'(i) : 0;
         end
     end
-
+    
+    assign dirty_addr_1 = {hit_line_1, dreq_1_addr.index};
+    assign dirty_addr_2 = {hit_line_2, dreq_2_addr.index};
+    
     //hit && miss
     logic dreq_hit_1, dreq_hit_2;
     logic dreq_avail;
@@ -264,9 +266,15 @@ module DCache (
     end
 
     always_ff @(posedge clk) begin
-        dirty_ram <= dirty_ram_new;
+        if (~resetn) dirty_ram <= '0;
+        else dirty_ram <= dirty_ram_new;
     end
 
+    initial begin
+        for (int i = 0; i < SET_NUM; i++) begin
+            plru_ram[i] = '0;
+        end
+    end
     //hit时更新plru_ram
     always_ff @(posedge clk) begin
         if (dreq_hit) begin
