@@ -8,16 +8,17 @@ module hazard
     output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,
     input u1 branchM,i_wait,d_wait,e_wait,overflowI,/*branch_misalign,*/
     input u1 excpW,excpM,
-    input u1 clk
+    input u1 clk,
+    input u1 branchD
 );
 // u1 branch_stall,lwstall,multi_stall;
-u1 excp_iwait,excp_iwait_nxt,branch_iwait,branch_iwait_nxt/*,misalign_iwait,misalign_iwait_nxt*/;
+u1 excp_iwait,excp_iwait_nxt,branch_iwait,branch_iwait_nxt,branchD_iwait,branchD_iwait_nxt;
 // u64 int_save;
-
+//
 always_ff @(posedge clk) begin
         excp_iwait<=excp_iwait_nxt;
         branch_iwait<=branch_iwait_nxt;
-        // misalign_iwait<=misalign_iwait_nxt;
+        branchD_iwait<=branchD_iwait_nxt;
 end
 
     always_comb begin
@@ -51,14 +52,14 @@ end
             stallF='1;stallF2='1;stallD='1;stallI='1;stallI_de='1;stallE='1;flushM='1;
         end else if (overflowI) begin
             stallF='1;stallF2='1;stallI='1;stallD='1;
-        end /*else if (branch_misalign) begin
+        end else if (branchD) begin
             flushF2='1;
             flushD='1;
             if (i_wait) begin
                 stallF='1;
-                misalign_iwait_nxt=1'b1;
+                branchD_iwait_nxt=1'b1;
             end
-        end*/else if (i_wait) begin
+        end else if (i_wait) begin
             stallF='1;flushF2='1;
         end
         if (~stallF&&excp_iwait) begin
@@ -69,10 +70,10 @@ end
             flushF2='1;flushD='1;
             branch_iwait_nxt='0;
         end
-        // if (~i_wait&&misalign_iwait) begin
-        //     flushF2='1;flushD='1;
-        //     misalign_iwait_nxt='0;
-        // end
+        if (~i_wait&&branchD_iwait) begin
+            flushF2='1;flushD='1;
+            branchD_iwait_nxt='0;
+        end
     end
 
 

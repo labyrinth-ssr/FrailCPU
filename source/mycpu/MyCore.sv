@@ -49,13 +49,15 @@ module MyCore (
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
+    u1 pred_taken,decode_taken;
+    word_t pre_pc,decode_pre_pc;
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.branchD(decode_taken)
 	);
 
     assign ireq.addr=dataP_pc;
-	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken);
+	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken||decode_taken);
     assign reset=~resetn;
 
     fetch_data_t dataF2_nxt [1:0],dataF2 [1:0];
@@ -64,8 +66,6 @@ module MyCore (
     execute_data_t dataE_nxt[1:0],dataE[1:0];
     execute_data_t dataM1_nxt[1:0],dataM1[1:0];
     memory_data_t dataM2_nxt[1:0],dataM2[1:0];
-
-   
 
     always_comb begin
         pc_succ=dataP_pc+8;
@@ -106,8 +106,11 @@ module MyCore (
         .epc,
         .entrance(32'hBFC0_0380),
 		.is_eret,
-		.is_INTEXC
-      
+		.is_INTEXC,
+        .pred_taken,
+        .pre_pc,
+        .decode_taken,
+        .decode_pre_pc
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
@@ -130,13 +133,55 @@ module MyCore (
 	end
     word_t pc_f1;
 
+    BPU bpu (
+        .clk,.resetn,
+        .f1_pc(dataP_pc),
+        // .hit(pred_hit),
+        .f1_taken(pred_taken),
+        .pre_pc,
+        // .need_pre()
+        .is_jr_ra_decode((dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31)),
+        .decode_taken,//预测跳转
+        .exe_pc(dataE[1].pc),
+        .is_taken(dataE[1].branch_taken),
+        .dest_pc(dataE[1].target),
+        .ret_pc(dataE[1].pc+8),
+        .is_jal(dataE[1].ctl.op==JAL),
+        .is_jalr(dataE[1].ctl.op==JALR),
+        .is_branch(dataE[1].ctl.branch),
+        .is_j(dataE[1].ctl.op==J),
+        .is_jr_ra_exe(dataE[1].ctl.op==JR&&dataE[1].ra1==31)
+    );
+
+    u1 branch_valid_i;
+    assign branch_valid_i=dataD_nxt[1].ctl.branch;
+
+    always_comb begin
+        decode_pre_pc='0;
+        if (dataD_nxt[branch_valid_i].ctl.branch) begin
+            if (dataD_nxt[1].ctl.branch) begin
+                decode_pre_pc=slot_pc+target_offset;
+            end else if (dataD_nxt[1].ctl.jr) begin
+                decode_pre_pc=dataD_nxt[1].rd1;
+            end else if (dataD_nxt[1].ctl.jump) begin
+                decode_pre_pc={slot_pc[31:28],raw_instr[25:0],2'b00};
+            end
+        end
+    end
+
+    // pc_branch pc_branch_decode(
+    //     .branch(dataD_nxt[1].ctl.branch_type),
+    //     .branch_condition,
+
+    // );
+    u1 decode_branch0;
     pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
         .reset,
         .in(dataF1_nxt),
         .out(dataF1),
         .en(~stallF2),
-        .flush(flushF2)
+        .flush(flushF2&&~decode_branch0)
     );
     u1 rawinstr_saved;
     u64 raw_instrf2_save;
@@ -146,12 +191,13 @@ module MyCore (
         delay_flushF2 <=flushF2;
         if (reset) begin
             {raw_instrf2_save,rawinstr_saved}<='0;
-        end
-        if (stallF2&&~rawinstr_saved) begin
-            raw_instrf2_save<=iresp.data;
-            rawinstr_saved<='1;
-        end else if (~stallF2) begin
-            {raw_instrf2_save,rawinstr_saved}<='0;
+        end else begin
+            if (stallF2&&~rawinstr_saved) begin
+                raw_instrf2_save<=iresp.data;
+                rawinstr_saved<='1;
+            end else if (~stallF2) begin
+                {raw_instrf2_save,rawinstr_saved}<='0;
+            end
         end
     end
     //前半部分静止，应当不发起ireq

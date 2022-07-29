@@ -7,7 +7,19 @@
 module BHT#(
     parameter int ASSOCIATIVITY = 8,
     parameter int SET_NUM = 8,
-
+) (
+    input logic clk, resetn,
+    input logic is_write, // if this instr write in to bht (branch, j, jal)
+    input logic is_jump_in, // if executed_branch is a jump(from exe)
+    input addr_t branch_pc, executed_branch_pc, dest_pc,
+    /*
+    * branch_pc is the pc of the branch to be predicted(from f1)
+    * executed_branch_pc is the pc of the branch to be executed(from exe)
+    * dest_pc is the branch dest of the executed_branch
+    */
+    output addr_t predict_pc,
+    output logic hit, is_jump_out
+);
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
     localparam TAG_BITS = 30 - INDEX_BITS,
@@ -24,19 +36,6 @@ module BHT#(
         index_t index;
         associativity_t line;
     }
-) (
-    input logic clk, resetn,
-    input logic is_write, // if this instr write in to bht (branch, j, jal)
-    input logic is_jump_in, // if executed_branch is a jump(from exe)
-    input addr_t branch_pc, executed_branch_pc, dest_pc,
-    /*
-    * branch_pc is the pc of the branch to be predicted(from f1)
-    * executed_branch_pc is the pc of the branch to be executed(from exe)
-    * dest_pc is the branch dest of the executed_branch
-    */
-    output addr_t predict_pc,
-    output logic hit, is_jump_out
-);
 
     function tag_t get_tag(addr_t addr);
         return addr[32:2+INDEX_BITS];
