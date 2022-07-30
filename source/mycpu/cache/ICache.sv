@@ -12,7 +12,10 @@ module ICache (
     input  ibus_req_t  ireq,
     output ibus_resp_t iresp,
     output cbus_req_t  icreq,
-    input  cbus_resp_t icresp
+    input  cbus_resp_t icresp,
+
+    input icache_inst_t cache_inst,
+    input cp0_taglo_t tag_lo
 );
 
     //32KB 8路组相联 1行8个data
@@ -66,6 +69,11 @@ module ICache (
         IDLE, FETCH
     };
 
+    //for INDEX_INVALID, INDEX_STORE_TAG
+    function associativity_t get_line(input addr_t addr);
+        return addr[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS+DATA_BITS-1:INDEX_BITS+OFFSET_BITS+DATA_BITS];
+    endfunction
+
     addr_t ireq_addr;
     assign ireq_addr = ireq.addr;
 
@@ -85,6 +93,8 @@ module ICache (
     index_t meta_addr;
     meta_t meta_r, meta_w;
     assign meta_addr = resetn ? ireq_addr.index : reset_counter[INDEX_BITS-1:0];
+
+
 
     RAM_SinglePort #(
         .ADDR_WIDTH(INDEX_BITS),
@@ -116,6 +126,13 @@ module ICache (
         end
     end
 
+    //for cache_inst invalid
+    logic invalid_en;
+    associativity_t index_line;
+    associativity_t invalid_line;
+    assign invalid_en = (cache_inst == INDEX_INVALID) | (cache_inst == HIT_INVALID);
+    assign invalid_line = (cache_inst == INDEX_INVALID) ? index_line : hit_line;
+
     //plru_ram
     plru_t [SET_NUM-1 : 0] plru_ram;
 
@@ -134,9 +151,15 @@ module ICache (
     );
 
     //Port 1 
-    data_addr_t data_addr;
-    data_t data_r;
-    assign data_addr = {hit_line, ireq_addr.index, ireq_addr.offset};
+    logic port_1_en;
+    strobe_t port_1_wen;
+    data_addr_t port_1_addr;
+    data_t port_1_data_w, port_1_data_r;
+
+    assign port_1_en = ireq_hit;
+    assign port_1_wen = '0;
+    assign port_1_addr = {hit_line, ireq_addr.index, ireq_addr.offset};
+    assign port_1_data_w = '0;
 
     logic data_ok_reg;
 
@@ -170,15 +193,15 @@ module ICache (
     end
 
     //hit && miss
-    logic hit_avail, miss_avail;
+    logic hit_avail;
     logic ireq_hit, ireq_miss;
 
     assign hit_avail = state == IDLE 
                     | fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}]
                     | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index};
-    assign miss_avail = state == IDLE;
     assign ireq_hit = ireq.valid & hit_avail & hit;
-    assign ireq_miss = ireq.valid & miss_avail & ~hit;
+
+    assign ireq_miss = ireq.valid & ~hit;
 
     //更新meta_ram, plru_ram
     always_comb begin
@@ -217,17 +240,18 @@ module ICache (
 
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (ireq_miss) begin
-                state <= FETCH;
-                
-                cbus_addr <= ireq_addr;
-                miss_data_addr <= {replace_line, ireq_addr.index, ireq_addr.offset};
-                
-                part_fetch_finish <= '0;
-                fetch_count <= {ireq_addr.offset, ireq_addr[DATA_BITS-1]};
-            end
-
             unique case(state)
+                IDLE : begin
+                    if (ireq_miss) begin
+                        state <= FETCH;
+                        
+                        cbus_addr <= ireq_addr;
+                        miss_data_addr <= {replace_line, ireq_addr.index, ireq_addr.offset};
+                        
+                        part_fetch_finish <= '0;
+                        fetch_count <= {ireq_addr.offset, ireq_addr[DATA_BITS-1]};
+                    end
+                end
                 FETCH : begin
                     if (icresp.ready) begin
                         if (fetch_count[0])  begin
@@ -273,11 +297,11 @@ module ICache (
         .clk, 
 
         // port 1 : ibus
-        .en_1(ireq_hit), 
-        .addr_1(data_addr), 
-        .strobe_1('0), 
-        .wdata_1(0), 
-        .rdata_1(data_r),
+        .en_1(port_1_en), 
+        .addr_1(port_1_addr), 
+        .strobe_1(port_1_wen), 
+        .wdata_1(port_1_data_w), 
+        .rdata_1(port_1_data_r),
         
         // port 2 : cbus 
         .en_2(1'b1),
@@ -292,7 +316,7 @@ module ICache (
     //DBus
     assign iresp.addr_ok = ireq_hit;
     assign iresp.data_ok = data_ok_reg;
-    assign iresp.data = data_r;
+    assign iresp.data = port_1_data_r;
 
     //CBus
     assign icreq.valid = state != IDLE;     

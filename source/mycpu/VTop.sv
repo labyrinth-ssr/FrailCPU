@@ -17,9 +17,8 @@ module VTop (
 
     ibus_req_t  ireq;
     ibus_resp_t iresp;
-    dbus_req_t  dreq [1:0];
-    dbus_resp_t dresp [1:0];
-
+    dbus_req_t  [1:0] dreq;
+    dbus_resp_t  [1:0] dresp;
     mmu_exc_out_t mmu_exc;
     mmu_req_t mmu_req;
     mmu_resp_t mmu_resp;

@@ -642,6 +642,9 @@ module decoder (
             end
         endcase
         end
+        if (ctl.regwrite&&destreg=='0) begin
+            ctl.regwrite='0;
+        end
         cp0_ctl.etype.reserveInstr=exception_ri;
         
 	end
