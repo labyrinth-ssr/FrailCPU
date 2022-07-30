@@ -58,8 +58,7 @@ module cp0
 	always_ff @(posedge clk) begin
 		if (reset) begin
 			int_saved<='0;
-		end else
-		if (interrupt&&~inter_valid) begin
+		end else if (interrupt&&~inter_valid) begin
 			// int_save.pc<=pc;
 			// int_save.is_slot<=is_slot;
 			int_saved<='1;
