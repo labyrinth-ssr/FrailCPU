@@ -118,7 +118,7 @@ module MyCore (
         dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except;
     end
     assign dataF1_nxt.cp0_ctl.valid='0;
-    u1 dataF1_pc;
+    // u1 dataF1_pc;
     always_ff @( posedge clk ) begin
 		if (reset) begin
 			dataP_pc<=32'hbfc0_0000;//
@@ -126,7 +126,7 @@ module MyCore (
 			dataP_pc<=pc_nxt;
 		end
 	end
-    word_t pc_f1;
+    // word_t pc_f1;
 
     pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
