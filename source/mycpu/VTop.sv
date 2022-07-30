@@ -1,6 +1,9 @@
 `include "access.svh"
 `include "common.svh"
-`include "cache_manage.sv"
+`ifdef VERILATOR
+`include "cache/cache_manage.sv"
+`endif 
+
 
 module VTop (
     input logic clk, resetn,

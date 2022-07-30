@@ -2,13 +2,11 @@
 `define __PIPES_SV
 
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "decode.svh"
 `include "cp0_pkg.svh"
 
-
-`endif 
 
 /* Define instrucion decoding rules here */
 
@@ -20,24 +18,31 @@
 // parameter F6_J = 6'b000010;
 // parameter F6_JAL = 6'b000011;
 
+//    typedef struct packed {
+//     word_t pc;
+//     u1 jump;
+//     u1 is_slot;
+//     u1 valid;
+//    } dataM2_save_t;
+
 typedef struct packed {
 	word_t data;
 	creg_addr_t rdst;
-	u8 cp0ra;
+	// u8 cp0ra;
 	// u1 lowrite,hiwrite,cp0write;
 	u1 memtoreg,lotoreg,hitoreg,cp0toreg;
 	u1 regwrite;
 } bypass_input_t;
 
 typedef struct packed {
-	u1 lo_read,hi_read,cp0_read;
-	u8 cp0ra;
+	// u1 lo_read,hi_read,cp0_read;
+	// u8 cp0ra;
 	creg_addr_t ra1,ra2;
 } bypass_issue_t;
 
 typedef struct packed {
-	u1 lowrite,hiwrite,cp0write;
-	u8 cp0ra;
+	// u1 lowrite,hiwrite,cp0write;
+	// u8 cp0ra;
 	u1 regwrite;
 	creg_addr_t rdst;
 } bypass_execute_t;
@@ -144,9 +149,9 @@ typedef struct packed {
 	creg_addr_t rdst,ra1,ra2;//2^5=32 assign the reg to be written
 	word_t pc;
 	u16 imm;
-	u1 is_slot;
+	// u1 is_slot;
 	cp0_control_t cp0_ctl;
-	word_t rd1,rd2;
+	// word_t rd1,rd2;
 } decode_data_t;
 
 typedef struct packed {
@@ -182,7 +187,7 @@ typedef struct packed {
 	word_t target;
 	u1 branch_taken;
 	u1 is_slot;
-	word_t lo_rd,hi_rd,cp0_rd;
+	// word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;
 	cp0_control_t cp0_ctl;
 } execute_data_t;
@@ -214,10 +219,10 @@ typedef struct packed {
 	creg_addr_t wa;
 	word_t wd;
 	control_t ctl;
-	word_t cp0_rd;
-	word_t lo_rd;
-	word_t hi_rd;
-	u1 regwrite;
+	// word_t cp0_rd;
+	// word_t lo_rd;
+	// word_t hi_rd;
+	// u1 regwrite;
 	word_t pc;
 
 } writeback_data_t;

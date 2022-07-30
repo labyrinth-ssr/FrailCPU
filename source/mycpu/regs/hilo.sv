@@ -10,7 +10,7 @@
 
 module hilo 
     (
-    input u1 clk,
+    input u1 clk,reset,
     output i32 hi, lo,
     input i1 hi_write, lo_write,
     input i32 hi_data, lo_data
@@ -26,7 +26,12 @@ module hilo
         end
     end
     always_ff @(posedge clk) begin
+        if (reset) begin
+            {hi,lo}<='0;
+        end else begin
+            
         {hi, lo} <= {hi_new, lo_new};
+        end
     end
 endmodule
 

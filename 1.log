@@ -1,33 +1,0 @@
-./build/clang+optimized/mycpu/VCacheTop/vmain 
-(1/27) running "void"...[K [K[32m[OK][0m void (0ms)
-(2/27) running "reset"...[K [K[33m[--][0m reset (skipped)
-(3/27) running "fake load"...[K [K[32m[OK][0m fake load (83ms)
-(4/27) running "fake store"...[K [K[32m[OK][0m fake store (87ms)
-(5/27) running "naive"...[K [K[32m[OK][0m naive (0ms)
-(6/27) running "akarin~"...[K [K[33m[--][0m akarin~ (skipped)
-(7/27) running "strobe"...[K [K[32m[OK][0m strobe (0ms)
-(8/27) running "ad hoc"...[K [K[32m[OK][0m ad hoc (0ms)
-(9/27) running "pipelined"...[K [K[32m[OK][0m pipelined (0ms)
-(10/27) running "memory cell"...[K [K[32m[OK][0m memory cell (0ms)
-(11/27) running "memory cell array"...[K [K[32m[OK][0m memory cell array (0ms)
-(12/27) running "cmp: word"...[K [K[32m[OK][0m cmp: word (5ms)
-(13/27) running "cmp: halfword"...[K [K[32m[OK][0m cmp: halfword (10ms)
-(14/27) running "cmp: byte"...[K [K[32m[OK][0m cmp: byte (20ms)
-(15/27) running "cmp: random"...[K [K[32m[OK][0m cmp: random (290ms)
-(16/27) running "memset"...[K [K[32m[OK][0m memset (225ms)
-(17/27) running "memcpy"...[K [K[32m[OK][0m memcpy (281ms)
-(18/27) running "load/store repeat"...[K [K[32m[OK][0m load/store repeat (178ms)
-(19/27) running "backward memset"...[K [K[32m[OK][0m backward memset (346ms)
-(20/27) running "backward load/store"...[K [K[32m[OK][0m backward load/store (441ms)
-(21/27) running "random step"...[K [K[32m[OK][0m random step (240ms)
-(22/27) running "random load/store"...[K (22/27) running "random load/store"...[K (22/27) running "random load/store"...[K (22/27) running "random load/store"...[K [K[32m[OK][0m random load/store (3944ms)
-(23/27) running "random block load/store"...[K (23/27) running "random block load/store"...[K [K[32m[OK][0m random block load/store (1976ms)
-(24/27) running "std::sort"...[K (24/27) running "std::sort"...[K (24/27) running "std::sort"...[K [K"std::sort": bingo!
-[32m[OK][0m std::sort (2722ms)
-(25/27) running "std::stable_sort"...[K (25/27) running "std::stable_sort"...[K (25/27) running "std::stable_sort"...[K (25/27) running "std::stable_sort"...[K [K"std::stable_sort": bingo!
-[32m[OK][0m std::stable_sort (3530ms)
-(26/27) running "heap sort"...[K (26/27) running "heap sort"...[K (26/27) running "heap sort"...[K (26/27) running "heap sort"...[K (26/27) running "heap sort"...[K (26/27) running "heap sort"...[K (26/27) running "heap sort"...[K (26/27) running "heap sort"...[K (26/27) running "heap sort"...[K [K"heap sort": bingo!
-[32m[OK][0m heap sort (8301ms)
-(27/27) running "binary search tree"...[K (27/27) running "binary search tree"...[K (27/27) running "binary search tree"...[K (27/27) running "binary search tree"...[K [K"binary search tree": bingo!
-[32m[OK][0m binary search tree (3749ms)
-[34m(info)[0m 27 tests passed.

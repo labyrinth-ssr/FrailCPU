@@ -1,12 +1,9 @@
 `ifndef __MULTI_SV
 `define __MULTI_SV
 
-`ifdef VERILATOR
 `include "common.svh"
 `include "pipes.svh"
-`else
 
-`endif
 
 module multi (
     input logic clk, resetn, valid,

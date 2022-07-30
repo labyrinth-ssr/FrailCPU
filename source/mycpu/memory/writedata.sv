@@ -13,7 +13,7 @@ module writedata
     input msize_t msize,
     output word_t wd,
     output strobe_t strobe,
-	output store_misalign
+	output u1 store_misalign
 );
 always_comb begin
 		strobe = '0;

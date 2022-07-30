@@ -1,7 +1,7 @@
 `ifndef __DECODE_SV
 `define __DECODE_SV
-`ifdef VERILATOR
 `include "common.svh"
+`ifdef VERILATOR
 `include "decoder.sv"
 `else
 
@@ -9,8 +9,7 @@
 
 module decode(
     input fetch_data_t dataF2 [1:0],
-    output decode_data_t dataD [1:0],
-    output branch_misalign
+    output decode_data_t dataD [1:0]
     // input word_t rd1[1:0],
     // input word_t rd2[1:0],
     // output creg_addr_t ra1[1:0],ra2[1:0]
@@ -53,8 +52,7 @@ module decode(
     //         dataD[0].pc=dataF2[0].pc;
     //     end 
     // end
-    assign dataD[0].is_slot=jump1;
-    assign branch_misalign=jump2;
+    // assign dataD[0].is_slot=jump1;
     for (genvar i=0; i<2; ++i) begin
         // assign dataD[i].rd1=rd1[i];
         // assign dataD[i].rd2=rd2[i];
@@ -66,7 +64,7 @@ module decode(
         // assign dataD[i].ra2=ra2[i];
     end
     assign dataD[1].valid=dataF2[1].valid;
-    assign dataD[0].valid=jump2?'0:dataF2[0].valid;
+    assign dataD[0].valid=dataF2[0].valid;
 
 
     

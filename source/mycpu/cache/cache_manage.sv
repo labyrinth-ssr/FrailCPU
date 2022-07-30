@@ -3,10 +3,13 @@
 
 `include "common.svh"
 `include "mmu_pkg.svh"
+
+`ifdef VERILATOR
 `include "ICache.sv"
 `include "DCache.sv"
-`include "CBusArbiter.sv"
-`include "DBusToCBus.sv"
+`include "../../util/CBusArbiter.sv"
+`include "../../util/DBusToCBus.sv"
+`endif 
 
 module cache_manage (
     input logic clk, resetn,

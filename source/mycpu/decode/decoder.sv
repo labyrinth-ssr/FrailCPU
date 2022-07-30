@@ -30,6 +30,7 @@ module decoder (
         ctl = '0;
         cp0_ctl=cp0_ctl_old;
         jump='0;
+        {srcrega,srcregb,destreg}='0;
         if (valid) begin
             case (op_)
             `OP_MUL: begin
@@ -308,12 +309,22 @@ module decoder (
             `OP_ERET: begin
                 case (instr[25:21])
                     `C_ERET:begin
-                        cp0_ctl.ctype=ERET;
+                        if (instr[20:0]==21'b11000) begin
+                            cp0_ctl.ctype=ERET;
                         // cp0_ctl.valid='1;
                         ctl.is_eret = 1'b1;
                         srcrega = '0;
                         srcregb = '0;
-                        destreg = '0;        
+                        destreg = '0;
+                        end else begin
+                            exception_ri = 1'b1;
+                        ctl.op = RESERVED;
+                        srcrega = '0;
+                        srcregb = '0;
+                        destreg = '0;
+                cp0_ctl.ctype=EXCEPTION;
+                        end
+                                
                     end 
                     `C_MFC0:begin
                         ctl.op = MFC0;

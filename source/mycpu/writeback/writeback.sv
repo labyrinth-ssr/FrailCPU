@@ -1,10 +1,7 @@
 `ifndef __WRITEBACK_SV
 `define __WRITEBACK_SV
 
-`ifdef VERILATOR
 `include "common.svh"
-`include "cp0.sv"
-`endif 
     module writeback(
         // input u1 clk,reset,
         input memory_data_t dataM [1:0],
@@ -40,7 +37,7 @@
             //         dataW[i].wd='0;
             //     end
             // end
-            assign dataW[i].valid=(dataM[i].cp0_ctl.ctype==EXCEPTION || dataM[i].cp0_ctl.ctype==ERET) ? '0: dataM[i].ctl.regwrite;
+            assign dataW[i].valid=(dataM[i].cp0_ctl.ctype==EXCEPTION || dataM[i].cp0_ctl.ctype==ERET) ? '0: dataM[i].ctl.regwrite&&dataM[i].valid;
             assign dataW[i].ctl=dataM[i].ctl;
             assign dataW[i].wa=dataM[i].rdst;
             assign dataW[i].pc=dataM[i].pc;

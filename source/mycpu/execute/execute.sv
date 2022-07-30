@@ -1,14 +1,14 @@
 `ifndef EXECUTE_SV
 `define EXECUTE_SV
 
-`ifdef VERILATOR
+
 `include "common.svh"
 `include "pipes.svh"
+`ifdef VERILATOR
 `include "alu.sv"
 `include "pcbranch.sv"
-`include "multi.sv"
-`include "div.sv"
-
+`include "alu/multi.sv"
+`include "alu/div.sv"
 `endif 
 
     module execute(
@@ -84,6 +84,8 @@
             dataE[1].target={slot_pc[31:28],raw_instr[25:0],2'b00};
         end
     end
+    assign dataE[0].target='0;
+    assign dataE[0].branch_taken='0;
 
     assign target_offset={{15{raw_instr[15]}},raw_instr[14:0],2'b00};
 
@@ -101,17 +103,21 @@
     assign dataE[i].rdst=dataI[i].rdst;
     assign dataE[i].pc=dataI[i].pc;
     assign dataE[i].ctl=dataI[i].ctl;
-    assign dataE[i].valid=dataI[i].valid;
-        
     end
+    assign dataE[1].valid=dataI[1].valid;
+    assign dataE[0].valid= exception_of[1]? '0 : dataI[0].valid;
+
     assign dataE[0].is_slot=dataI[0].is_slot;
-    
+    assign dataE[1].is_slot='0;
+
     assign dataE[0].cp0ra=dataI[0].cp0ra;
     assign dataE[1].cp0ra=dataI[1].cp0ra;
 
     u1 mult_done,div_done,nega,negb;
     word_t multia,multib;
-    u64 multc,divc,multi_res;
+    u64 multc,divc,multi_res;    
+    u1 valid_i;
+
     assign multia=dataI[valid_i].rd1;
     assign multib=dataI[valid_i].rd2;
     // assign diva=dataI[1].rd1;
@@ -146,16 +152,23 @@
 
     // u1 hi_write,lo_write;
     word_t hi_data,lo_data;
-    assign dataE[valid_i].hilo={hi_data,lo_data};
 
-    u1 valid_i;
+    always_comb begin
+        if(valid_i == 1'b1) begin
+            dataE[1].hilo={hi_data,lo_data};
+            dataE[0].hilo='0;
+        end else begin
+            dataE[0].hilo={hi_data,lo_data};
+            dataE[1].hilo='0;
+        end
+    end
+
     always_comb begin
         valid_i='0;
         if (dataI[1].ctl.op==MULT||dataI[1].ctl.op==MULTU||dataI[1].ctl.op==DIV||dataI[1].ctl.op==DIVU) begin
             valid_i='1;
         end else if (dataI[0].ctl.op==MULT||dataI[0].ctl.op==MULTU||dataI[0].ctl.op==DIV||dataI[0].ctl.op==DIVU) begin
             valid_i='0;
-            
         end
     end
 
