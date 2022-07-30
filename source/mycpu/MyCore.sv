@@ -51,7 +51,7 @@ module MyCore (
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
 
     hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset
 	);
 
     assign ireq.addr=dataP_pc;
@@ -78,8 +78,7 @@ module MyCore (
         if (reset) begin
             jpc_save<='0;
 			jpc_saved<='0;
-        end else
-		if (stallF && dataE[1].branch_taken) begin
+        end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (~stallF) begin
@@ -122,7 +121,7 @@ module MyCore (
     always_ff @( posedge clk ) begin
 		if (reset) begin
 			dataP_pc<=32'hbfc0_0000;//
-		end  else if(~stallF) begin
+		end else if(~stallF) begin
 			dataP_pc<=pc_nxt;
 		end
 	end
@@ -141,15 +140,16 @@ module MyCore (
     u1 delay_flushF2;
 
     always_ff @(posedge clk) begin
-        delay_flushF2 <=flushF2;
         if (reset) begin
-            {raw_instrf2_save,rawinstr_saved}<='0;
-        end
-        if (stallF2&&~rawinstr_saved) begin
-            raw_instrf2_save<=iresp.data;
-            rawinstr_saved<='1;
-        end else if (~stallF2) begin
-            {raw_instrf2_save,rawinstr_saved}<='0;
+            {raw_instrf2_save,rawinstr_saved,delay_flushF2}<='0;
+        end else begin
+            delay_flushF2 <=flushF2;
+            if (stallF2&&~rawinstr_saved) begin
+                raw_instrf2_save<=iresp.data;
+                rawinstr_saved<='1;
+            end else if (~stallF2) begin
+                {raw_instrf2_save,rawinstr_saved}<='0;
+            end
         end
     end
     //前半部分静止，应当不发起ireq
@@ -330,8 +330,7 @@ module MyCore (
             else if (~d_wait) begin
                 req1_finish <= 0;
             end
-        end
-        else begin
+        end else begin
             req1_finish <= 0;
         end   
     end
