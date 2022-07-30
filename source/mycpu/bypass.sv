@@ -7,16 +7,16 @@
 `endif 
 
 module bypass(
-    input bypass_input_t dataE_in[1:0],
-    input bypass_input_t dataM1_in[1:0],
-    input bypass_input_t dataM2_in[1:0],
-    // input creg_addr_t dataEnxt_in[1:.dst0],
-    input bypass_issue_t dataI_in[1:0],
-    input bypass_execute_t dataEnxt_in[1:0],
+    input bypass_input_t [1:0] dataE_in,
+    input bypass_input_t [1:0] dataM1_in,
+    input bypass_input_t [1:0] dataM2_in,
+    // input creg_addr_t [1:0] dataEnxt_in[1:.dst0],
+    input bypass_issue_t [1:0] dataI_in,
+    input bypass_execute_t [1:0] dataEnxt_in,
     // input hi,hi,
     // input u8 cp0ra,
-    output bypass_output_t outra1 [1:0],
-    output bypass_output_t outra2 [1:0]
+    output bypass_output_t [1:0] outra1,
+    output bypass_output_t [1:0] outra2 
 
 );
     // u1 no_relate_[1:0][1:0];
@@ -103,8 +103,6 @@ endfunction
     end
     
 endmodule
-
-
 `endif 
 
 
