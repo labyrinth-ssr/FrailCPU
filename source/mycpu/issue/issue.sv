@@ -136,7 +136,10 @@ u1 last1;
 assign last1=pop(head)==tail;
 // ||issue_en[1]&&~issue_en[0]&&dataD[0].valid
 always_ff @(posedge clk) begin
-    if(~flush_que&&~overflow&&~stallI) begin
+    if (reset) begin
+        {head,tail}<='0;
+    end else begin
+        if(~flush_que&&~overflow&&~stallI) begin
         if ((que_empty&&~issue_en[1]&&dataD[1].valid)
         ||(~que_empty&&dataD[1].valid&&~(last1&&issue_en[0]))) begin
             tail<=push(tail);
@@ -181,6 +184,8 @@ always_ff @(posedge clk) begin
             end
         end
     end
+    end
+    
 end
 
 // always_comb begin
