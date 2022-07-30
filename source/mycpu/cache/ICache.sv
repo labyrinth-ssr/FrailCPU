@@ -275,12 +275,12 @@ module ICache (
         // port 1 : ibus
         .en_1(ireq_hit), 
         .addr_1(data_addr), 
-        .strobe_1(0), 
+        .strobe_1('0), 
         .wdata_1(0), 
         .rdata_1(data_r),
         
         // port 2 : cbus 
-        .en_2(1),
+        .en_2(1'b1),
         .addr_2(miss_data_addr),
         .strobe_2(miss_write_en),
         .wdata_2(data_w),
