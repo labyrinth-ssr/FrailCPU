@@ -74,6 +74,10 @@ module ICache (
         return addr[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS+DATA_BITS-1:INDEX_BITS+OFFSET_BITS+DATA_BITS];
     endfunction
 
+    tag_t taglo_tag;
+    logic taglo_valid;
+    data_t taglo_data;
+
     addr_t ireq_addr;
     assign ireq_addr = ireq.addr;
 
@@ -144,15 +148,10 @@ module ICache (
     );
 
     //Port 1 
-    logic port_1_en;
-    strobe_t port_1_wen;
     data_addr_t port_1_addr;
-    data_t port_1_data_w, port_1_data_r;
+    data_t port_1_data_r;
 
-    assign port_1_en = ireq_hit;
-    assign port_1_wen = '0;
     assign port_1_addr = {hit_line, ireq_addr.index, ireq_addr.offset};
-    assign port_1_data_w = '0;
 
     logic data_ok_reg;
 
@@ -160,9 +159,9 @@ module ICache (
     logic port_2_en;
     double_strobe_t port_2_wen;
     data_addr_t port_2_addr;
-    data_t port_2_data_w, port_2_data_r;
+    data_t port_2_data_w;
 
-    data_addr_t miss_data_addr; //内存->Cache
+    data_addr_t fill_data_addr; //内存->Cache
 
     //fetch finish
     record_t fetch_finish;
@@ -176,12 +175,39 @@ module ICache (
     addr_t cbus_addr;   //内存->Cache
     
     assign port_2_en = 1'b1;
-    assign port_2_wen = resetn ? ((state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
-                                                                     : '0)
-                                  : {BYTE_PER_DATA{1'b1}};
-    assign port_2_addr = resetn ? miss_data_addr : reset_counter[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS-1:0];
-    assign port_2_data_w = (resetn & state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
-                                                            : '0;
+    always_comb begin
+        port_2_wen = '0;
+        if (resetn) begin
+            if (state == FETCH && icresp.ready) begin
+                port_2_wen = fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}};
+            end
+            else if (state == INDEX_STORE) begin
+                port_2_wen = {BYTE_PER_DATA{1'b1}};
+            end
+            else begin
+                port_2_wen = '0;
+            end
+        end
+        else begin
+            port_2_wen = {BYTE_PER_DATA{1'b1}};
+        end
+    end
+    assign port_2_addr = resetn ? fill_data_addr : reset_counter[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS-1:0];
+    always_comb begin
+        port_2_data_w = '0;
+        if (resetn) begin
+            if (state == FETCH && icresp.ready) begin
+                port_2_data_w = fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data};
+            end
+            else if (state == INDEX_STORE) begin
+                port_2_data_w = taglo_data;
+            end
+            else begin
+            end
+        end
+        else begin
+        end
+    end
 
 
     for (genvar i = 0; i < WORD_PER_LINE; i = i + 2) begin
@@ -194,8 +220,7 @@ module ICache (
     logic ireq_hit, ireq_miss;
 
     assign hit_avail = state == IDLE 
-                    | fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}]
-                    | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index};
+                    |  (state == FETCH & (fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}] | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index}));
     assign ireq_hit = ireq.valid & hit_avail & (cache_inst == NULL) & hit;
     assign ireq_miss = ireq.valid & (cache_inst == NULL) & ~hit;
 
@@ -207,14 +232,10 @@ module ICache (
     associativity_t invalid_line;
 
     assign invalid_en = (cache_inst == INDEX_INVALID) | (cache_inst == HIT_INVALID & hit);
-    assign index_store_en = (cache_inst == INDEX_STORE_TAG & state == IDLE);
+    assign index_store_en = cache_inst == INDEX_STORE_TAG;
     assign index_line = get_line(ireq_addr);
 
     assign invalid_line = (cache_inst == INDEX_INVALID) ? index_line : hit_line;
-
-    tag_t taglo_tag;
-    logic taglo_valid;
-    data_t taglo_data;
 
     //更新meta_ram, plru_ram
     always_comb begin
@@ -224,16 +245,6 @@ module ICache (
                 for (int i = 0; i < ASSOCIATIVITY; i++) begin
                     if (invalid_line == associativity_t'(i)) begin
                         meta_w[i].valid = 1'0;
-                    end
-                    else begin
-                    end
-                end
-            end
-            else if (index_store_en) begin
-                for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                    if (index_line == associativity_t'(i)) begin
-                        meta_w[i].tag = taglo_tag;
-                        meta_w[i].valid = taglo_valid;
                     end
                     else begin
                     end
@@ -251,6 +262,18 @@ module ICache (
                                 else begin
                                 end
                             end
+                        end
+                        else if (index_store_en) begin
+                            for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                                if (index_line == associativity_t'(i)) begin
+                                    meta_w[i].tag = taglo_tag;
+                                    meta_w[i].valid = taglo_valid;
+                                end
+                                else begin
+                                end
+                            end
+                        end
+                        else begin
                         end
                     end
                     default : begin
@@ -286,16 +309,21 @@ module ICache (
                         state <= FETCH;
                         
                         cbus_addr <= ireq_addr;
-                        miss_data_addr <= {replace_line, ireq_addr.index, ireq_addr.offset};
+                        fill_data_addr <= {replace_line, ireq_addr.index, ireq_addr.offset};
                         
                         part_fetch_finish <= '0;
                         fetch_count <= {ireq_addr.offset, ireq_addr[DATA_BITS-1]};
-                    end    
+                    end 
+                    else if (index_store_en) begin
+                        state <= INDEX_STORE;
+                        
+                        fill_data_addr <= {index_line, ireq_addr.index, '0};
+                    end   
                 end
                 FETCH : begin
                     if (icresp.ready) begin
                         if (fetch_count[0])  begin
-                            miss_data_addr.offset <= miss_data_addr.offset + 1;
+                            fill_data_addr.offset <= fill_data_addr.offset + 1;
                         end
 
                         for (int i = 0; i < WORD_PER_LINE; i++) begin
@@ -307,6 +335,12 @@ module ICache (
                         state <= icresp.last ? IDLE : FETCH;
                     end
                 end
+                INDEX_STORE : begin
+                    fill_data_addr.offset <= fill_data_addr.offset + 1;
+                    if (&fill_data_addr.offset) begin
+                        state <= IDLE;
+                    end
+                end
                 default : begin
                 end
             endcase
@@ -314,7 +348,7 @@ module ICache (
         else begin
             state <= IDLE;
             cbus_addr <= '0;
-            miss_data_addr <= '0;
+            fill_data_addr <= '0;
             part_fetch_finish <= '0;
             fetch_count <= '0;
         end
@@ -329,40 +363,31 @@ module ICache (
         end
     end
 
-
-    RAM_TrueDualPort #(
+    RAM_SimpleDualPort #(
         .ADDR_WIDTH(DATA_ADDR_BITS),
         .DATA_WIDTH(DATA_WIDTH),
         .BYTE_WIDTH(BYTE_WIDTH),
         .MEM_TYPE(0),
 	    .READ_LATENCY(1)
-    ) data_bram(
+    ) data_ram(
         .clk, 
-
-        // port 1 : ibus
-        .en_1(port_1_en), 
-        .addr_1(port_1_addr), 
-        .strobe_1(port_1_wen), 
-        .wdata_1(port_1_data_w), 
-        .rdata_1(port_1_data_r),
         
-        // port 2 : cbus 
-        .en_2(port_2_en),
-        .addr_2(port_2_addr),
-        .strobe_2(port_2_wen),
-        .wdata_2(port_2_data_w),
-        .rdata_2(port_2_data_r)
+        .raddr(port_1_addr), 
+        .rdata(port_1_data_r),
+        
+        .en(port_2_en),
+        .waddr(port_2_addr),
+        .strobe(port_2_wen),
+        .wdata(port_2_data_w)
     );
 
-
-
     //DBus
-    assign iresp.addr_ok = ireq_hit;
+    assign iresp.addr_ok = ireq_hit | (cache_inst == INDEX_INVALID | cache_inst == HIT_INVALID) | (state == INDEX_STORE & (&fill_data_addr.offset));
     assign iresp.data_ok = data_ok_reg;
     assign iresp.data = port_1_data_r;
 
     //CBus
-    assign icreq.valid = state != IDLE;     
+    assign icreq.valid = state == FETCH;     
     assign icreq.is_write = 0;  
     assign icreq.size = MSIZE4;      
     assign icreq.addr = cbus_addr;      

@@ -46,13 +46,15 @@
         always_comb begin
 
             for (int i=0; i<2; ++i) begin
-                    if (dataM[i].ctl.memtoreg) begin
-                        dataW[i].wd=dataM[i].rd;
-                    end else if (dataM[i].ctl.regwrite) begin
-                        dataW[i].wd=dataM[i].alu_out;
-                    end else begin
-                        dataW[i].wd='0;
-                    end
+                dataW[i].wd='0;
+                if (dataM[i].ctl.memtoreg) begin
+                    dataW[i].wd=dataM[i].rd;
+                end else if (dataM[i].ctl.regwrite) begin
+                    dataW[i].wd=dataM[i].alu_out;
+                end else begin
+                    dataW[i].wd='0;
+                end
+
                 if (dataM[i].ctl.cp0toreg) begin
                     dataW[i].wd=cp0_rd;
                 end 

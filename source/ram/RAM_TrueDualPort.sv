@@ -111,8 +111,8 @@ module RAM_TrueDualPort #(
 		.WAKEUP_TIME("disable_sleep"),
 		.WRITE_DATA_WIDTH_A(DATA_WIDTH),
 		.WRITE_DATA_WIDTH_B(DATA_WIDTH),
-		.WRITE_MODE_A("no_change"),
-		.WRITE_MODE_B("no_change")
+		.WRITE_MODE_A("read_first"),
+		.WRITE_MODE_B("read_first")
 	) xpm_memory_tdpram_inst (
 		.sleep(0),
 		.clka(clk), .clkb(clk),  // use the same clock

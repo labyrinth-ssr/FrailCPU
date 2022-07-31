@@ -14,7 +14,10 @@ module DCache (
     input  dbus_req_t  dreq_2,
     output dbus_resp_t dresp_2,
     output cbus_req_t  dcreq,
-    input  cbus_resp_t dcresp
+    input  cbus_resp_t dcresp,
+
+    input dcache_inst_t cache_inst,
+    input cp0_taglo_t tag_lo
 );
     //32KB 8路组相联 1行16个data
     //3 + 6 + 4 + 2
@@ -34,6 +37,7 @@ module DCache (
 
     localparam DATA_ADDR_BITS = ASSOCIATIVITY_BITS + INDEX_BITS + OFFSET_BITS;
 
+    localparam type data_t = logic [DATA_BITS-1:0];
     localparam type align_t = logic [DATA_BITS-1:0];
     localparam type offset_t = logic [OFFSET_BITS-1:0];
     localparam type associativity_t = logic [ASSOCIATIVITY_BITS-1:0];
@@ -59,12 +63,21 @@ module DCache (
     localparam type plru_t = logic [ASSOCIATIVITY-2:0];
 
     localparam type state_t = enum logic[2:0] {
-        IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2
+        IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2, INDEX_STORE
     };
 
     function word_t get_mask(input strobe_t strobe);
         return {{8{strobe[3]}}, {8{strobe[2]}}, {8{strobe[1]}}, {8{strobe[0]}}};
     endfunction
+
+    //for INDEX_WRITEBACK_INVALID, INDEX_STORE_TAG,
+    function associativity_t get_line(input addr_t addr);
+        return addr[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS+DATA_BITS-1:INDEX_BITS+OFFSET_BITS+DATA_BITS];
+    endfunction
+
+    tag_t taglo_tag;
+    logic taglo_valid;
+    data_t taglo_data;
     
     addr_t dreq_1_addr, dreq_2_addr;
     assign dreq_1_addr = dreq_1.addr;
@@ -246,6 +259,20 @@ module DCache (
 
     logic delay_counter;
 
+    //for cache_inst invalid
+    logic invalid_en;
+    logic index_store_en;
+    associativity_t index_line;
+
+    associativity_t invalid_line;
+
+    assign invalid_en = (cache_inst == INDEX_WRITEBACK_INVALID) | (cache_inst == HIT_INVALID) | (cache_inst == HIT_WRITEBACK_INVALID);
+    assign index_store_en = cache_inst == INDEX_STORE_TAG;
+    assign index_line = get_line(ireq_addr);
+
+    assign invalid_line = (cache_inst == INDEX_INVALID) ? index_line : hit_line;
+
+
     always_comb begin
         dirty_ram_new = dirty_ram;
         for (int i = 0; i < ASSOCIATIVITY*SET_NUM; i++) begin
@@ -425,6 +452,7 @@ module DCache (
         endcase
     end
 
+
     always_comb begin
         meta_w = meta_r_1;
         if (resetn) begin
@@ -490,7 +518,7 @@ module DCache (
         .BYTE_WIDTH(BYTE_WIDTH),
         .MEM_TYPE(0),
 	    .READ_LATENCY(1)
-    ) data_bram(
+    ) data_ram(
         .clk, 
 
         .en_1(port_1_en), 
