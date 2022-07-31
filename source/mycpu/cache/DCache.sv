@@ -495,7 +495,7 @@ module DCache (
         .BYTE_WIDTH(BYTE_WIDTH),
         .MEM_TYPE(0),
 	    .READ_LATENCY(1)
-    ) data_bram(
+    ) data_ram(
         .clk, 
 
         .en_1(port_1_en), 

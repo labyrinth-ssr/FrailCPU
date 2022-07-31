@@ -64,7 +64,7 @@ module cache_manage (
 
         dresp_1 = mmu_dresp_1;
 
-        dreq_1_uncache = dreq_1.addr[29];
+        dreq_1_uncache = dreq_1.addr[31:29] == 3'b101;
     end
 
     dbus_req_t mmu_dreq_2;
@@ -76,7 +76,7 @@ module cache_manage (
 
         dresp_2 = mmu_dresp_2;
         
-        dreq_2_uncache = dreq_2.addr[29];
+        dreq_2_uncache = dreq_2.addr[31:29] == 3'b101;
     end
 
 
