@@ -65,8 +65,8 @@ module ICache (
 
     localparam type plru_t = logic [ASSOCIATIVITY-2:0];
 
-    localparam type cbus_state_t = enum logic {
-        IDLE, FETCH
+    localparam type state_t = enum logic [1:0] {
+        IDLE, FETCH, INDEX_STORE
     };
 
     //for INDEX_INVALID, INDEX_STORE_TAG
@@ -126,13 +126,6 @@ module ICache (
         end
     end
 
-    //for cache_inst invalid
-    logic invalid_en;
-    associativity_t index_line;
-    associativity_t invalid_line;
-    assign invalid_en = (cache_inst == INDEX_INVALID) | (cache_inst == HIT_INVALID);
-    assign invalid_line = (cache_inst == INDEX_INVALID) ? index_line : hit_line;
-
     //plru_ram
     plru_t [SET_NUM-1 : 0] plru_ram;
 
@@ -164,26 +157,30 @@ module ICache (
     logic data_ok_reg;
 
     //Port 2
-    double_strobe_t miss_write_en;
+    logic port_2_en;
+    double_strobe_t port_2_wen;
+    data_addr_t port_2_addr;
+    data_t port_2_data_w, port_2_data_r;
+
     data_addr_t miss_data_addr; //内存->Cache
-    data_t data_w;
-    data_t unused_data_r;
+
     //fetch finish
     record_t fetch_finish;
     record_t part_fetch_finish;
     cbus_num_t fetch_count;
-     //cbus_state
-    cbus_state_t state;
+
+    //cbus_state
+    state_t state;
 
     //cbus
     addr_t cbus_addr;   //内存->Cache
-    /*
-    改动！！
-    */
-    assign miss_write_en = resetn ? ((state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
+    
+    assign port_2_en = 1'b1;
+    assign port_2_wen = resetn ? ((state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
                                                                      : '0)
                                   : {BYTE_PER_DATA{1'b1}};
-    assign data_w = (resetn & state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
+    assign port_2_addr = resetn ? miss_data_addr : reset_counter[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS-1:0];
+    assign port_2_data_w = (resetn & state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
                                                             : '0;
 
 
@@ -199,24 +196,67 @@ module ICache (
     assign hit_avail = state == IDLE 
                     | fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}]
                     | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index};
-    assign ireq_hit = ireq.valid & hit_avail & hit;
+    assign ireq_hit = ireq.valid & hit_avail & (cache_inst == NULL) & hit;
+    assign ireq_miss = ireq.valid & (cache_inst == NULL) & ~hit;
 
-    assign ireq_miss = ireq.valid & ~hit;
+    //for cache_inst invalid
+    logic invalid_en;
+    logic index_store_en;
+    associativity_t index_line;
+
+    associativity_t invalid_line;
+
+    assign invalid_en = (cache_inst == INDEX_INVALID) | (cache_inst == HIT_INVALID & hit);
+    assign index_store_en = (cache_inst == INDEX_STORE_TAG & state == IDLE);
+    assign index_line = get_line(ireq_addr);
+
+    assign invalid_line = (cache_inst == INDEX_INVALID) ? index_line : hit_line;
+
+    tag_t taglo_tag;
+    logic taglo_valid;
+    data_t taglo_data;
 
     //更新meta_ram, plru_ram
     always_comb begin
         meta_w = meta_r;
         if (resetn) begin
-            if (ireq_miss) begin
+            if (invalid_en) begin
                 for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                    if (replace_line == associativity_t'(i)) begin
-                        meta_w[i].tag = ireq_addr.tag;
-                        meta_w[i].valid = 1'b1;
+                    if (invalid_line == associativity_t'(i)) begin
+                        meta_w[i].valid = 1'0;
                     end
                     else begin
                     end
                 end
             end
+            else if (index_store_en) begin
+                for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                    if (index_line == associativity_t'(i)) begin
+                        meta_w[i].tag = taglo_tag;
+                        meta_w[i].valid = taglo_valid;
+                    end
+                    else begin
+                    end
+                end
+            end
+            else begin
+                unique case(state)
+                    IDLE : begin
+                        if (ireq_miss) begin
+                            for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                                if (replace_line == associativity_t'(i)) begin
+                                    meta_w[i].tag = ireq_addr.tag;
+                                    meta_w[i].valid = 1'b1;
+                                end
+                                else begin
+                                end
+                            end
+                        end
+                    end
+                    default : begin
+                    end
+                endcase      
+            end   
         end
         else begin
             meta_w = '0;
@@ -250,7 +290,7 @@ module ICache (
                         
                         part_fetch_finish <= '0;
                         fetch_count <= {ireq_addr.offset, ireq_addr[DATA_BITS-1]};
-                    end
+                    end    
                 end
                 FETCH : begin
                     if (icresp.ready) begin
@@ -273,7 +313,10 @@ module ICache (
         end
         else begin
             state <= IDLE;
-            miss_data_addr <= miss_data_addr + 1;
+            cbus_addr <= '0;
+            miss_data_addr <= '0;
+            part_fetch_finish <= '0;
+            fetch_count <= '0;
         end
     end
 
@@ -304,11 +347,11 @@ module ICache (
         .rdata_1(port_1_data_r),
         
         // port 2 : cbus 
-        .en_2(1'b1),
-        .addr_2(miss_data_addr),
-        .strobe_2(miss_write_en),
-        .wdata_2(data_w),
-        .rdata_2(unused_data_r)
+        .en_2(port_2_en),
+        .addr_2(port_2_addr),
+        .strobe_2(port_2_wen),
+        .wdata_2(port_2_data_w),
+        .rdata_2(port_2_data_r)
     );
 
 
