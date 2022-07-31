@@ -13,8 +13,8 @@
 
     module execute(
         input clk,resetn,
-        input issue_data_t dataI[1:0],
-        output execute_data_t dataE[1:0],
+        input issue_data_t [1:0] dataI,
+        output execute_data_t [1:0] dataE,
         output e_wait
     );
 

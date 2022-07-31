@@ -4,8 +4,8 @@
 `include "common.svh"
     module writeback(
         // input u1 clk,reset,
-        input memory_data_t dataM [1:0],
-        output writeback_data_t dataW [1:0],
+        input memory_data_t [1:0] dataM ,
+        output writeback_data_t [1:0] dataW ,
         input word_t hi_rd,lo_rd,cp0_rd
         // input u1 valid_i,valid_j,valid_k
     );

@@ -141,26 +141,30 @@ module ICache (
     logic data_ok_reg;
 
     //Port 2
-    double_strobe_t miss_write_en;
+    logic port_2_en;
+    double_strobe_t port_2_wen;
+    data_addr_t port_2_addr;
+    data_t port_2_data_w, port_2_data_r;
+
     data_addr_t miss_data_addr; //内存->Cache
-    data_t data_w;
-    data_t unused_data_r;
+
     //fetch finish
     record_t fetch_finish;
     record_t part_fetch_finish;
     cbus_num_t fetch_count;
-     //cbus_state
+
+    //cbus_state
     cbus_state_t state;
 
     //cbus
     addr_t cbus_addr;   //内存->Cache
-    /*
-    改动！！
-    */
-    assign miss_write_en = resetn ? ((state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
+    
+    assign port_2_en = 1'b1;
+    assign port_2_wen = resetn ? ((state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
                                                                      : '0)
                                   : {BYTE_PER_DATA{1'b1}};
-    assign data_w = (resetn & state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
+    assign port_2_addr = resetn ? miss_data_addr : reset_counter[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS-1:0];
+    assign port_2_data_w = (resetn & state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
                                                             : '0;
 
 
@@ -170,21 +174,20 @@ module ICache (
     end
 
     //hit && miss
-    logic hit_avail, miss_avail;
+    logic hit_avail;
     logic ireq_hit, ireq_miss;
 
     assign hit_avail = state == IDLE 
                     | fetch_finish[{ireq_addr.offset, ireq_addr[DATA_BITS-1]}]
                     | {ireq_addr.tag, ireq_addr.index} != {cbus_addr.tag, cbus_addr.index};
-    assign miss_avail = state == IDLE;
     assign ireq_hit = ireq.valid & hit_avail & hit;
-    assign ireq_miss = ireq.valid & miss_avail & ~hit;
+    assign ireq_miss = ireq.valid & ~hit;
 
     //更新meta_ram, plru_ram
     always_comb begin
         meta_w = meta_r;
         if (resetn) begin
-            if (ireq_miss) begin
+            if (state == IDLE & ireq_miss) begin
                 for (int i = 0; i < ASSOCIATIVITY; i++) begin
                     if (replace_line == associativity_t'(i)) begin
                         meta_w[i].tag = ireq_addr.tag;
@@ -217,17 +220,18 @@ module ICache (
 
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (ireq_miss) begin
-                state <= FETCH;
-                
-                cbus_addr <= ireq_addr;
-                miss_data_addr <= {replace_line, ireq_addr.index, ireq_addr.offset};
-                
-                part_fetch_finish <= '0;
-                fetch_count <= {ireq_addr.offset, ireq_addr[DATA_BITS-1]};
-            end
-
             unique case(state)
+                IDLE : begin
+                    if (ireq_miss) begin
+                        state <= FETCH;
+                        
+                        cbus_addr <= ireq_addr;
+                        miss_data_addr <= {replace_line, ireq_addr.index, ireq_addr.offset};
+                        
+                        part_fetch_finish <= '0;
+                        fetch_count <= {ireq_addr.offset, ireq_addr[DATA_BITS-1]};
+                    end    
+                end
                 FETCH : begin
                     if (icresp.ready) begin
                         if (fetch_count[0])  begin
@@ -249,7 +253,10 @@ module ICache (
         end
         else begin
             state <= IDLE;
-            miss_data_addr <= miss_data_addr + 1;
+            cbus_addr <= '0;
+            miss_data_addr <= '0;
+            part_fetch_finish <= '0;
+            fetch_count <= '0;
         end
     end
 
@@ -275,16 +282,16 @@ module ICache (
         // port 1 : ibus
         .en_1(ireq_hit), 
         .addr_1(data_addr), 
-        .strobe_1(0), 
+        .strobe_1('0), 
         .wdata_1(0), 
         .rdata_1(data_r),
         
         // port 2 : cbus 
-        .en_2(1),
-        .addr_2(miss_data_addr),
-        .strobe_2(miss_write_en),
-        .wdata_2(data_w),
-        .rdata_2(unused_data_r)
+        .en_2(port_2_en),
+        .addr_2(port_2_addr),
+        .strobe_2(port_2_wen),
+        .wdata_2(port_2_data_w),
+        .rdata_2(port_2_data_r)
     );
 
 

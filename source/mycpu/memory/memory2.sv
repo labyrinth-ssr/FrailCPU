@@ -12,10 +12,10 @@
 module memory2
     (
     input clk,
-    input execute_data_t dataE[1:0],
-    output memory_data_t dataM[1:0],
-    input  dbus_resp_t dresp[1:0],
-    input dbus_req_t dreq[1:0],
+    input execute_data_t [1:0] dataE,
+    output memory_data_t [1:0] dataM,
+    input  dbus_resp_t [1:0] dresp,
+    input dbus_req_t [1:0] dreq,
     input logic d_wait,
     input logic resetn
 );
