@@ -49,7 +49,7 @@ end
             flush_que='1;
             if (i_wait) begin
                 branch_iwait_nxt=1'b1;
-                stallF ='1; 
+                stallF ='1;
             end
         end else if (e_wait) begin
             stallF='1;stallF2='1;stallD='1;stallI='1;stallI_de='1;stallE='1;flushM='1;
