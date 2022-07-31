@@ -144,7 +144,7 @@ module ICache (
     logic port_2_en;
     double_strobe_t port_2_wen;
     data_addr_t port_2_addr;
-    data_t port_2_data_w, port_2_data_r;
+    data_t port_2_data_w;
 
     data_addr_t miss_data_addr; //内存->Cache
 
@@ -269,32 +269,23 @@ module ICache (
         end
     end
 
-
-    RAM_TrueDualPort #(
+    RAM_SimpleDualPort #(
         .ADDR_WIDTH(DATA_ADDR_BITS),
         .DATA_WIDTH(DATA_WIDTH),
         .BYTE_WIDTH(BYTE_WIDTH),
         .MEM_TYPE(0),
 	    .READ_LATENCY(1)
-    ) data_bram(
+    ) data_ram(
         .clk, 
-
-        // port 1 : ibus
-        .en_1(ireq_hit), 
-        .addr_1(data_addr), 
-        .strobe_1('0), 
-        .wdata_1(0), 
-        .rdata_1(data_r),
         
-        // port 2 : cbus 
-        .en_2(port_2_en),
-        .addr_2(port_2_addr),
-        .strobe_2(port_2_wen),
-        .wdata_2(port_2_data_w),
-        .rdata_2(port_2_data_r)
+        .raddr(data_addr), 
+        .rdata(data_r),
+        
+        .en(port_2_en),
+        .waddr(port_2_addr),
+        .strobe(port_2_wen),
+        .wdata(port_2_data_w)
     );
-
-
 
     //DBus
     assign iresp.addr_ok = ireq_hit;
