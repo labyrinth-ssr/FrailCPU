@@ -128,10 +128,18 @@ module cache_manage (
                                                                                                     : '0;
     
     always_ff @(posedge clk) begin
-        uncache_1_valid_reg <= dbus_uncache_req_1.valid;
-        uncache_2_valid_reg <= dbus_uncache_req_2.valid;
-        cache_1_valid_reg <= dbus_cache_req_1.valid;
-        cache_2_valid_reg <= dbus_cache_req_2.valid;
+        if (resetn) begin
+            uncache_1_valid_reg <= dbus_uncache_req_1.valid;
+            uncache_2_valid_reg <= dbus_uncache_req_2.valid;
+            cache_1_valid_reg <= dbus_cache_req_1.valid;
+            cache_2_valid_reg <= dbus_cache_req_2.valid;    
+        end
+        else begin
+            uncache_1_valid_reg <= '0;
+            uncache_2_valid_reg <= '0;
+            cache_1_valid_reg <= '0;
+            cache_2_valid_reg <= '0;
+        end
     end
 
     assign {mmu_dresp_1.data_ok, mmu_dresp_1.data} = uncache_1_valid_reg ? {dbus_uncache_resp_1.data_ok, dbus_uncache_resp_1.data}
