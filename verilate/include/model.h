@@ -68,10 +68,9 @@ public:
 
     void ticks(int count);
 
-protected:
     std::shared_ptr<Confreg> con;
     std::shared_ptr<CBusDevice> dev;
-
+protected:
     int _num_workers = 1;
     std::string _fst_folder = "";
 

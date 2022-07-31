@@ -125,9 +125,8 @@ public:
         return 0;
     }
 
-protected:
     std::unique_ptr<TModel> top = nullptr;
-
+protected:
     bool _init_memory = true;
     bool _init_text_trace = true;
     bool _init_fst_trace = true;

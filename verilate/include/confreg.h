@@ -78,7 +78,7 @@ public:
     }
 
     void uart_open_pty(const std::string &path);
-
+std::unordered_map<addr_t, word_t> mem;
 private:
     struct Context {
         bool uart_avail, uart_written, uart_fetched;
@@ -113,7 +113,7 @@ private:
         std::deque<uchar> ififo;
         ThreadWorker worker;
     } uart;
-    std::unordered_map<addr_t, word_t> mem;
+    
 
     struct change_t {
         addr_t addr;

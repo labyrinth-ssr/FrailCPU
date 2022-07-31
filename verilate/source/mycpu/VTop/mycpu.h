@@ -14,10 +14,10 @@ public:
     void reset();
     void tick();
     void run();
-
+bool test_finished;
 private:
     int current_cycle;
-    bool test_finished;
+    
 
     auto get_oreq() const -> CBusWrapper {
         return CBusWrapper(VTop, oreq);

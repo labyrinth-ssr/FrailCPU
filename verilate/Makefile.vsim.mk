@@ -137,4 +137,6 @@ vsim: $(VMAIN)
 
 vsim-gdb: $(VMAIN)
 	@echo Command line arguments: $(VSIM_ARGS)
-	@gdb -q ./$(VMAIN)
+	@echo -n "r " > build/.gdbinit
+	@echo $(VSIM_ARGS) >> build/.gdbinit
+	@gdb -q ./$(VMAIN) -x build/.gdbinit

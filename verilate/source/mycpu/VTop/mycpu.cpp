@@ -62,13 +62,13 @@ auto MyCPU::get_writeback_wen2() const -> word_t {
 }
 
 void MyCPU::print_status() {
-    status_line(
+    /*status_line(
         GREEN "[%d]" RESET " ack=%zu (%d%%), pc=%08x",
         current_cycle,
         get_text_diff().current_line(),
         get_text_diff().current_progress(),
         get_writeback_pc1(),get_writeback_pc2()
-    );
+    );*/
 }
 
 void MyCPU::print_writeback() {
@@ -122,6 +122,7 @@ void MyCPU::tick() {
     fst_dump(+0);
 
     checkout_confreg();
+    return;
 
     // check for the end of tests
     if ((get_writeback_pc1() & TEST_END_PC_MASK) == TEST_END_PC + 4 ||

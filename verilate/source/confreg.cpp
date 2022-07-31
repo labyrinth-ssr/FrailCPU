@@ -71,6 +71,7 @@ void Confreg::store(addr_t addr, word_t data, word_t mask) {
             ctx.vuart_data = data;
             break;
         case NUM:
+        printf("set NUM %x\n", data);
             ctx.v_num = data;
             break;
         case SIMU_FLAG:
@@ -86,6 +87,15 @@ void Confreg::store(addr_t addr, word_t data, word_t mask) {
         case NUM_MONITOR:
             data &= 1;
             ctx.v_num_monitor = data;
+            break;
+        case LED:
+            printf("set LED %4x\n", data);
+            break;
+        case LED_RG0:
+            printf("set LED_GR0 %x\n", data);
+            break;
+        case LED_RG1:
+            printf("set LED_GR1 %x\n", data);
             break;
     }
 
@@ -126,7 +136,7 @@ void Confreg::sync() {
     changes.clear();
 
     // increment timer counter
-    mem[TIMER]++;
+    mem[TIMER]+=10000;
 }
 
 void Confreg::uart_open_pty(const std::string &path) {
