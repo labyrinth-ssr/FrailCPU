@@ -541,8 +541,11 @@ module DCache (
     always_ff @(posedge clk)begin
         if(counter[20])begin
             counter <= '0;
+            $display("\n*********************");
             $display("accuracy:%.2f \%", (total-fail)/total*100);
             $display("counter: %x", counter);
+            $display("accuracy:%.2f \%", (total-fail)/total*100);
+            $display("*********************\n");
         end 
         else begin
             counter <= counter + 1;
