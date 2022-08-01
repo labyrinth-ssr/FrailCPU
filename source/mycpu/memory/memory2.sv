@@ -47,9 +47,17 @@ end
 word_t data2_save;
 u1 data2_saved;
 //cache hit？
+u1 req1_valid_delay;
+always_ff @(posedge clk) begin
+    if (~resetn) begin
+        req1_valid_delay<='0;
+    end else begin
+        req1_valid_delay<=dreq[1].valid;
+    end
+end
 always_ff @(posedge clk) begin
     if (resetn) begin
-        if ((dreq[1].valid&&~dresp[1].addr_ok) & & dresp[0].data_ok) begin
+        if ((req1_valid_delay&&~dresp[1].data_ok) && dresp[0].data_ok) begin
             data2_save<=dresp[0].data;
             data2_saved<='1;
         end
