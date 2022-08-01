@@ -16,11 +16,11 @@ module DCache (
     output cbus_req_t  dcreq,
     input  cbus_resp_t dcresp
 );
-    //32KB 8路组相联 1行16个data
-    //3 + 6 + 4 + 2
+    //32KB 4路组相联 1行16个data
+    //2 + 7 + 4 + 2
     localparam DATA_PER_LINE = 16;
-    localparam ASSOCIATIVITY = 8;
-    localparam SET_NUM = 64;
+    localparam ASSOCIATIVITY = 4;
+    localparam SET_NUM = 128;
 
     localparam BYTE_WIDTH = 8;
     localparam BYTE_PER_DATA = 4;
