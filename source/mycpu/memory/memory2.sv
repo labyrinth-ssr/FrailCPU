@@ -33,7 +33,7 @@ always_ff @(posedge clk) begin
             data1_save<=dresp[1].data;
             data1_saved<='1;
         end
-        else if (dresp[0].data_ok) begin
+        else if (dresp[0].data_ok||~dreq[0].valid) begin
             data1_save<='0;
             data1_saved<='0;
         end
