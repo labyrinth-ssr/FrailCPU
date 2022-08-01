@@ -26,10 +26,17 @@ assign uncache=dreq[1].addr[29] || dreq[0].addr[29];
 // u1 load_misalign;
 word_t data1_save;
 u1 data1_saved;
-
+u1 req2_valid_delay;
+always_ff @(posedge clk) begin
+    if (~resetn) begin
+        req2_valid_delay<='0;
+    end else begin
+        req2_valid_delay<=dreq[0].valid;
+    end
+end
 always_ff @(posedge clk) begin
     if (resetn) begin
-        if ((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].data_ok) begin
+        if ((req2_valid_delay&&~dresp[0].data_ok) && dresp[1].data_ok) begin
             data1_save<=dresp[1].data;
             data1_saved<='1;
         end
