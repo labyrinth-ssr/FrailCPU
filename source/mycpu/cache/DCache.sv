@@ -533,39 +533,6 @@ module DCache (
     assign dcreq.data = buffer[offset_count];      
     assign dcreq.len = MLEN16;  
 
-    real succ;
-    real fail;
-    real total;
-    word_t counter;
-
-    always_ff @(posedge clk)begin
-        if(counter[20])begin
-            counter <= '0;
-            $display("\n*********************");
-            $display("accuracy:%.2f \%", (total-fail)/total*100);
-            $display("counter: %x", counter);
-            $display("accuracy:%.2f \%", (total-fail)/total*100);
-            $display("*********************\n");
-        end 
-        else begin
-            counter <= counter + 1;
-
-            if (dcresp.last) begin
-                fail <= fail + 1;
-            end 
-            else begin
-                if(dreq_1.valid & dresp_1.addr_ok) begin
-                    total <= total + 1;
-                end
-                if(dreq_2.valid & dresp_2.addr_ok) begin
-                    total <= total + 1;
-                end
-            end
-            
-        end
-    end
-
-
     `UNUSED_OK({clk, resetn, dreq_1, dreq_2, dcresp});
 endmodule
 
