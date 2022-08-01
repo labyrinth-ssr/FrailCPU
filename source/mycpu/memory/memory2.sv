@@ -43,10 +43,30 @@ always_ff @(posedge clk) begin
         data1_saved<='0;
     end   
 end
+
+word_t data2_save;
+u1 data2_saved;
+
+always_ff @(posedge clk) begin
+    if (resetn) begin
+        if (~dresp[1].data_ok & dresp[0].data_ok) begin
+            data2_save<=dresp[0].data;
+            data2_saved<='1;
+        end
+        else if (dresp[1].data_ok) begin
+            data2_save<='0;
+            data2_saved<='0;
+        end
+    end
+    else begin
+        data2_save<='0;
+        data2_saved<='0;
+    end   
+end
     
 
 readdata readdata1(._rd( data1_saved? data1_save:dresp[1].data),.rd(dataM[1].rd),.addr(dataE[1].alu_out[1:0]),.msize(dataE[1].ctl.msize),.mem_unsigned(~dataE[1].ctl.memsext));
-readdata readdata2(._rd(dresp[0].data),.rd(dataM[0].rd),.addr(dataE[0].alu_out[1:0]),.msize(dataE[0].ctl.msize),.mem_unsigned(~dataE[0].ctl.memsext));
+readdata readdata2(._rd( data2_saved? data2_save:dresp[0].data),.rd(dataM[0].rd),.addr(dataE[0].alu_out[1:0]),.msize(dataE[0].ctl.msize),.mem_unsigned(~dataE[0].ctl.memsext));
 
     // always_comb begin
     //     dataM.cp0_ctl=dataE.cp0_ctl;
