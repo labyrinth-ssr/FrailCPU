@@ -324,7 +324,7 @@ module MyCore (
     u1 req1_finish,req2_finish;
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (d_wait & dresp[1].addr_ok) begin
+            if ((d_wait & dresp[1].addr_ok)) begin
                 req1_finish <= 1;
             end
             else if (~d_wait) begin

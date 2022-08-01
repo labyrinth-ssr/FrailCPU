@@ -396,11 +396,13 @@ module DCache (
         end
         else begin
             state <= IDLE;
-            delay_counter <= '0;
             miss_addr <= '0;
+            offset_count <= '0;
+
+            delay_counter <= '0;
+
             buffer_offset <= '0;
             buffer <= '0;
-            offset_count <= '0;
         end
     end
 
@@ -480,6 +482,7 @@ module DCache (
             w_to_r_strobe <= '0;
             w_to_r_reg <= '0;
             w_to_r_data <= '0;
+            w_to_r_strobe <= '0;
         end
     end
 
