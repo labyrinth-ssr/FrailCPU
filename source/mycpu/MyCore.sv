@@ -321,31 +321,32 @@ module MyCore (
         .flush(flushM)
     );
 
-    u1 req1_finish,req2_finish;
+u1 req1_finish,req2_finish;
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (d_wait & dresp[1].addr_ok) begin
-                req1_finish <= 1;
+            if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
+                req1_finish <= '1;
             end
-            else if (~d_wait) begin
-                req1_finish <= 0;
+            else if (dresp[0].addr_ok) begin
+                req1_finish <= '0;
             end
         end else begin
-            req1_finish <= 0;
+            req1_finish <= '0;
         end   
     end
 
+    //如果没有。
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (d_wait & dresp[0].addr_ok) begin
-                req2_finish <= 1;
+            if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
+                req2_finish <= '1;
             end
-            else if (~d_wait) begin
-                req2_finish <= 0;
+            else if (dresp[1].addr_ok) begin
+                req2_finish <= '0;
             end
-        end
+        end 
         else begin
-            req2_finish <= 0;
+            req2_finish <= '0;
         end   
     end
 
