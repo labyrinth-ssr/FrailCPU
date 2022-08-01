@@ -29,11 +29,11 @@ u1 data1_saved;
 
 always_ff @(posedge clk) begin
     if (resetn) begin
-        if (d_wait & dresp[1].data_ok) begin
+        if ((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].data_ok) begin
             data1_save<=dresp[1].data;
             data1_saved<='1;
         end
-        else if (dresp[0].data_ok||~dreq[0].valid) begin
+        else if (dresp[0].data_ok) begin
             data1_save<='0;
             data1_saved<='0;
         end
@@ -46,10 +46,18 @@ end
 
 word_t data2_save;
 u1 data2_saved;
-
+//cache hit？
+u1 req1_valid_delay;
+always_ff @(posedge clk) begin
+    if (~resetn) begin
+        req1_valid_delay<='0;
+    end else begin
+        req1_valid_delay<=dreq[1].valid;
+    end
+end
 always_ff @(posedge clk) begin
     if (resetn) begin
-        if (~dresp[1].data_ok & dresp[0].data_ok) begin
+        if ((req1_valid_delay&&~dresp[1].data_ok) && dresp[0].data_ok) begin
             data2_save<=dresp[0].data;
             data2_saved<='1;
         end
