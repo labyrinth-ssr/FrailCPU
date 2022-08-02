@@ -144,7 +144,7 @@ module rpct #(
         .strobe(is_write | ~resetn),  
         .wdata(resetn ? w_meta : '0),
 
-        .en_2(1'b0), //port2 for predict
+        .en_2(1'b1), //port2 for predict
         .addr_2(get_index(pc_check)),
         .rdata_2(r_meta_hit)
     );

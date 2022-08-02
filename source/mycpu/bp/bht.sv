@@ -7,14 +7,14 @@
 `endif 
 
 module bht#(
-    parameter int ASSOCIATIVITY = 4,
-    parameter int SET_NUM = 8,
+    parameter int ASSOCIATIVITY = 2,
+    parameter int SET_NUM = 16,
     parameter int BH_BITS = 2,
     parameter int COUNTER_BITS = 2,
 
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
-    localparam TAG_BITS = 30 - INDEX_BITS,
+    localparam TAG_BITS = 30,
     localparam type tag_t = logic [TAG_BITS-1:0],
     localparam type index_t = logic [INDEX_BITS-1:0],
     localparam type associativity_t = logic [ASSOCIATIVITY_BITS-1:0],
@@ -136,12 +136,8 @@ module bht#(
 
     assign plru_r = plru_ram[get_index(branch_pc)];
 
-    plru port_1_plru(
-        .plru_old(plru_r),
-        .hit_line(hit_line),
-        .plru_new(plru_new),
-        .replace_line(replace_line)
-    );
+    assign replace_line[0] = plru_r[0];
+    assign plru_new[0] = ~hit_line[0];
 
     always_ff @(posedge clk) begin
         if (hit) begin
@@ -256,7 +252,7 @@ module bht#(
         .strobe(1'b1),  
         .wdata(resetn ? w_meta : '0),
 
-        .en_2(1'b0), //port2 for predict
+        .en_2(1'b1), //port2 for predict
         .addr_2(get_index(branch_pc)),
         .rdata_2(r_meta_hit)
     );
@@ -275,7 +271,7 @@ module bht#(
         .strobe(1'b1),  
         .wdata(resetn ? w_pc_replace : '0),
 
-        .en_2(1'b0), //port2 for predict
+        .en_2(1'b1), //port2 for predict
         .addr_2(predict_addr),
         .rdata_2(r_pc_predict)
     );
@@ -294,7 +290,7 @@ module bht#(
         .strobe(resetn ? counter_strobe : '1),  
         .wdata(resetn ? w_counter_set_replace : '1),
 
-        .en_2(1'b0), //port2 for predict
+        .en_2(1'b1), //port2 for predict
         .addr_2(predict_addr),
         .rdata_2(r_counter_set_predict)
     );
