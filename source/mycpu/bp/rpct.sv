@@ -35,7 +35,7 @@ module rpct #(
 );
 
     function tag_t get_tag(addr_t addr);
-        return addr[32:2+INDEX_BITS];
+        return addr[31:2+INDEX_BITS];
     endfunction
 
     function index_t get_index(addr_t addr);
@@ -84,7 +84,7 @@ module rpct #(
 
     always_ff @(posedge clk) begin
         if (hit) begin
-            plru_ram[predict_addr.index] <= plru_new;
+            plru_ram[get_index(pc_check)] <= plru_new;
         end
     end
 
@@ -94,7 +94,7 @@ module rpct #(
 
     always_comb begin : w_meta_block
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (/*~in_bht &&*/ is_write && i == replace_line) begin
+            if (/*~in_bht &&*/ is_write && associativity_t'(i) == replace_line) begin
                 w_meta[i].valid = 1'b1;
                 w_meta[i].tag = get_tag(jrra_pc);
             end else begin
@@ -125,7 +125,7 @@ module rpct #(
         .wdata(resetn ? w_meta : '0),
 
         .en_2(1'b0), //port2 for predict
-        .addr_2(predict_addr.index),
+        .addr_2(get_index(pc_check)),
         .rdata_2(r_meta_hit)
     );
 

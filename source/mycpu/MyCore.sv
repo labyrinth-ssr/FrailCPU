@@ -50,7 +50,7 @@ module MyCore (
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
-    u1 pred_taken,decode_taken;
+    u1 pred_taken;
     word_t pre_pc;
 
         u1 is_jr_ra_decode;
@@ -61,7 +61,7 @@ module MyCore (
 	);
 
     assign ireq.addr=dataP_pc;
-	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken||decode_taken);
+	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken||is_jr_ra_decode);
     assign reset=~resetn;
 
     fetch_data_t [1:0] dataF2_nxt ,dataF2 ;
@@ -78,15 +78,20 @@ module MyCore (
         end
     end
 
-    word_t jpc_save,pc_nxt;
-    u1 jpc_saved;
+    word_t jpc_save,pc_nxt,dpc_save;
+    u1 jpc_saved,dpc_saved;
     always_ff @(posedge clk) begin
         if (reset) begin
             jpc_save<='0;
 			jpc_saved<='0;
+            dpc_save<='0;
+			dpc_saved<='0;
         end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
+        end else if (stallF && is_jr_ra_decode) begin
+            dpc_save<=pc_selected;
+            dpc_saved<='1;
         end else if (~stallF) begin
             jpc_save<='0;
 			jpc_saved<='0;
@@ -96,6 +101,8 @@ module MyCore (
     always_comb begin
         if (jpc_saved&&~is_INTEXC) begin
             pc_nxt=jpc_save;
+        end else if (dpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
+            pc_nxt=dpc_save;
         end else begin
             pc_nxt=pc_selected;
         end
@@ -119,6 +126,7 @@ module MyCore (
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
+    assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     always_comb begin
         dataF1_nxt.cp0_ctl.etype='0;
         dataF1_nxt.cp0_ctl.vaddr='0;
@@ -144,7 +152,7 @@ module MyCore (
         .pre_pc,
         // .need_pre()
         .is_jr_ra_decode,
-        .decode_ret_pc,
+        // .decode_ret_pc,
         // .decode_taken,//预测跳转
         .exe_pc(dataE[1].pc),
         .is_taken(dataE[1].branch_taken),
@@ -154,8 +162,11 @@ module MyCore (
         .is_jalr(dataE[1].ctl.op==JALR),
         .is_branch(dataE[1].ctl.branch),
         .is_j(dataE[1].ctl.op==J),
-        .is_jr_ra_exe(dataE[1].ctl.op==JR&&dataE[1].ra1==31)
+        .is_jr_ra_exe(dataE[1].is_jr_ra),
+        .hit_bit()
     );
+    u1 zero_prej;
+    assign zero_prej=pred_taken&&~hit_bit;
 
     u1 branch_valid_i;
     assign branch_valid_i=dataD_nxt[1].ctl.branch;
@@ -178,18 +189,23 @@ module MyCore (
     //     .branch_condition,
 
     // );
-    u1 decode_branch0;
+    // assign flushF2=flushF2_hazard||zero_prej;
     pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
         .reset,
         .in(dataF1_nxt),
         .out(dataF1),
         .en(~stallF2),
-        .flush(flushF2&&~decode_branch0)
+        .flush(flushF2)
     );
     u1 rawinstr_saved;
     u64 raw_instrf2_save;
     u1 delay_flushF2;
+    u1 delay_zeroprej;
+
+    always_ff @(posedge clk) begin
+        delay_zeroprej<=zero_prej;
+    end
 
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -225,14 +241,16 @@ module MyCore (
         end
     end
     assign dataF2_nxt[1].pc=dataF1.pc;
+    assign dataF2_nxt[1].pre_b=dataF1.pre_b;
+    assign dataF2_nxt[0].pre_b='0;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
     assign dataF2_nxt[0].cp0_ctl='0;
 
-    assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
+    assign dataF2_nxt[0].pc= (dataF1.pc[2]==1||delay_zeroprej)? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/(~(dataF1.pc[2]==1)||delay_zeroprej) &&dataF1.valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
