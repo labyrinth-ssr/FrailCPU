@@ -75,8 +75,11 @@ module DCache (
         reset_counter <= reset_counter + 1;
     end
 
-     //state
+    //state
     state_t state;
+
+    data_addr_t miss_addr;
+    addr_t cbus_addr;
 
     //buffer
     buffer_t buffer;
@@ -123,8 +126,9 @@ module DCache (
     //cache_dirty
     logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty;
     logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty_new;
-    
 
+    
+/* DCache_1 ***************** 计算hit */
     //计算hit
     logic hit_1, hit_2;
     logic [ASSOCIATIVITY-1:0] hit_1_bits, hit_2_bits;
@@ -154,40 +158,31 @@ module DCache (
     
     //hit && miss
     logic dreq_hit_1, dreq_hit_2;
-    logic dreq_avail;
     logic dreq_hit;
+    logic miss_1;
+    logic miss_2;
     
-    assign dreq_avail = state == IDLE;
-    assign dreq_hit_1 = dreq_1.valid & dreq_avail & hit_1;
-    assign dreq_hit_2 = dreq_2.valid & dreq_avail & hit_2;
+    assign dreq_hit_1 = dreq_1.valid & hit_1;
+    assign dreq_hit_2 = dreq_2.valid & hit_2;
     assign dreq_hit = (dreq_hit_1 & dreq_hit_2) | (dreq_hit_1 & ~dreq_2.valid);
+    assign miss_1 = dreq_1.valid & ~hit_1 & ((dreq_2.valid & hit_2) | ~dreq_2.valid);
+    assign miss_2 = dreq_2.valid & ~hit_2;
+/* ***************** */
 
-    data_addr_t miss_addr;
-    addr_t cbus_addr;
-
-    //plru
-    // plru_t [SET_NUM-1 : 0] plru;
-    // plru_t plru_r_1, plru_r_2;
-    // associativity_t replace_line_1, replace_line_2;
-    // plru_t plru_new_1, plru_new_2;
-
-    // assign plru_r_1 = plru[dreq_1_addr.index];
-    // assign plru_r_2 = (dreq_1_addr.index == dreq_2_addr.index) ? plru_new_1
-    //                                                            : plru[dreq_2_addr.index];
-
-    // plru port_1_plru(
-    //     .plru_old(plru_r_1),
-    //     .hit_line(hit_line_1),
-    //     .plru_new(plru_new_1),
-    //     .replace_line(replace_line_1)
-    // );
-
-    // plru port_2_plru(
-    //     .plru_old(plru_r_2),
-    //     .hit_line(hit_line_2),
-    //     .plru_new(plru_new_2),
-    //     .replace_line(replace_line_2)
-    // );
+    logic hit_reg;
+    logic stall_finish_1;
+    logic stall_finish_2;
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (hit_reg & (miss_1 | miss_2)) begin
+                hit_reg <= '0; 
+            end
+            else if (~hit_reg & ~dreq_hit)    
+        end
+        else begin
+            
+        end
+    end
     
     //plru
     plru_t [SET_NUM-1 : 0] plru, plru_new;
@@ -223,11 +218,6 @@ module DCache (
     logic addr_same;
     assign addr_same = (dreq_1_addr[31:2] == dreq_2_addr[31:2]) & (dreq_1.valid & dreq_2.valid);
 
-    //plru_r -> replace_line
-    //hit_line + plru_r -> plru_new
-    /*
-    double miss -> stall forever
-    */
     //W -> W
     logic w_to_w;
     word_t w_to_w_data;
@@ -310,28 +300,6 @@ module DCache (
             cache_dirty <= '0;
         end
     end
-
-    //hit时更新plru
-    // always_ff @(posedge clk) begin
-    //     if (resetn) begin
-    //         if (dreq_hit) begin
-    //             for (int i = 0; i < SET_NUM; i++) begin
-    //                 plru[i] <= (dreq_1_addr.index == index_t'(i)) ? ((dreq_1_addr.index == dreq_2_addr.index & dreq_2.valid) ? plru_new_2
-    //                                                                                                                             : plru_new_1)
-    //                                                                 : plru[i];
-    //             end
-    //             if (dreq_1_addr.index != dreq_2_addr.index & dreq_2.valid) begin
-    //                 for (int i = 0; i < SET_NUM; i++) begin
-    //                     plru[i] <= (dreq_2_addr.index == index_t'(i)) ? plru_new_2
-    //                                                                     : plru[i];
-    //                 end
-    //             end
-    //         end    
-    //     end
-    //     else begin
-    //         plru <= '0;
-    //     end    
-    // end
 
     always_ff @(posedge clk) begin
         if (resetn) begin
