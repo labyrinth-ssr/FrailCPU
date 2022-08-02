@@ -76,8 +76,10 @@
     assign raw_instr=dataI[1].raw_instr;
     always_comb begin
         dataE[1].target='0;
-        if (dataI[1].ctl.branch) begin
+        if (dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b) begin
             dataE[1].target=slot_pc+target_offset;
+        end else if (dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b) begin
+            dataE[1].target=dataI[1].pc+8;  
         end else if (dataI[1].ctl.jr) begin
             dataE[1].target=dataI[1].rd1;
         end else if (dataI[1].ctl.jump) begin
@@ -96,7 +98,10 @@
         .valid(dataI[1].ctl.branch)
     );
 
-    assign dataE[1].branch_taken=dataI[1].ctl.jump||(dataI[1].ctl.branch&&branch_condition);
+    assign dataE[1].branch_taken=dataI[1].ctl.jump
+    ||(dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
+    ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b);
+
     for (genvar i=0; i<2; ++i) begin
     assign dataE[i].srcb=dataI[i].rd2;
     assign dataE[i].srca=dataI[i].rd1;
@@ -112,6 +117,9 @@
 
     assign dataE[0].cp0ra=dataI[0].cp0ra;
     assign dataE[1].cp0ra=dataI[1].cp0ra;
+
+    assign dataE[1].is_jr_ra=dataI[1].is_jr_ra;
+    assign dataE[0].is_jr_ra='0;
 
     u1 mult_done,div_done,nega,negb;
     word_t multia,multib;
