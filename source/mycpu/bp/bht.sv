@@ -69,23 +69,6 @@ module bht#(
 
     // for predict
 
-    hit = 1'b0;
-    hit_line = '0;
-    is_jump_out = 1'b0;
-
-    always_comb begin
-        hit_pc = 1'b0;
-        pc_hit_line = '0;
-        pc_is_jump = 1'b0;
-        for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc))) begin
-                hit_pc = 1'b1;
-                hit_line = associativity_t'(i);
-                is_jump_out = r_meta_hit[i].is_jump;
-            end
-        end 
-    end
-
     always_comb begin
         pc_hit = 1'b0;
         pc_hit_line = '0;
@@ -112,6 +95,8 @@ module bht#(
         end 
     end
 
+    assign hit_pc = pc_hit;
+    assign hit_pcp4 = pcp4_hit;
     assign hit = pcp4_hit | pc_hit;
     always_comb begin : hit_line
         hit_line = '0;

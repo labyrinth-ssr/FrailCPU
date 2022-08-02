@@ -31,7 +31,7 @@ module rpct #(
     * pc_check is the pc to be predicted(from f1)
     * jrra_pc is the pc of the jr (ra) or jalr (from exe)
     */
-    output logic hit
+    output logic hit, hit_pc, hit_pcp4
 );
 
     function tag_t get_tag(addr_t addr);
@@ -45,21 +45,41 @@ module rpct #(
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
     meta_t [ASSOCIATIVITY-1:0] r_meta_in_rpct;
     meta_t [ASSOCIATIVITY-1:0] w_meta;
-    associativity_t replace_line, hit_line;
+    associativity_t replace_line, hit_line, pc_hit_line, pcp4_hit_line;
     ram_addr_t replace_addr;
-    // logic in_bht;
+    logic pc_hit, pcp4_hit;
 
     // for predict
 
     always_comb begin
-        hit = 1'b0;
-        hit_line = '0;
+        pc_hit = 1'b0;
+        pc_hit_line = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(pc_check) || r_meta_hit[i].tag == get_tag(pc_check+4))) begin
-                hit = 1'b1;
-                hit_line = associativity_t'(i);
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc))) begin
+                pc_hit  = 1'b1;
+                pc_hit_line = associativity_t'(i);
             end
         end 
+    end
+
+    always_comb begin
+        pcp4_hit = 1'b0;
+        pcp4_hit_line = '0;
+        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc+4))) begin
+                pcp4_hit = 1'b1;
+                pcp4_hit_line = associativity_t'(i);
+            end
+        end 
+    end
+
+    assign hit_pc = pc_hit;
+    assign hit_pcp4 = pcp4_hit;
+    assign hit = pcp4_hit | pc_hit;
+    always_comb begin : hit_line
+        hit_line = '0;
+        if(pc_hit) hit_line = pc_hit_line;
+        else if(pcp4_hit) hit_line = pcp4_hit_line;
     end
 
 
