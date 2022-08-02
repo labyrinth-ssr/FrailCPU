@@ -15,10 +15,10 @@ module ICache (
     input  cbus_resp_t icresp
 );
 
-    //32KB 8路组相联 1行8个data
-    //3 + 6 + 3 + 3
+    //16KB 2路组相联 1行8个data
+    //1 + 7 + 3 + 3
     localparam DATA_PER_LINE = 8;
-    localparam ASSOCIATIVITY = 4;
+    localparam ASSOCIATIVITY = 2;
     localparam SET_NUM = 128;
 
     localparam BYTE_WIDTH = 8;

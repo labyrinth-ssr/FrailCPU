@@ -16,10 +16,10 @@ module DCache (
     output cbus_req_t  dcreq,
     input  cbus_resp_t dcresp
 );
-    //32KB 4路组相联 1行16个data
-    //2 + 7 + 4 + 2
+    //16KB 2路组相联 1行16个data
+    //1 + 7 + 4 + 2
     localparam DATA_PER_LINE = 16;
-    localparam ASSOCIATIVITY = 4;
+    localparam ASSOCIATIVITY = 2;
     localparam SET_NUM = 128;
 
     localparam BYTE_WIDTH = 8;
@@ -110,11 +110,11 @@ module DCache (
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk), 
-        .en_1(meta_en), 
-        .en_2(1'b0),
+        .en_1(1'b1), 
+        .en_2(1'b1),
         .addr_1(meta_addr_1), 
         .addr_2(meta_addr_2),
-        .strobe(1'b1),  
+        .strobe(meta_en),  
         .wdata(meta_w), 
         .rdata_1(meta_r_1), 
         .rdata_2(meta_r_2)
@@ -218,14 +218,11 @@ module DCache (
     strobe_t port_1_wen;
     data_addr_t port_1_addr;
     word_t port_1_data_w, port_1_data_r;
-    assign port_1_en = resetn ? (dreq_hit_1 & ~w_to_w)
-                              : 1'b1;
-    assign port_1_wen = resetn ? dreq_1.strobe
-                                : {BYTE_PER_DATA{1'b1}};
-    assign port_1_addr = resetn ? {hit_line_1, dreq_1_addr.index, dreq_1_addr.offset}
-                                : reset_counter[DATA_ADDR_BITS-1:0];
-    assign port_1_data_w = resetn ? dreq_1.data
-                                  : '0;
+    assign port_1_en = (dreq_hit_1 & ~w_to_w);       
+    assign port_1_wen = dreq_1.strobe;                    
+    assign port_1_addr = {hit_line_1, dreq_1_addr.index, dreq_1_addr.offset};                   
+    assign port_1_data_w = dreq_1.data;
+                                  
 
     //Port 2 : dreq_2 & cbus
     logic port_2_en;
