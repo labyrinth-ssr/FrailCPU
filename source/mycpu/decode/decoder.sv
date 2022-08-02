@@ -546,7 +546,7 @@ module decoder (
                     end		
 					`F_JR:begin
                         ctl.op = JR;
-                jump='1;
+                        jump='1;
                         ctl.jump = 1'b1;
                         ctl.jr = 1'b1;
                         srcrega = rs;
@@ -555,7 +555,7 @@ module decoder (
                     end		
 					`F_JALR:begin
                         ctl.op = JALR;
-                jump='1;
+                        jump='1;
                         ctl.jump = 1'b1;
                         ctl.jr = 1'b1;
                         ctl.regwrite = 1'b1;
