@@ -19,8 +19,8 @@ module DCache (
     //32KB 4路组相联 1行16个data
     //2 + 7 + 4 + 2
     localparam DATA_PER_LINE = 16;
-    localparam ASSOCIATIVITY = 4;
-    localparam SET_NUM = 128;
+    localparam ASSOCIATIVITY = 2;
+    localparam SET_NUM = 256;
 
     localparam BYTE_WIDTH = 8;
     localparam BYTE_PER_DATA = 4;

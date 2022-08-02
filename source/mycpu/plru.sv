@@ -5,7 +5,7 @@
 
 //七位PLRU值
 module plru #(
-    parameter int ASSOCIATIVITY = 4,
+    parameter int ASSOCIATIVITY = 2,
 
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
     localparam type plru_t = logic [ASSOCIATIVITY-2:0],
@@ -21,8 +21,10 @@ module plru #(
     // assign replace_line[1] = plru_old[0] ? plru_old[2] : plru_old[1];
     // assign replace_line[0] = plru_old[ {30'b0, plru_old[0], 1'b0} + 3 + ( plru_old[0] ? int'(plru_old[2]) : int'(plru_old[1]) ) ];
 
-    assign replace_line[1] = plru_old[0];
-    assign replace_line[0] = plru_old[0] ? plru_old[2] : plru_old[1];
+    // assign replace_line[1] = plru_old[0];
+    // assign replace_line[0] = plru_old[0] ? plru_old[2] : plru_old[1];
+
+    assign replace_line = plru_old;
 
     // always_comb begin
     //     plru_new = plru_old;
@@ -46,20 +48,21 @@ module plru #(
 
     // end
 
-    always_comb begin
-        plru_new = plru_old;
+    // always_comb begin
+    //     plru_new = plru_old;
 
-        plru_new[0] = ~hit_line[1];
+    //     plru_new[0] = ~hit_line[1];
 
-        if (hit_line[1]) begin
-            plru_new[2] = ~hit_line[0];
-        end 
-        else begin
-            plru_new[1] = ~hit_line[0];
-        end
+    //     if (hit_line[1]) begin
+    //         plru_new[2] = ~hit_line[0];
+    //     end 
+    //     else begin
+    //         plru_new[1] = ~hit_line[0];
+    //     end
 
-    end
-   
+    // end
+
+    assign plru_new = ~hit_line;
 
 endmodule
 
