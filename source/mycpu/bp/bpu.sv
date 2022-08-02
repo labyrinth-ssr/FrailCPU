@@ -9,7 +9,7 @@
 `include "rpct.sv"
 `endif 
 
-module BPU #(
+module bpu #(
     parameter int COUNTER_BITS = 2
 ) (
     input logic clk, resetn,
@@ -19,6 +19,7 @@ module BPU #(
     output addr_t pre_pc,
 
     input logic is_jr_ra_decode,// decode (jump do not need pre)
+    // output addr_t decode_ret_pc,
 
     input addr_t exe_pc, dest_pc, ret_pc,// exe
     // ret_pc for jal, jalr
@@ -30,7 +31,7 @@ module BPU #(
     addr_t bht_pre_pc, ras_pre_pc;
     logic prediction_outcome;
 
-    always_comb begin : pre_pc
+    always_comb begin : pre_pc_block
         pre_pc = '0;
         if(bht_hit) begin
             pre_pc = bht_pre_pc;
@@ -39,7 +40,7 @@ module BPU #(
         end
     end
 
-    always_comb begin : f1_taken
+    always_comb begin : f1_taken_block
         f1_taken = 1'b0;
         if(rpct_hit) begin
             f1_taken = 1'b1;
@@ -48,7 +49,7 @@ module BPU #(
         end
     end
 
-    BHT bht (
+    bht bht (
         .clk, .resetn,
         .is_write(is_branch | is_j | is_jal),
         .is_jump_in(is_j | is_jal),
@@ -62,7 +63,7 @@ module BPU #(
         .dpre(prediction_outcome)
     );
 
-    RAS ras (
+    ras ras (
         .clk, .resetn,
         .push(is_jal | is_jalr),
         .pop(is_jr_ra_decode | rpct_hit),
@@ -70,7 +71,7 @@ module BPU #(
         .ret_pc_pop(ras_pre_pc)
     );
 
-    RPCT rpct (
+    rpct rpct (
         .clk, .resetn,
         .is_write(is_jr_ra_exe),
         .pc_check(f1_pc),

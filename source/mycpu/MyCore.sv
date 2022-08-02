@@ -21,6 +21,7 @@
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
+`include "bpu.sv"
 `endif 
 
 
@@ -50,10 +51,13 @@ module MyCore (
     assign i_wait=ireq.valid && ~iresp.addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     u1 pred_taken,decode_taken;
-    word_t pre_pc,decode_pre_pc;
+    word_t pre_pc;
+
+        u1 is_jr_ra_decode;
+    assign is_jr_ra_decode=(dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(is_jr_ra_decode)
 	);
 
     assign ireq.addr=dataP_pc;
@@ -108,8 +112,7 @@ module MyCore (
 		.is_INTEXC,
         .pred_taken,
         .pre_pc,
-        .decode_taken,
-        .decode_pre_pc
+        .decode_taken(is_jr_ra_decode)
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
@@ -132,15 +135,17 @@ module MyCore (
 	end
     // word_t pc_f1;
 
-    BPU bpu (
+
+    bpu bpu (
         .clk,.resetn,
         .f1_pc(dataP_pc),
         // .hit(pred_hit),
         .f1_taken(pred_taken),
         .pre_pc,
         // .need_pre()
-        .is_jr_ra_decode((dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31)),
-        .decode_taken,//预测跳转
+        .is_jr_ra_decode,
+        .decode_ret_pc,
+        // .decode_taken,//预测跳转
         .exe_pc(dataE[1].pc),
         .is_taken(dataE[1].branch_taken),
         .dest_pc(dataE[1].target),
@@ -155,18 +160,18 @@ module MyCore (
     u1 branch_valid_i;
     assign branch_valid_i=dataD_nxt[1].ctl.branch;
 
-    always_comb begin
-        decode_pre_pc='0;
-        if (dataD_nxt[branch_valid_i].ctl.branch) begin
-            if (dataD_nxt[1].ctl.branch) begin
-                decode_pre_pc=slot_pc+target_offset;
-            end else if (dataD_nxt[1].ctl.jr) begin
-                decode_pre_pc=dataD_nxt[1].rd1;
-            end else if (dataD_nxt[1].ctl.jump) begin
-                decode_pre_pc={slot_pc[31:28],raw_instr[25:0],2'b00};
-            end
-        end
-    end
+    // always_comb begin
+    //     decode_pre_pc='0;
+    //     if (dataD_nxt[branch_valid_i].ctl.branch) begin
+    //         if (dataD_nxt[1].ctl.branch) begin
+    //             decode_pre_pc=slot_pc+target_offset;
+    //         end else if (dataD_nxt[1].ctl.jr) begin
+    //             decode_pre_pc=dataD_nxt[1].rd1;
+    //         end else if (dataD_nxt[1].ctl.jump) begin
+    //             decode_pre_pc={slot_pc[31:28],raw_instr[25:0],2'b00};
+    //         end
+    //     end
+    // end
 
     // pc_branch pc_branch_decode(
     //     .branch(dataD_nxt[1].ctl.branch_type),

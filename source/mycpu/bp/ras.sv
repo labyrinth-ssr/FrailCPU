@@ -3,7 +3,7 @@
 
 `include "common.svh"
 
-module RAS #(
+module ras #(
     parameter int RAS_SIZE = 16,
 
     localparam RAS_ADDR_BITS = $clog2(RAS_SIZE),
@@ -41,7 +41,7 @@ module RAS #(
         top_nxt = top;
         if(push && ~(&top) && ~empty) begin // push && top is not '1 && stack is not empty (when stack_num == 0 or stack_num == 1 top = 0)
             top_nxt = top + 1;
-        end else (pop && (|top)) begin // pop && top is not '0
+        end else if(pop && (|top)) begin // pop && top is not '0
             top_nxt = top - 1;
         end
     end

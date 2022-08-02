@@ -6,7 +6,7 @@
 module hazard
 (
     output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,
-    input u1 branchM,i_wait,d_wait,e_wait,overflowI,/*branch_misalign,*/
+    input u1 branchM,i_wait,d_wait,e_wait,overflowI,branchD,
     input u1 excpW,excpM,
     input u1 clk,reset
 );
@@ -20,6 +20,7 @@ always_ff @(posedge clk) begin
     end else begin
         excp_iwait<=excp_iwait_nxt;
         branch_iwait<=branch_iwait_nxt;
+        branchD_iwait<=branch_iwait_nxt;
         // misalign_iwait<=misalign_iwait_nxt;        
     end
 end

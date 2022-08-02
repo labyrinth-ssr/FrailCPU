@@ -4,7 +4,7 @@
 `include "common.svh"
 
 
-module RPCT #(
+module rpct #(
     parameter int ASSOCIATIVITY = 2,
     parameter int SET_NUM = 8,
     
@@ -92,7 +92,7 @@ module RPCT #(
     assign replace_addr.index = get_index(jrra_pc);
 
 
-    always_comb begin : w_meta
+    always_comb begin : w_meta_block
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
             if (/*~in_bht &&*/ is_write && i == replace_line) begin
                 w_meta[i].valid = 1'b1;
