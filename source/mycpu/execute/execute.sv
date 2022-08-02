@@ -28,6 +28,7 @@
     assign a[0]=dataI[0].ctl.shamt_valid? {27'b0, dataI[0].raw_instr [10:6]} :dataI[0].rd1;
 
     u1 exception_of[1:0];
+    word_t aluout2;
 
     always_comb begin
         for (int i=0; i<2; ++i) begin
@@ -49,26 +50,13 @@
     alu alu_inst2(
         .a(a[0]),
         .b(b[0]),
-        .c(dataE[0].alu_out),
+        .c(aluout2),
         .alufunc(dataI[0].ctl.alufunc),
         .exception_of(exception_of[0])
     );
 
+    assign dataE[0].alu_out=aluout2;
     assign dataE[1].alu_out=dataI[1].ctl.is_link? dataI[1].pc+8:aluout;
-
-    always_comb begin//都是双端口
-        dataE[1].cp0_ctl=dataI[1].cp0_ctl;
-        dataE[0].cp0_ctl=dataI[0].cp0_ctl;
-        if (exception_of[1]) begin
-            dataE[1].cp0_ctl.ctype=EXCEPTION;
-            dataE[1].cp0_ctl.etype.overflow= '1;
-        end
-        else if (exception_of[0]) begin
-            dataE[0].cp0_ctl.ctype=EXCEPTION;
-            dataE[0].cp0_ctl.etype.overflow= '1;
-        end
-    end
-
     
     word_t slot_pc;
     assign slot_pc=dataI[1].pc+4;
@@ -102,7 +90,7 @@
     assign dataE[i].srca=dataI[i].rd1;
     assign dataE[i].rdst=dataI[i].rdst;
     assign dataE[i].pc=dataI[i].pc;
-    assign dataE[i].ctl=dataI[i].ctl;
+    // assign dataE[i].ctl=dataI[i].ctl;
     end
     assign dataE[1].valid=dataI[1].valid;
     assign dataE[0].valid= exception_of[1]? '0 : dataI[0].valid;
@@ -182,29 +170,73 @@
             // {hi_write,lo_write}='1;
             lo_data= nega^negb? -divc[31:0] : divc[31:0];
             hi_data=nega? -divc[63:32]:divc[63:32];
-        //     unique case ({nega,negb})
-        //     2'b00:begin
-        //         hi_data= divc[63:32];
-        //         lo_data=divc[31:0];
-        //     end
-        //     2'b10:begin
-        //         hi_data= multib-divc[63:32];
-        //         lo_data=-(divc[31:0]+1);
-        //     end
-        //     2'b01:begin
-        //         hi_data= divc[63:32];
-        //         lo_data=-divc[31:0];
-        //     end
-        //     2'b11:begin
-        //         hi_data= -multib-divc[63:32];
-        //         lo_data=divc[31:0]+1;
-        //     end
-        // endcase
         end
     end
 
-
     assign e_wait=((div_valid)&&~div_done)||((mult_valid)&&~mult_done);
+
+    u1 [1:0] load_misalign,store_misalign;
+
+    assign load_misalign[1]=dataI[1].ctl.memtoreg&&((dataI[1].ctl.msize==MSIZE2&&aluout[0]!=1'b0)||(dataI[1].ctl.msize==MSIZE4&&aluout[1:0]!=2'b00));
+    assign load_misalign[0]=dataI[0].ctl.memtoreg&&((dataI[0].ctl.msize==MSIZE2&&aluout2[0]!=1'b0)||(dataI[0].ctl.msize==MSIZE4&&aluout2[1:0]!=2'b00));
+    assign store_misalign[1]=dataI[1].ctl.memwrite&&((dataI[1].ctl.msize==MSIZE2&&aluout[0]!=1'b0)||(dataI[1].ctl.msize==MSIZE4&&aluout[1:0]!=2'b00));
+    assign store_misalign[0]=dataI[0].ctl.memwrite&&((dataI[0].ctl.msize==MSIZE2&&aluout2[0]!=1'b0)||(dataI[0].ctl.msize==MSIZE4&&aluout2[1:0]!=2'b00));
+
+    always_comb begin
+        dataE[1].ctl=dataI[1].ctl;
+        dataE[0].ctl=dataI[0].ctl;
+
+            if (load_misalign[1]) begin
+                dataE[1].ctl.memtoreg='0;
+                dataE[0].ctl.memtoreg='0;
+            end else if (store_misalign[1]) begin
+                dataE[1].ctl.memwrite='0;
+                dataE[0].ctl.memwrite='0;
+            end
+
+            if (load_misalign[0]) begin
+                dataE[0].ctl.memtoreg='0;
+            end else if (load_misalign[0]) begin
+                dataE[0].ctl.memwrite='0;
+            end
+
+    end
+
+    always_comb begin//都是双端口
+        dataE[1].cp0_ctl=dataI[1].cp0_ctl;
+        dataE[0].cp0_ctl=dataI[0].cp0_ctl;
+        if (exception_of[1]) begin
+            dataE[1].cp0_ctl.ctype=EXCEPTION;
+            dataE[1].cp0_ctl.etype.overflow= '1;
+        end
+        else if (exception_of[0]) begin
+            dataE[0].cp0_ctl.ctype=EXCEPTION;
+            dataE[0].cp0_ctl.etype.overflow= '1;
+        end
+
+        if (store_misalign[1]) begin
+            dataE[1].cp0_ctl.ctype=EXCEPTION;
+            dataE[1].cp0_ctl.etype.adesD= '1;
+            dataE[1].cp0_ctl.valid='1;
+            dataE[1].cp0_ctl.vaddr=aluout;
+        end else if (store_misalign[0]) begin
+            dataE[0].cp0_ctl.ctype=EXCEPTION;
+            dataE[0].cp0_ctl.valid='1;
+            dataE[0].cp0_ctl.etype.adesD='1;
+            dataE[0].cp0_ctl.vaddr=aluout2;
+        end
+        if ( load_misalign[1]) begin
+            dataE[1].cp0_ctl.ctype=EXCEPTION;
+            dataE[1].cp0_ctl.valid='1;
+            dataE[1].cp0_ctl.etype.adelD= '1;
+            dataE[1].cp0_ctl.vaddr=aluout;
+        end else if ( load_misalign[0]) begin
+            dataE[0].cp0_ctl.ctype=EXCEPTION;
+            dataE[0].cp0_ctl.valid='1;
+            dataE[0].cp0_ctl.etype.adelD='1;
+            dataE[0].cp0_ctl.vaddr=aluout2;
+        end
+    end
 
     endmodule
 

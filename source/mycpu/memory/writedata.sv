@@ -12,13 +12,11 @@ module writedata
     input word_t _wd,
     input msize_t msize,
     output word_t wd,
-    output strobe_t strobe,
-	output u1 store_misalign
+    output strobe_t strobe
 );
 always_comb begin
 		strobe = '0;
 		wd = '0;
-		store_misalign='0;
 		unique case(msize)
 			MSIZE1: begin
 				unique case(addr)
@@ -39,7 +37,6 @@ always_comb begin
 						strobe = 4'h08;
 					end
 					default: begin
-						store_misalign='1;
 					end
 				endcase
 			end
@@ -54,7 +51,6 @@ always_comb begin
 						strobe = 4'h0c;
 					end
 					default: begin
-						store_misalign='1;
 						
 					end
 				endcase
@@ -66,7 +62,6 @@ always_comb begin
 						strobe = 4'h0f;
 					end
 					default: begin
-						store_misalign='1;
 						
 					end
 				endcase
