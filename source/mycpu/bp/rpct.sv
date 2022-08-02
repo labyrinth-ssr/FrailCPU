@@ -55,7 +55,7 @@ module rpct #(
         pc_hit = 1'b0;
         pc_hit_line = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc))) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(pc_check))) begin
                 pc_hit  = 1'b1;
                 pc_hit_line = associativity_t'(i);
             end
@@ -66,7 +66,7 @@ module rpct #(
         pcp4_hit = 1'b0;
         pcp4_hit_line = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc+4))) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(pc_check+4))) begin
                 pcp4_hit = 1'b1;
                 pcp4_hit_line = associativity_t'(i);
             end
@@ -76,7 +76,7 @@ module rpct #(
     assign hit_pc = pc_hit;
     assign hit_pcp4 = pcp4_hit;
     assign hit = pcp4_hit | pc_hit;
-    always_comb begin : hit_line
+    always_comb begin : hit_line_b
         hit_line = '0;
         if(pc_hit) hit_line = pc_hit_line;
         else if(pcp4_hit) hit_line = pcp4_hit_line;

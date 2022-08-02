@@ -76,9 +76,9 @@
     assign raw_instr=dataI[1].raw_instr;
     always_comb begin
         dataE[1].target='0;
-        if (dataI[1].ctl.branch&&branch_condition&&~pre_b) begin
+        if (dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b) begin
             dataE[1].target=slot_pc+target_offset;
-        end else if (dataI[1].ctl.branch&&~branch_condition&&pre_b) begin
+        end else if (dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b) begin
             dataE[1].target=dataI[1].pc+8;  
         end else if (dataI[1].ctl.jr) begin
             dataE[1].target=dataI[1].rd1;
@@ -99,8 +99,8 @@
     );
 
     assign dataE[1].branch_taken=dataI[1].ctl.jump
-    ||(dataI[1].ctl.branch&&branch_condition&&~pre_b)
-    ||(dataI[1].ctl.branch&&~branch_condition&&pre_b);
+    ||(dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
+    ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b);
 
     for (genvar i=0; i<2; ++i) begin
     assign dataE[i].srcb=dataI[i].rd2;

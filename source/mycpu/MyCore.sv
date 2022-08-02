@@ -53,7 +53,7 @@ module MyCore (
     u1 pred_taken;
     word_t pre_pc;
 
-        u1 is_jr_ra_decode;
+    u1 is_jr_ra_decode;
     assign is_jr_ra_decode=(dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
 
     hazard hazard (
@@ -122,6 +122,11 @@ module MyCore (
         .decode_taken(is_jr_ra_decode)
     );
     //pipereg between pcselect and fetch1
+
+    u1 zero_prej;
+    u1 hit_bit;
+    assign zero_prej=pred_taken&&~hit_bit;
+
     fetch1_data_t dataF1_nxt,dataF1;
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
@@ -143,7 +148,6 @@ module MyCore (
 	end
     // word_t pc_f1;
 
-
     bpu bpu (
         .clk,.resetn,
         .f1_pc(dataP_pc),
@@ -163,10 +167,9 @@ module MyCore (
         .is_branch(dataE[1].ctl.branch),
         .is_j(dataE[1].ctl.op==J),
         .is_jr_ra_exe(dataE[1].is_jr_ra),
-        .hit_bit()
+        .pos(hit_bit)
     );
-    u1 zero_prej;
-    assign zero_prej=pred_taken&&~hit_bit;
+
 
     u1 branch_valid_i;
     assign branch_valid_i=dataD_nxt[1].ctl.branch;

@@ -128,6 +128,7 @@ typedef struct packed {
 	cp0_control_t cp0_ctl;
 	u1 valid;
 	u32 pc;
+	u1 pre_b;
 	// int_type_t int_type;
     } fetch1_data_t;//
 

@@ -51,7 +51,7 @@ module bht#(
 );
 
     function tag_t get_tag(addr_t addr);
-        return addr[31:2+INDEX_BITS];
+        return addr[31:2];
     endfunction
 
     function index_t get_index(addr_t addr);
@@ -62,7 +62,7 @@ module bht#(
     meta_t [ASSOCIATIVITY-1:0] r_meta_in_bht;
     meta_t [ASSOCIATIVITY-1:0] w_meta;
     bh_data_t r_pc_predict, r_pc_replace, w_pc_replace;
-    counter_t [2**BH_BITS] r_counter_set_predict, r_counter_set_replace, w_counter_set_replace;
+    counter_t [2**BH_BITS-1:0] r_counter_set_predict, r_counter_set_replace, w_counter_set_replace;
     associativity_t pc_hit_line, pcp4_hit_line, hit_line, replace_line;
     ram_addr_t predict_addr, replace_addr;
     logic in_bht, pc_hit, pcp4_hit, is_pc_jump, is_pcp4_jump;
@@ -98,18 +98,18 @@ module bht#(
     assign hit_pc = pc_hit;
     assign hit_pcp4 = pcp4_hit;
     assign hit = pcp4_hit | pc_hit;
-    always_comb begin : hit_line
+    always_comb begin : hit_line_b
         hit_line = '0;
         if(pc_hit) hit_line = pc_hit_line;
         else if(pcp4_hit) hit_line = pcp4_hit_line;
     end
-    always_comb begin : is_jump_out
+    always_comb begin : is_jump_out_b
         is_jump_out = '0;
         if(pc_hit) is_jump_out = is_pc_jump;
         else if(pcp4_hit) is_jump_out = is_pcp4_jump;
     end
 
-    always_comb begin : predict_addr_index
+    always_comb begin : predict_addr_index_b
         predict_addr.index = '0;
         if(pc_hit) predict_addr.index = get_index(branch_pc);
         else if(pcp4_hit) predict_addr.index = get_index(branch_pc+4);
