@@ -195,6 +195,7 @@ typedef struct packed {
 	u1 is_slot;
 	u1 is_jr_ra;
 	u1 penalty_taken;
+	word_t dest_pc;
 	// word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;
 	cp0_control_t cp0_ctl;
