@@ -148,7 +148,6 @@ module MyCore (
 	end
     // word_t pc_f1;
 
-    word_t dest_pc;
 
     bpu bpu (
         .clk,.resetn,
@@ -162,7 +161,7 @@ module MyCore (
         // .decode_taken,//预测跳转
         .exe_pc(dataE[1].pc),
         .is_taken(dataE[1].branch_taken),
-        .dest_pc,
+        .dest_pc(dataE[1].dest_pc),
         .ret_pc(dataE[1].pc+8),
         .is_jal(dataE[1].ctl.op==JAL),
         .is_jalr(dataE[1].ctl.op==JALR),
@@ -384,8 +383,7 @@ module MyCore (
         .clk,.resetn,
         .dataI,
         .dataE(dataE_nxt),
-        .e_wait,
-        .dest_pc
+        .e_wait
     );
 
     pipereg2 #(.T(execute_data_t))XM1reg(
