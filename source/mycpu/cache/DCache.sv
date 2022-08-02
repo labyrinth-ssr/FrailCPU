@@ -70,7 +70,7 @@ module DCache (
     assign dreq_1_addr = dreq_1.addr;
     assign dreq_2_addr = dreq_2.addr;
 
-    u64 reset_counter;
+    index_t reset_counter;
     always_ff @(posedge clk) begin
         reset_counter <= reset_counter + 1;
     end
@@ -120,9 +120,9 @@ module DCache (
         .rdata_2(meta_r_2)
     );
 
-    //dirty_ram
-    logic [ASSOCIATIVITY*SET_NUM-1:0] dirty_ram;
-    logic [ASSOCIATIVITY*SET_NUM-1:0] dirty_ram_new;
+    //cache_dirty
+    logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty;
+    logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty_new;
     
 
     //计算hit
@@ -165,30 +165,61 @@ module DCache (
     data_addr_t miss_addr;
     addr_t cbus_addr;
 
-    //plru_ram
-    plru_t [SET_NUM-1 : 0] plru_ram;
-    plru_t plru_r_1, plru_r_2;
-    associativity_t replace_line_1, replace_line_2;
-    plru_t plru_new_1, plru_new_2;
+    //plru
+    // plru_t [SET_NUM-1 : 0] plru;
+    // plru_t plru_r_1, plru_r_2;
+    // associativity_t replace_line_1, replace_line_2;
+    // plru_t plru_new_1, plru_new_2;
 
-    assign plru_r_1 = plru_ram[dreq_1_addr.index];
-    assign plru_r_2 = (dreq_1_addr.index == dreq_2_addr.index) ? plru_new_1
-                                                               : plru_ram[dreq_2_addr.index];
+    // assign plru_r_1 = plru[dreq_1_addr.index];
+    // assign plru_r_2 = (dreq_1_addr.index == dreq_2_addr.index) ? plru_new_1
+    //                                                            : plru[dreq_2_addr.index];
 
-    plru port_1_plru(
-        .plru_old(plru_r_1),
-        .hit_line(hit_line_1),
-        .plru_new(plru_new_1),
-        .replace_line(replace_line_1)
-    );
+    // plru port_1_plru(
+    //     .plru_old(plru_r_1),
+    //     .hit_line(hit_line_1),
+    //     .plru_new(plru_new_1),
+    //     .replace_line(replace_line_1)
+    // );
 
-    plru port_2_plru(
-        .plru_old(plru_r_2),
-        .hit_line(hit_line_2),
-        .plru_new(plru_new_2),
-        .replace_line(replace_line_2)
-    );
+    // plru port_2_plru(
+    //     .plru_old(plru_r_2),
+    //     .hit_line(hit_line_2),
+    //     .plru_new(plru_new_2),
+    //     .replace_line(replace_line_2)
+    // );
     
+    //plru
+    plru_t [SET_NUM-1 : 0] plru, plru_new;
+    associativity_t replace_line_1, replace_line_2;
+
+    assign replace_line_1 = plru[dreq_1_addr.index];
+    assign replace_line_2 = (dreq_1_addr.index == dreq_2_addr.index) ? ~hit_line_1
+                                                               : plru[dreq_2_addr.index];
+
+
+    always_comb begin
+        plru_new = plru;
+        for (int i = 0; i < SET_NUM; i++) begin
+            if (dreq_hit) begin
+                plru_new[i] = (dreq_1_addr.index == index_t'(i)) ? ~hit_line_1 : plru[i];
+                if (dreq_2.valid) begin      
+                    plru_new[i] = (dreq_2_addr.index == index_t'(i)) ? ~hit_line_2 : plru[i];    
+                end
+            end    
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            plru <= plru_new;
+        end
+        else begin
+            plru <= '0;
+        end
+    end
+
+
     logic addr_same;
     assign addr_same = (dreq_1_addr[31:2] == dreq_2_addr[31:2]) & (dreq_1.valid & dreq_2.valid);
 
@@ -244,24 +275,24 @@ module DCache (
     logic delay_counter;
 
     always_comb begin
-        dirty_ram_new = dirty_ram;
+        cache_dirty_new = cache_dirty;
         for (int i = 0; i < ASSOCIATIVITY*SET_NUM; i++) begin
             unique case (state)
                 IDLE: begin
                     if (dreq_hit & |dreq_1.strobe) begin
-                        dirty_ram_new[i] = ({hit_line_1, dreq_1_addr.index} == dirty_t'(i)) ? 1'b1 : dirty_ram[i];
+                        cache_dirty_new[i] = ({hit_line_1, dreq_1_addr.index} == dirty_t'(i)) ? 1'b1 : cache_dirty[i];
                         if (dreq_2.valid & |dreq_2.strobe) begin
-                            dirty_ram_new[i] = ({hit_line_2, dreq_2_addr.index} == dirty_t'(i)) ? 1'b1 : dirty_ram[i];
+                            cache_dirty_new[i] = ({hit_line_2, dreq_2_addr.index} == dirty_t'(i)) ? 1'b1 : cache_dirty[i];
                         end
                     end
                 end
 
                 FETCH_1: begin
-                    dirty_ram_new[i] = ({replace_line_1, dreq_1_addr.index} == dirty_t'(i)) ? '0 : dirty_ram[i];
+                    cache_dirty_new[i] = ({replace_line_1, dreq_1_addr.index} == dirty_t'(i)) ? '0 : cache_dirty[i];
                 end
             
                 FETCH_2: begin
-                    dirty_ram_new[i] = ({replace_line_2, dreq_2_addr.index} == dirty_t'(i)) ? '0 : dirty_ram[i];
+                    cache_dirty_new[i] = ({replace_line_2, dreq_2_addr.index} == dirty_t'(i)) ? '0 : cache_dirty[i];
                 end
 
                 default: begin   
@@ -273,41 +304,41 @@ module DCache (
 
     always_ff @(posedge clk) begin
         if (resetn) begin
-            dirty_ram <= dirty_ram_new;
+            cache_dirty <= cache_dirty_new;
         end 
         else begin
-            dirty_ram <= '0;
+            cache_dirty <= '0;
         end
     end
 
-    //hit时更新plru_ram
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if (dreq_hit) begin
-                for (int i = 0; i < SET_NUM; i++) begin
-                    plru_ram[i] <= (dreq_1_addr.index == index_t'(i)) ? ((dreq_1_addr.index == dreq_2_addr.index & dreq_2.valid) ? plru_new_2
-                                                                                                                                : plru_new_1)
-                                                                    : plru_ram[i];
-                end
-                if (dreq_1_addr.index != dreq_2_addr.index & dreq_2.valid) begin
-                    for (int i = 0; i < SET_NUM; i++) begin
-                        plru_ram[i] <= (dreq_2_addr.index == index_t'(i)) ? plru_new_2
-                                                                        : plru_ram[i];
-                    end
-                end
-            end    
-        end
-        else begin
-            plru_ram <= '0;
-        end    
-    end
+    //hit时更新plru
+    // always_ff @(posedge clk) begin
+    //     if (resetn) begin
+    //         if (dreq_hit) begin
+    //             for (int i = 0; i < SET_NUM; i++) begin
+    //                 plru[i] <= (dreq_1_addr.index == index_t'(i)) ? ((dreq_1_addr.index == dreq_2_addr.index & dreq_2.valid) ? plru_new_2
+    //                                                                                                                             : plru_new_1)
+    //                                                                 : plru[i];
+    //             end
+    //             if (dreq_1_addr.index != dreq_2_addr.index & dreq_2.valid) begin
+    //                 for (int i = 0; i < SET_NUM; i++) begin
+    //                     plru[i] <= (dreq_2_addr.index == index_t'(i)) ? plru_new_2
+    //                                                                     : plru[i];
+    //                 end
+    //             end
+    //         end    
+    //     end
+    //     else begin
+    //         plru <= '0;
+    //     end    
+    // end
 
     always_ff @(posedge clk) begin
         if (resetn) begin
             unique case (state)
                 IDLE: begin
                     if (dreq_1.valid & ~hit_1) begin
-                        if (dirty_ram[{replace_line_1, dreq_1_addr.index}] & meta_r_1[replace_line_1].valid) begin
+                        if (cache_dirty[{replace_line_1, dreq_1_addr.index}] & meta_r_1[replace_line_1].valid) begin
                             state <= WRITEBACK_1;
                         end
                         else begin
@@ -318,7 +349,7 @@ module DCache (
                     end
 
                     else if (hit_1 & dreq_2.valid & ~hit_2) begin
-                        if (dirty_ram[{replace_line_2, dreq_2_addr.index}] & meta_r_2[replace_line_2].valid) begin
+                        if (cache_dirty[{replace_line_2, dreq_2_addr.index}] & meta_r_2[replace_line_2].valid) begin
                             state <= WRITEBACK_2;
                         end
                         else begin

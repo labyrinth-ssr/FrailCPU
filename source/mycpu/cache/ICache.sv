@@ -69,7 +69,7 @@ module ICache (
     addr_t ireq_addr;
     assign ireq_addr = ireq.addr;
 
-    u64 reset_counter;
+    index_t reset_counter;
     always_ff @(posedge clk) begin
         reset_counter <= reset_counter + 1;
     end
@@ -117,21 +117,45 @@ module ICache (
     end
 
     //plru_ram
-    plru_t [SET_NUM-1 : 0] plru_ram;
+    // plru_t [SET_NUM-1 : 0] plru_ram;
 
-    //plru_r -> replace_line
-    //hit_line + plru_r -> plru_new
+    // //plru_r -> replace_line
+    // //hit_line + plru_r -> plru_new
+    // associativity_t replace_line;
+    // plru_t plru_new;
+    // /*
+    // double miss -> stall forever
+    // */
+    // plru plru(
+    //     .plru_old(plru_ram[ireq_addr.index]),
+    //     .hit_line,
+    //     .plru_new,
+    //     .replace_line
+    // );
+
+    //plru
+    plru_t [SET_NUM-1 : 0] plru, plru_new;
     associativity_t replace_line;
-    plru_t plru_new;
-    /*
-    double miss -> stall forever
-    */
-    plru plru(
-        .plru_old(plru_ram[ireq_addr.index]),
-        .hit_line,
-        .plru_new,
-        .replace_line
-    );
+
+    assign replace_line = plru[ireq_addr.index];
+    
+    always_comb begin
+        plru_new = plru;
+        for (int i = 0; i < SET_NUM; i++) begin 
+            if (ireq_hit) begin
+                plru_new[i] = (ireq_addr.index == index_t'(i)) ? ~hit_line : plru[i];
+            end    
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            plru <= plru_new;
+        end
+        else begin
+            plru <= '0;
+        end
+    end
 
     //Port 1 
     data_addr_t data_addr;
@@ -160,11 +184,10 @@ module ICache (
     addr_t cbus_addr;   //内存->Cache
     
     assign port_2_en = 1'b1;
-    assign port_2_wen = resetn ? ((state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
-                                                                     : '0)
-                                  : {BYTE_PER_DATA{1'b1}};
-    assign port_2_addr = resetn ? miss_data_addr : reset_counter[ASSOCIATIVITY_BITS+INDEX_BITS+OFFSET_BITS-1:0];
-    assign port_2_data_w = (resetn & state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
+    assign port_2_wen = (state == FETCH && icresp.ready) ? (fetch_count[0] ? {{BYTE_PER_WORD{1'b1}}, {BYTE_PER_WORD{1'b0}}} : {{BYTE_PER_WORD{1'b0}}, {BYTE_PER_WORD{1'b1}}})
+                                                                     : '0;
+    assign port_2_addr = miss_data_addr;
+    assign port_2_data_w = (state == FETCH & icresp.ready) ? (fetch_count[0] ? {icresp.data, {WORD_WIDTH{1'b0}}} : {{WORD_WIDTH{1'b0}}, icresp.data})
                                                             : '0;
 
 
@@ -183,7 +206,7 @@ module ICache (
     assign ireq_hit = ireq.valid & hit_avail & hit;
     assign ireq_miss = ireq.valid & ~hit;
 
-    //更新meta_ram, plru_ram
+    //更新meta_ram
     always_comb begin
         meta_w = meta_r;
         if (resetn) begin
@@ -203,20 +226,20 @@ module ICache (
         end
     end
 
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if (ireq_hit) begin
-                for (int i = 0; i < SET_NUM; i++) begin
-                    plru_ram[i] <= (ireq_addr.index == index_t'(i)) ? plru_new
-                                                                    : plru_ram[i];
-                end
-            end    
-        end
-        else begin
-            plru_ram <= '0;                                            
-        end
+    // always_ff @(posedge clk) begin
+    //     if (resetn) begin
+    //         if (ireq_hit) begin
+    //             for (int i = 0; i < SET_NUM; i++) begin
+    //                 plru_ram[i] <= (ireq_addr.index == index_t'(i)) ? plru_new
+    //                                                                 : plru_ram[i];
+    //             end
+    //         end    
+    //     end
+    //     else begin
+    //         plru_ram <= '0;                                            
+    //     end
         
-    end
+    // end
 
     always_ff @(posedge clk) begin
         if (resetn) begin
