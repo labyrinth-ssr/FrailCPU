@@ -6,7 +6,7 @@
 `include "../plru.sv"
 `endif 
 
-module BHT#(
+module bht#(
     parameter int ASSOCIATIVITY = 4,
     parameter int SET_NUM = 8,
     parameter int BH_BITS = 2,
@@ -47,11 +47,11 @@ module BHT#(
     * dest_pc is the branch dest of the executed_branch
     */
     output addr_t predict_pc,
-    output logic hit, is_jump_out, dpre
+    output logic hit, is_jump_out, dpre, hit_pc, hit_pcp4
 );
 
     function tag_t get_tag(addr_t addr);
-        return addr[32:2+INDEX_BITS];
+        return addr[31:2+INDEX_BITS];
     endfunction
 
     function index_t get_index(addr_t addr);
@@ -68,6 +68,23 @@ module BHT#(
     logic in_bht, pc_hit, pcp4_hit, is_pc_jump, is_pcp4_jump;
 
     // for predict
+
+    hit = 1'b0;
+    hit_line = '0;
+    is_jump_out = 1'b0;
+
+    always_comb begin
+        hit_pc = 1'b0;
+        pc_hit_line = '0;
+        pc_is_jump = 1'b0;
+        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc))) begin
+                hit_pc = 1'b1;
+                hit_line = associativity_t'(i);
+                is_jump_out = r_meta_hit[i].is_jump;
+            end
+        end 
+    end
 
     always_comb begin
         pc_hit = 1'b0;
@@ -115,7 +132,7 @@ module BHT#(
     assign predict_addr.line = hit_line;
 
     assign predict_pc = hit ? r_pc_predict.pc : '0;
-    assign dpre = r_counter_set_predict[COUNTER_BITS-1];
+    assign dpre = r_counter_set_predict[r_pc_predict.bhr][COUNTER_BITS-1];
 
 
     // for repalce
@@ -132,7 +149,7 @@ module BHT#(
     plru_t plru_ram [SET_NUM-1 : 0];
     plru_t plru_r, plru_new;
 
-    assign plru_r = plru_ram[predict_addr.index];
+    assign plru_r = plru_ram[get_index(branch_pc)];
 
     plru port_1_plru(
         .plru_old(plru_r),
@@ -143,7 +160,7 @@ module BHT#(
 
     always_ff @(posedge clk) begin
         if (hit) begin
-            plru_ram[predict_addr.index] <= plru_new;
+            plru_ram[get_index(branch_pc)] <= plru_new;
         end
     end
 
@@ -158,9 +175,9 @@ module BHT#(
         end
     end
 
-    always_comb begin : w_meta
+    always_comb begin : w_meta_b
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (~in_bht && is_write && i == replace_line) begin
+            if (~in_bht && is_write && associativity_t'(i) == replace_line) begin
                 w_meta[i].valid = 1'b1;
                 w_meta[i].is_jump = is_jump_in;
                 w_meta[i].tag = get_tag(executed_branch_pc);
@@ -199,7 +216,7 @@ module BHT#(
             endcase
     end
 
-    always_comb begin : w_counter_set_replace 
+    always_comb begin : w_counter_set_replace_b 
         w_counter_set_replace = '0;
         if(in_bht) begin
             for (int i = 0; i < 2**BH_BITS; i++) begin
@@ -214,9 +231,9 @@ module BHT#(
         end 
     end
 
-    logic [2**BH_BITS] counter_strobe;
+    logic [2**BH_BITS-1:0] counter_strobe;
 
-    always_comb begin : counter_strobe
+    always_comb begin : counter_strobe_b
         counter_strobe = '0;
         if(in_bht) begin
             for (int i = 0; i < 2**BH_BITS; i++) begin
@@ -227,7 +244,8 @@ module BHT#(
                 end
             end    
         end else if (is_write) begin
-            counter_strobe[i] = '1;
+
+            counter_strobe = '1;
         end 
     end
 
@@ -254,7 +272,7 @@ module BHT#(
         .wdata(resetn ? w_meta : '0),
 
         .en_2(1'b0), //port2 for predict
-        .addr_2(predict_addr.index),
+        .addr_2(get_index(branch_pc)),
         .rdata_2(r_meta_hit)
     );
 
@@ -278,7 +296,7 @@ module BHT#(
     );
 
     LUTRAM_DualPort #(
-        .ADDR_WIDTH(INDEX_BITS+ASSOCIATIVITY_BITS+BH_BITS),
+        .ADDR_WIDTH(INDEX_BITS+ASSOCIATIVITY_BITS),
         .DATA_WIDTH(COUNTER_BITS * (2**BH_BITS)),
         .BYTE_WIDTH(COUNTER_BITS),
         .READ_LATENCY(0)

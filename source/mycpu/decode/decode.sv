@@ -59,12 +59,14 @@ module decode(
         assign dataD[i].imm=dataF2[i].raw_instr[15:0];
         assign dataD[i].raw_instr=dataF2[i].raw_instr;
         assign dataD[i].pc=dataF2[i].pc;
+        assign dataD[i].pre_b=dataF2[i].pre_b;
         assign dataD[i].cp0ra={dataF2[i].raw_instr[15:11],dataF2[i].raw_instr[2:0]};
         // assign dataD[i].ra1=ra1[i];
         // assign dataD[i].ra2=ra2[i];
     end
     assign dataD[1].valid=dataF2[1].valid;
     assign dataD[0].valid=dataF2[0].valid;
+    // assign dataD[1].is_jr_ra
 
 
     

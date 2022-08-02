@@ -26,6 +26,8 @@ localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
 u1 have_slot;
 decode_data_t issue_queue [ISSUE_QUEUE_SIZE-1:0];
+// decode_data_t issue_queue_even [(ISSUE_QUEUE_SIZE-1)/2:0];
+
 index_t head;
 index_t tail;
 
@@ -260,6 +262,8 @@ end
                 dataI[i].raw_instr=dataD[i].raw_instr;
                 dataI[i].rdst=dataD[i].rdst;
                 dataI[i].cp0_ctl=dataD[i].cp0_ctl;
+                dataI[i].pre_b=dataD[i].pre_b;
+                dataI[i].is_jr_ra=dataD[i].ctl.op==JR&&dataD[i].ra1==31;
                 end
             end
         end else begin
@@ -274,6 +278,8 @@ end
                 dataI[1].cp0ra=candidate1.cp0ra;
                 dataI[1].rdst=candidate1.rdst;
                 dataI[1].cp0_ctl=candidate1.cp0_ctl;
+                dataI[1].pre_b=candidate1.pre_b;
+                dataI[1].is_jr_ra=candidate1.ctl.op==JR&&candidate1.ra1==31;
                 if (issue_en[0]) begin
                     dataI[0].ctl=candidate2.ctl;
                     dataI[0].pc=candidate2.pc;
@@ -285,6 +291,8 @@ end
                     dataI[0].cp0ra=candidate2.cp0ra;
                     dataI[0].rdst=candidate2.rdst;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
+                    dataI[0].pre_b='0;
+                    dataI[0].is_jr_ra=candidate2.ctl.op==JR&&candidate2.ra1==31;
                 end
             end
         end

@@ -21,6 +21,7 @@
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
+`include "bpu.sv"
 `endif 
 
 
@@ -49,13 +50,18 @@ module MyCore (
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
     assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
+    u1 pred_taken;
+    word_t pre_pc;
+
+        u1 is_jr_ra_decode;
+    assign is_jr_ra_decode=(dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(is_jr_ra_decode)
 	);
 
     assign ireq.addr=dataP_pc;
-	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken);
+	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken||is_jr_ra_decode);
     assign reset=~resetn;
 
     fetch_data_t [1:0] dataF2_nxt ,dataF2 ;
@@ -72,15 +78,20 @@ module MyCore (
         end
     end
 
-    word_t jpc_save,pc_nxt;
-    u1 jpc_saved;
+    word_t jpc_save,pc_nxt,dpc_save;
+    u1 jpc_saved,dpc_saved;
     always_ff @(posedge clk) begin
         if (reset) begin
             jpc_save<='0;
 			jpc_saved<='0;
+            dpc_save<='0;
+			dpc_saved<='0;
         end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
+        end else if (stallF && is_jr_ra_decode) begin
+            dpc_save<=pc_selected;
+            dpc_saved<='1;
         end else if (~stallF) begin
             jpc_save<='0;
 			jpc_saved<='0;
@@ -90,6 +101,8 @@ module MyCore (
     always_comb begin
         if (jpc_saved&&~is_INTEXC) begin
             pc_nxt=jpc_save;
+        end else if (dpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
+            pc_nxt=dpc_save;
         end else begin
             pc_nxt=pc_selected;
         end
@@ -103,14 +116,17 @@ module MyCore (
         .epc,
         .entrance(32'hBFC0_0380),
 		.is_eret,
-		.is_INTEXC
-      
+		.is_INTEXC,
+        .pred_taken,
+        .pre_pc,
+        .decode_taken(is_jr_ra_decode)
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
+    assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     always_comb begin
         dataF1_nxt.cp0_ctl.etype='0;
         dataF1_nxt.cp0_ctl.vaddr='0;
@@ -127,6 +143,53 @@ module MyCore (
 	end
     // word_t pc_f1;
 
+
+    bpu bpu (
+        .clk,.resetn,
+        .f1_pc(dataP_pc),
+        // .hit(pred_hit),
+        .f1_taken(pred_taken),
+        .pre_pc,
+        // .need_pre()
+        .is_jr_ra_decode,
+        // .decode_ret_pc,
+        // .decode_taken,//预测跳转
+        .exe_pc(dataE[1].pc),
+        .is_taken(dataE[1].branch_taken),
+        .dest_pc(dataE[1].target),
+        .ret_pc(dataE[1].pc+8),
+        .is_jal(dataE[1].ctl.op==JAL),
+        .is_jalr(dataE[1].ctl.op==JALR),
+        .is_branch(dataE[1].ctl.branch),
+        .is_j(dataE[1].ctl.op==J),
+        .is_jr_ra_exe(dataE[1].is_jr_ra),
+        .hit_bit()
+    );
+    u1 zero_prej;
+    assign zero_prej=pred_taken&&~hit_bit;
+
+    u1 branch_valid_i;
+    assign branch_valid_i=dataD_nxt[1].ctl.branch;
+
+    // always_comb begin
+    //     decode_pre_pc='0;
+    //     if (dataD_nxt[branch_valid_i].ctl.branch) begin
+    //         if (dataD_nxt[1].ctl.branch) begin
+    //             decode_pre_pc=slot_pc+target_offset;
+    //         end else if (dataD_nxt[1].ctl.jr) begin
+    //             decode_pre_pc=dataD_nxt[1].rd1;
+    //         end else if (dataD_nxt[1].ctl.jump) begin
+    //             decode_pre_pc={slot_pc[31:28],raw_instr[25:0],2'b00};
+    //         end
+    //     end
+    // end
+
+    // pc_branch pc_branch_decode(
+    //     .branch(dataD_nxt[1].ctl.branch_type),
+    //     .branch_condition,
+
+    // );
+    // assign flushF2=flushF2_hazard||zero_prej;
     pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
         .reset,
@@ -138,6 +201,11 @@ module MyCore (
     u1 rawinstr_saved;
     u64 raw_instrf2_save;
     u1 delay_flushF2;
+    u1 delay_zeroprej;
+
+    always_ff @(posedge clk) begin
+        delay_zeroprej<=zero_prej;
+    end
 
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -173,14 +241,16 @@ module MyCore (
         end
     end
     assign dataF2_nxt[1].pc=dataF1.pc;
+    assign dataF2_nxt[1].pre_b=dataF1.pre_b;
+    assign dataF2_nxt[0].pre_b='0;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
     assign dataF2_nxt[0].cp0_ctl='0;
 
-    assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
+    assign dataF2_nxt[0].pc= (dataF1.pc[2]==1||delay_zeroprej)? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/(~(dataF1.pc[2]==1)||delay_zeroprej) &&dataF1.valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
