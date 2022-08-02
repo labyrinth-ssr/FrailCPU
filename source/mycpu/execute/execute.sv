@@ -189,8 +189,10 @@
             if (load_misalign[1]) begin
                 dataE[1].ctl.memtoreg='0;
                 dataE[0].ctl.memtoreg='0;
+                dataE[0].ctl.memwrite='0;
             end else if (store_misalign[1]) begin
                 dataE[1].ctl.memwrite='0;
+                dataE[0].ctl.memtoreg='0;
                 dataE[0].ctl.memwrite='0;
             end
 
