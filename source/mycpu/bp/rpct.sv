@@ -2,11 +2,11 @@
 `define __RPCT_SV
 
 `include "common.svh"
-`include "plru.sv"
+
 
 module RPCT #(
-    parameter int ASSOCIATIVITY = 8,
-    parameter int SET_NUM = 2,
+    parameter int ASSOCIATIVITY = 2,
+    parameter int SET_NUM = 8,
     
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
@@ -45,7 +45,7 @@ module RPCT #(
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
     meta_t [ASSOCIATIVITY-1:0] r_meta_in_rpct;
     meta_t [ASSOCIATIVITY-1:0] w_meta;
-    associativity_t replace_line;
+    associativity_t replace_line, hit_line;
     ram_addr_t replace_addr;
     // logic in_bht;
 
@@ -53,9 +53,11 @@ module RPCT #(
 
     always_comb begin
         hit = 1'b0;
+        hit_line = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && r_meta_hit[i].tag == get_tag(pc_check)) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(pc_check) || r_meta_hit[i].tag == get_tag(pc_check+4))) begin
                 hit = 1'b1;
+                hit_line = associativity_t'(i);
             end
         end 
     end
@@ -77,12 +79,8 @@ module RPCT #(
 
     assign plru_r = plru_ram[get_index(pc_check)];
 
-    plru port_1_plru(
-        .plru_old(plru_r),
-        .hit_line(hit_line),
-        .plru_new(plru_new),
-        .replace_line(replace_line)
-    );
+    assign replace_line[0] = plru_r[0];
+    assign plru_new[0] = ~hit_line[0];
 
     always_ff @(posedge clk) begin
         if (hit) begin
@@ -94,7 +92,7 @@ module RPCT #(
     assign replace_addr.index = get_index(jrra_pc);
 
 
-    always_comb begin
+    always_comb begin : w_meta
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
             if (/*~in_bht &&*/ is_write && i == replace_line) begin
                 w_meta[i].valid = 1'b1;
@@ -105,6 +103,11 @@ module RPCT #(
         end 
     end
 
+    index_t reset_addr;
+
+    always_ff @( posedge clk ) begin : reset
+            reset_addr <= reset_addr+1;
+    end
 
 
     LUTRAM_DualPort #(
@@ -114,13 +117,12 @@ module RPCT #(
         .READ_LATENCY(0)
     ) meta_ram(
         .clk(clk),
-        .resetn,
 
-        .en_1(1'b1), //port1 for replace
-        .addr_1(replace_addr.index),
+        .en_1(is_write | ~resetn), //port1 for replace
+        .addr_1(resetn ? replace_addr.index : reset_addr),
         .rdata_1(r_meta_in_rpct),
-        .strobe(1'b1),  
-        .wdata(w_meta),
+        .strobe(is_write | ~resetn),  
+        .wdata(resetn ? w_meta : '0),
 
         .en_2(1'b0), //port2 for predict
         .addr_2(predict_addr.index),

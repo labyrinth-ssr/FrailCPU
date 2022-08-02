@@ -28,8 +28,8 @@ module MyCore (
     input logic clk, resetn,
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp,
-    output dbus_req_t  dreq[1:0],
-    input  dbus_resp_t dresp[1:0],
+    output dbus_req_t [1:0]  dreq,
+    input  dbus_resp_t [1:0] dresp,
     input logic[5:0] ext_int
 );
     /**
@@ -43,7 +43,7 @@ module MyCore (
     word_t epc;
     u1 excpM,overflowI;
     u1 reset;
-    writeback_data_t dataW[1:0];
+    writeback_data_t [1:0]dataW;
     u1 pc_except;
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
@@ -52,20 +52,20 @@ module MyCore (
     u1 pred_taken,decode_taken;
     word_t pre_pc,decode_pre_pc;
 
-    hazard hazard(
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.branchD(decode_taken)
+    hazard hazard (
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset
 	);
 
     assign ireq.addr=dataP_pc;
 	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken||decode_taken);
     assign reset=~resetn;
 
-    fetch_data_t dataF2_nxt [1:0],dataF2 [1:0];
-    decode_data_t dataD_nxt [1:0],dataD [1:0];
-    issue_data_t dataI_nxt[1:0],dataI[1:0];
-    execute_data_t dataE_nxt[1:0],dataE[1:0];
-    execute_data_t dataM1_nxt[1:0],dataM1[1:0];
-    memory_data_t dataM2_nxt[1:0],dataM2[1:0];
+    fetch_data_t [1:0] dataF2_nxt ,dataF2 ;
+    decode_data_t [1:0] dataD_nxt ,dataD ;
+    issue_data_t [1:0] dataI_nxt,dataI;
+    execute_data_t [1:0] dataE_nxt,dataE;
+    execute_data_t [1:0] dataM1_nxt,dataM1;
+    memory_data_t [1:0] dataM2_nxt,dataM2;
 
     always_comb begin
         pc_succ=dataP_pc+8;
@@ -80,8 +80,7 @@ module MyCore (
         if (reset) begin
             jpc_save<='0;
 			jpc_saved<='0;
-        end else
-		if (stallF && dataE[1].branch_taken) begin
+        end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (~stallF) begin
@@ -123,15 +122,15 @@ module MyCore (
         dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except;
     end
     assign dataF1_nxt.cp0_ctl.valid='0;
-    u1 dataF1_pc;
+    // u1 dataF1_pc;
     always_ff @( posedge clk ) begin
 		if (reset) begin
 			dataP_pc<=32'hbfc0_0000;//
-		end  else if(~stallF) begin
+		end else if(~stallF) begin
 			dataP_pc<=pc_nxt;
 		end
 	end
-    word_t pc_f1;
+    // word_t pc_f1;
 
     BPU bpu (
         .clk,.resetn,
@@ -188,10 +187,10 @@ module MyCore (
     u1 delay_flushF2;
 
     always_ff @(posedge clk) begin
-        delay_flushF2 <=flushF2;
         if (reset) begin
-            {raw_instrf2_save,rawinstr_saved}<='0;
+            {raw_instrf2_save,rawinstr_saved,delay_flushF2}<='0;
         end else begin
+            delay_flushF2 <=flushF2;
             if (stallF2&&~rawinstr_saved) begin
                 raw_instrf2_save<=iresp.data;
                 rawinstr_saved<='1;
@@ -255,7 +254,7 @@ module MyCore (
         .en(~stallI),
         .flush(flushI)
     );
-    word_t rd1[1:0],rd2[1:0];
+    word_t [1:0]rd1,rd2;
     // creg_addr_t ra1[1:0],ra2[1:0];
 
     regfile regfile_inst(
@@ -277,8 +276,8 @@ module MyCore (
     //     end
     // end
 
-    bypass_input_t dataE_in[1:0],dataM1_in[1:0],dataM2_in[1:0];
-    bypass_output_t bypass_outra1 [1:0],bypass_outra2 [1:0];
+    bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in;
+    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ;
 
     issue issue_inst(
         .clk,.reset,
@@ -294,9 +293,9 @@ module MyCore (
         .stallI_de
     );
 
-    bypass_issue_t dataI_in[1:0],issue_bypass_out[1:0];
+    bypass_issue_t [1:0] dataI_in,issue_bypass_out;
     assign dataI_in=issue_bypass_out;
-    bypass_execute_t dataEnxt_in[1:0];
+    bypass_execute_t [1:0] dataEnxt_in;
 
     bypass bypass_inst(
         .dataE_in,
@@ -369,32 +368,32 @@ module MyCore (
         .flush(flushM)
     );
 
-    u1 req1_finish,req2_finish;
+u1 req1_finish,req2_finish;
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (d_wait & dresp[1].addr_ok) begin
-                req1_finish <= 1;
+            if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
+                req1_finish <= '1;
             end
-            else if (~d_wait) begin
-                req1_finish <= 0;
+            else if (dresp[0].addr_ok) begin
+                req1_finish <= '0;
             end
-        end
-        else begin
-            req1_finish <= 0;
+        end else begin
+            req1_finish <= '0;
         end   
     end
 
+    //如果没有。
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (d_wait & dresp[0].addr_ok) begin
-                req2_finish <= 1;
+            if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
+                req2_finish <= '1;
             end
-            else if (~d_wait) begin
-                req2_finish <= 0;
+            else if (dresp[1].addr_ok) begin
+                req2_finish <= '0;
             end
-        end
+        end 
         else begin
-            req2_finish <= 0;
+            req2_finish <= '0;
         end   
     end
 

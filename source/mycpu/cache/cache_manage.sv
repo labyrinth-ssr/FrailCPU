@@ -64,7 +64,7 @@ module cache_manage (
 
         dresp_1 = mmu_dresp_1;
 
-        dreq_1_uncache = dreq_1.addr[29];
+        dreq_1_uncache = dreq_1.addr[31:29]==3'b101;
     end
 
     dbus_req_t mmu_dreq_2;
@@ -76,7 +76,7 @@ module cache_manage (
 
         dresp_2 = mmu_dresp_2;
         
-        dreq_2_uncache = dreq_2.addr[29];
+        dreq_2_uncache = dreq_2.addr[31:29]==3'b101;
     end
 
 
@@ -128,10 +128,18 @@ module cache_manage (
                                                                                                     : '0;
     
     always_ff @(posedge clk) begin
-        uncache_1_valid_reg <= dbus_uncache_req_1.valid;
-        uncache_2_valid_reg <= dbus_uncache_req_2.valid;
-        cache_1_valid_reg <= dbus_cache_req_1.valid;
-        cache_2_valid_reg <= dbus_cache_req_2.valid;
+        if (resetn) begin
+            uncache_1_valid_reg <= dbus_uncache_req_1.valid;
+            uncache_2_valid_reg <= dbus_uncache_req_2.valid;
+            cache_1_valid_reg <= dbus_cache_req_1.valid;
+            cache_2_valid_reg <= dbus_cache_req_2.valid;    
+        end
+        else begin
+            uncache_1_valid_reg <= '0;
+            uncache_2_valid_reg <= '0;
+            cache_1_valid_reg <= '0;
+            cache_2_valid_reg <= '0;
+        end
     end
 
     assign {mmu_dresp_1.data_ok, mmu_dresp_1.data} = uncache_1_valid_reg ? {dbus_uncache_resp_1.data_ok, dbus_uncache_resp_1.data}

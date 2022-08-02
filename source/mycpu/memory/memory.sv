@@ -11,29 +11,29 @@
 
 module memory
     (
-    input execute_data_t dataE[1:0],
-    output execute_data_t dataE2[1:0],
-    output dbus_req_t  dreq[1:0],
+    input execute_data_t [1:0] dataE,
+    output execute_data_t [1:0] dataE2,
+    output dbus_req_t [1:0]  dreq,
     input u1 [1:0]  req_finish,
     output u1 excpM
     // input u1 exception
 );
-word_t wd[1:0];
-strobe_t strobe[1:0];
-u1 store_misalign[1:0];
-u1 load_misalign[1:0];
-word_t paddr[1:0];
+word_t [1:0] wd;
+strobe_t [1:0] strobe;
+u1 [1:0] store_misalign;
+u1 [1:0] load_misalign;
+// word_t paddr[1:0];
 u1 uncache;
 assign uncache=dataE[1].alu_out[29] || dataE[0].alu_out[29];
 // word_t cp0wd;
-pvtrans pvtransd1(
-    .vaddr(dataE[1].alu_out),
-    .paddr(paddr[1])
-);
-pvtrans pvtransd2(
-    .vaddr(dataE[0].alu_out),
-    .paddr(paddr[0])
-);
+// pvtrans pvtransd1(
+//     .vaddr(dataE[1].alu_out),
+//     .paddr(paddr[1])
+// );
+// pvtrans pvtransd2(
+//     .vaddr(dataE[0].alu_out),
+//     .paddr(paddr[0])
+// );
 
 
 

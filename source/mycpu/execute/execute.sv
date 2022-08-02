@@ -13,8 +13,8 @@
 
     module execute(
         input clk,resetn,
-        input issue_data_t dataI[1:0],
-        output execute_data_t dataE[1:0],
+        input issue_data_t [1:0] dataI,
+        output execute_data_t [1:0] dataE,
         output e_wait
     );
 
@@ -169,7 +169,6 @@
             valid_i='1;
         end else if (dataI[0].ctl.op==MULT||dataI[0].ctl.op==MULTU||dataI[0].ctl.op==DIV||dataI[0].ctl.op==DIVU) begin
             valid_i='0;
-            
         end
     end
 

@@ -16,6 +16,12 @@
  */
 
 module BRAM #(
+`ifdef VERILATOR
+    parameter `STRING BACKEND = "behavioral",
+`else
+    parameter `STRING BACKEND = "xilinx_xpm",
+`endif
+
     parameter int DATA_WIDTH = 32,
     parameter int ADDR_WIDTH = 10,
 
@@ -52,7 +58,9 @@ module BRAM #(
 );
     /* verilator tracing_off */
 
-`ifdef VERILATOR
+    `ASSERT(BACKEND == "behavioral" || BACKEND == "xilinx_xpm");
+
+if (BACKEND == "behavioral") begin: behavioral
 
     localparam rword_t _RESET_VALUE = rword_t'(RESET_VALUE.atohex());
     localparam rword_t DEADBEEF     = rword_t'('hdeadbeef);
@@ -74,12 +82,10 @@ module BRAM #(
 
     always_comb begin
         if (resetn_reg) begin
-            // data_out_1 = hazard_reg_1 ?
-            //     DEADBEEF : /*mem[addr_reg_1].word*/ data_out_reg_1;
-            data_out_1 = data_out_reg_1;
-            // data_out_2 = hazard_reg_2 ?
-            //     DEADBEEF : /*mem[addr_reg_2].word*/ data_out_reg_2;
-            data_out_2 = data_out_reg_2;
+            data_out_1 = hazard_reg_1 ?
+                DEADBEEF : /*mem[addr_reg_1].word*/ data_out_reg_1;
+            data_out_2 = hazard_reg_2 ?
+                DEADBEEF : /*mem[addr_reg_2].word*/ data_out_reg_2;
         end else begin
             data_out_1 = _RESET_VALUE;
             data_out_2 = _RESET_VALUE;
@@ -127,7 +133,7 @@ module BRAM #(
         end
     end
 
-`else
+end else begin: xilinx_xpm
 
 `ifndef VERILATOR
 `define ICS_WITH_XPM
@@ -199,5 +205,6 @@ module BRAM #(
     $error("XPM modules are disabled.");
 `endif
 
-`endif
+end
+
 endmodule

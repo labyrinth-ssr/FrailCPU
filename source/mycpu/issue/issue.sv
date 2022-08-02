@@ -9,12 +9,12 @@
 
 module issue(
     input u1 clk,reset,
-    input decode_data_t dataD [1:0],
-    output issue_data_t dataI [1:0],
-    input word_t rd1[1:0],rd2[1:0],
-    output bypass_issue_t issue_bypass_out[1:0],
-    input bypass_output_t bypass_inra1[1:0],
-    input bypass_output_t bypass_inra2[1:0],
+    input decode_data_t [1:0] dataD ,
+    output issue_data_t [1:0] dataI ,
+    input word_t [1:0] rd1,rd2,
+    output bypass_issue_t [1:0] issue_bypass_out,
+    input bypass_output_t [1:0] bypass_inra1,
+    input bypass_output_t [1:0] bypass_inra2,
     input u1 flush_que,
     input u1 stallI,stallI_de,
     output u1 overflow
@@ -41,7 +41,7 @@ endfunction
 u1 que_empty;
 assign que_empty=head==tail;
 
-u1 issue_en[1:0];
+u1 [1:0]issue_en;
 decode_data_t candidate1,candidate2;
 assign candidate1=que_empty? dataD[1]:issue_queue[head];
 always_comb begin
@@ -60,10 +60,23 @@ end
 //cp0两个读，不可同时
 //一读一写，若读在写前，可以；读在写后，不行（可能是同一wa）
 //
+
+// assign issue_en[1]= bypass_inra1[1].valid && bypass_inra2[1].valid&& 
+// (~((candidate1.ctl.jump||candidate1.ctl.branch)&&(~candidate2.valid || ~(bypass_inra1[0].valid && bypass_inra2[0].valid))));
+// assign have_slot=(candidate1.ctl.branch||candidate1.ctl.jump)&&issue_en[1];
+// assign issue_en[0]=bypass_inra1[0].valid && bypass_inra2[0].valid 
+// && ~((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2)&&~have_slot)
+//         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
+//         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en[1]||candidate2.ctl.branch||candidate2.ctl.jump
+//         ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
+//         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)||(candidate1.ctl.cp0toreg&&candidate2.ctl.cp0toreg)
+//         ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET));
+        
 always_comb begin
     // have_slot='0;
     issue_en[0]=bypass_inra1[0].valid && bypass_inra2[0].valid;
     issue_en[1]=bypass_inra1[1].valid && bypass_inra2[1].valid&& (~((candidate1.ctl.jump||candidate1.ctl.branch)&&(~candidate2.valid || ~issue_en[0])));
+    //
     have_slot=(candidate1.ctl.branch||candidate1.ctl.jump)&&issue_en[1];
      if ((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2)&&~have_slot)
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
@@ -78,61 +91,113 @@ assign overflow= push(push(tail))==head || push(tail)==head;
 // (((que_empty&&~issue_en[1]&&dataD[1].valid)||(que_empty&&~issue_en[0]&&dataD[0].valid)||( ~que_empty&&dataD[1].valid&&~(pop(head)==tail&&issue_en[0]))||(~que_empty&&dataD[0].valid&&pop(head)==tail&&issue_en[0])) && push(tail)==head)
 //                 || (((que_empty&&~issue_en[1]&&dataD[1].valid&&dataD[0].valid) || (~que_empty && dataD[0].valid&& ~ (pop(head)==tail&&issue_en[0]))) && push(push(tail))==head) ;
 
+// always_ff @(posedge clk) begin
+//     if (reset) begin
+//         head<='0;
+//         tail<='0;
+//         // issue_queue<='0;
+//     end else
 
+//     if (flush_que) begin
+//         head<=tail;
+//     end else begin
+//         if (~overflow && ~stallI) begin
+//             if (que_empty) begin
+//                 if (~issue_en[1]&&dataD[1].valid) begin
+//                     // issue_queue[tail]<=dataD[1];
+//                     tail<=push(tail);
+//                     if (dataD[0].valid) begin
+//                         // issue_queue[push(tail)]<=dataD[0];
+//                         tail<=push(push(tail));
+//                     end
+//                 end else if (~issue_en[0]&&dataD[0].valid) begin
+//                     // issue_queue[tail]<=dataD[0];
+//                     tail<=push(tail);
+//                 end
+//             end else begin
+//                 //不存在有1无0的情况
+//                 if (dataD[1].valid&&~(pop(head)==tail&&issue_en[0])) begin
+//                         // issue_queue[tail]<=dataD[1];
+//                         tail<=push(tail);
+//                 end
+//                 if (dataD[0].valid) begin
+//                     if (pop(head)==tail&&issue_en[0]) begin
+//                         // issue_queue[tail]<=dataD[0];
+//                         tail<=push(tail);
+//                     end else begin
+//                         // issue_queue[push(tail)]<=dataD[0];
+//                         tail<=push(push(tail));
+//                     end
+//                 end
+//             end
+//         end
+        
+//         if (~stallI || (stallI && overflow && ~stallI_de)) begin
+//                 if (~que_empty) begin
+//             if (issue_en[1]) begin
+//                 head<=pop(head);
+//                 if (pop(head)!=tail&&issue_en[0]) begin
+//                     head<=pop(pop(head));
+//                 end
+//             end
+//         end
+//         end
+//     end
+// end
+u1 last1;
+assign last1=pop(head)==tail;
+// ||issue_en[1]&&~issue_en[0]&&dataD[0].valid
 always_ff @(posedge clk) begin
     if (reset) begin
-        head<='0;
-        tail<='0;
-        // issue_queue<='0;
-    end else
-
-    if (flush_que) begin
-        head<=tail;
+        {head,tail}<='0;
     end else begin
-        if (~overflow && ~stallI) begin
-            if (que_empty) begin
-        if (~issue_en[1]&&dataD[1].valid) begin
-            issue_queue[tail]<=dataD[1];
+        if(~flush_que&&~overflow&&~stallI) begin
+        if ((que_empty&&~issue_en[1]&&dataD[1].valid)
+        ||(~que_empty&&dataD[1].valid&&~(last1&&issue_en[0]))) begin
             tail<=push(tail);
-            if (dataD[0].valid) begin
-                issue_queue[push(tail)]<=dataD[0];
-                tail<=push(push(tail));
+            for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
+                if (i[ISSUE_QUEUE_WIDTH-1:0]==tail) begin
+                    issue_queue[i]<=dataD[1];
+                end
             end
-        end else if (~issue_en[0]&&dataD[0].valid) begin
-            issue_queue[tail]<=dataD[0];
+        end else if ((que_empty&&issue_en[1]&&dataD[0].valid&&~issue_en[0])
+        ||(~que_empty&&last1&&issue_en[0])) begin
             tail<=push(tail);
-        end
-    end else begin
-        //不存在有1无0的情况
-        if (dataD[1].valid&&~(pop(head)==tail&&issue_en[0])) begin
-                issue_queue[tail]<=dataD[1];
-                tail<=push(tail);
-        end
-        if (dataD[0].valid) begin
-            if (pop(head)==tail&&issue_en[0]) begin
-                issue_queue[tail]<=dataD[0];
-                tail<=push(tail);
-            end else begin
-                issue_queue[push(tail)]<=dataD[0];
-                tail<=push(push(tail));
+            for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
+                if (i[ISSUE_QUEUE_WIDTH-1:0]==tail) begin
+                    issue_queue[i]<=dataD[0];
+                end
             end
         end
-    end
-        end
-        
-    if (~stallI || (stallI && overflow && ~stallI_de)) begin
-            if (~que_empty) begin
-        if (issue_en[1]) begin
-            head<=pop(head);
-            if (pop(head)!=tail&&issue_en[0]) begin
-                head<=pop(pop(head));
+        if (que_empty&&~issue_en[1]&&dataD[1].valid&&dataD[0].valid
+        ||(~que_empty&&dataD[0].valid&&~(last1&&issue_en[0]))) begin
+            tail<=push(push(tail));
+            for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
+                if (i[ISSUE_QUEUE_WIDTH-1:0]==push(tail)) begin
+                    issue_queue[i]<=dataD[0];
+                end
             end
         end
-    end
     end
 
+    if (flush_que||reset) begin
+        head <= '0;
+        tail <= '0;
+        for (int i=0; i<ISSUE_QUEUE_SIZE; ++i) begin
+            issue_queue[i]<='0;
+        end
+    end else if (~stallI || (stallI && overflow && ~stallI_de)) begin
+        if (~que_empty) begin
+            if (issue_en[1]) begin
+                head<=pop(head);
+                if (pop(head)!=tail&&issue_en[0]) begin
+                    head<=pop(pop(head));
+                end
+            end
+        end
     end
-
+    end
+    
 end
 
 // always_comb begin
@@ -199,38 +264,33 @@ end
             end
         end else begin
             if (issue_en[1]) begin
-                dataI[1].ctl=issue_queue[head].ctl;
-                dataI[1].pc=issue_queue[head].pc;
-                dataI[1].valid=issue_queue[head].valid;
-                dataI[1].imm=issue_queue[head].imm;
-                // dataI[1].is_slot=issue_queue[head].is_slot;
+                dataI[1].ctl=candidate1.ctl;
+                dataI[1].pc=candidate1.pc;
+                dataI[1].valid=candidate1.valid;
+                dataI[1].imm=candidate1.imm;
                 dataI[1].rd1=bypass_inra1[1].bypass? bypass_inra1[1].data :rd1[1];
                 dataI[1].rd2=bypass_inra2[1].bypass? bypass_inra2[1].data :rd2[1];
-                dataI[1].raw_instr=issue_queue[head].raw_instr;
-                dataI[1].cp0ra=issue_queue[head].cp0ra;
-                dataI[1].raw_instr=issue_queue[head].raw_instr;
-                dataI[1].rdst=issue_queue[head].rdst;
-                dataI[1].cp0_ctl=issue_queue[head].cp0_ctl;
+                dataI[1].raw_instr=candidate1.raw_instr;
+                dataI[1].cp0ra=candidate1.cp0ra;
+                dataI[1].rdst=candidate1.rdst;
+                dataI[1].cp0_ctl=candidate1.cp0_ctl;
                 if (issue_en[0]) begin
                     dataI[0].ctl=candidate2.ctl;
                     dataI[0].pc=candidate2.pc;
                     dataI[0].valid=candidate2.valid;
                     dataI[0].imm=candidate2.imm;
-                    // dataI[0].is_slot=candidate2.is_slot;
                     dataI[0].rd1=bypass_inra1[0].bypass? bypass_inra1[0].data :rd1[0];
                     dataI[0].rd2=bypass_inra2[0].bypass? bypass_inra2[0].data :rd2[0];
                     dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].cp0ra=candidate2.cp0ra;
-                    dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].rdst=candidate2.rdst;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
+                end
             end
         end
-end
-if (have_slot) begin
-    dataI[0].is_slot='1;
-end
-        
+        if (have_slot) begin
+            dataI[0].is_slot='1;
+        end
     end
 
 endmodule

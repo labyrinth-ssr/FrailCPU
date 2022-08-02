@@ -12,7 +12,7 @@ void MyCache::reset() {
     cresp = 0;
     memset(dreq, 0, sizeof(dreq));
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
         _tick<false>();
     }
 
