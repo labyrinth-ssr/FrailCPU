@@ -32,9 +32,11 @@ module BPU #(
 
     always_comb begin : pre_pc
         pre_pc = '0;
-        if(bht_hit) begin
+        if(is_jr_ra_decode) begin
+            pre_pc = ras_pre_pc;
+        end else if(bht_hit) begin
             pre_pc = bht_pre_pc;
-        end else if(rpct_hit | is_jr_ra_decode) begin
+        end else if(rpct_hit) begin
             pre_pc = ras_pre_pc;
         end
     end

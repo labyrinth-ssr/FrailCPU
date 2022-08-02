@@ -63,27 +63,56 @@ module BHT#(
     meta_t [ASSOCIATIVITY-1:0] w_meta;
     bh_data_t r_pc_predict, r_pc_replace, w_pc_replace;
     counter_t [2**BH_BITS] r_counter_set_predict, r_counter_set_replace, w_counter_set_replace;
-    associativity_t hit_line, replace_line;
+    associativity_t pc_hit_line, pcp4_hit_line, hit_line, replace_line;
     ram_addr_t predict_addr, replace_addr;
-    logic in_bht;
+    logic in_bht, pc_hit, pcp4_hit, is_pc_jump, is_pcp4_jump;
 
     // for predict
 
     always_comb begin
-        hit = 1'b0;
-        hit_line = '0;
-        is_jump_out = 1'b0;
+        pc_hit = 1'b0;
+        pc_hit_line = '0;
+        is_pc_jump = 1'b0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc) || r_meta_hit[i].tag == get_tag(branch_pc+4))) begin
-                hit = 1'b1;
-                hit_line = associativity_t'(i);
-                is_jump_out = r_meta_hit[i].is_jump;
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc))) begin
+                pc_hit  = 1'b1;
+                pc_hit_line = associativity_t'(i);
+                is_pc_jump = r_meta_hit[i].is_jump;
             end
         end 
     end
 
+    always_comb begin
+        pcp4_hit = 1'b0;
+        pcp4_hit_line = '0;
+        is_pcp4_jump = 1'b0;
+        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(branch_pc+4))) begin
+                pcp4_hit = 1'b1;
+                pcp4_hit_line = associativity_t'(i);
+                is_pcp4_jump = r_meta_hit[i].is_jump;
+            end
+        end 
+    end
+
+    assign hit = pcp4_hit | pc_hit;
+    always_comb begin : hit_line
+        hit_line = '0;
+        if(pc_hit) hit_line = pc_hit_line;
+        else if(pcp4_hit) hit_line = pcp4_hit_line;
+    end
+    always_comb begin : is_jump_out
+        is_jump_out = '0;
+        if(pc_hit) is_jump_out = is_pc_jump;
+        else if(pcp4_hit) is_jump_out = is_pcp4_jump;
+    end
+
+    always_comb begin : predict_addr_index
+        predict_addr.index = '0;
+        if(pc_hit) predict_addr.index = get_index(branch_pc);
+        else if(pcp4_hit) predict_addr.index = get_index(branch_pc+4);
+    end
     assign predict_addr.line = hit_line;
-    assign predict_addr.index = get_index(branch_pc);
 
     assign predict_pc = hit ? r_pc_predict.pc : '0;
     assign dpre = r_counter_set_predict[COUNTER_BITS-1];
