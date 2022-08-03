@@ -79,8 +79,6 @@ end
             branchD_iwait_nxt='0;
         end
     end
-
-
 endmodule
 
 `endif 

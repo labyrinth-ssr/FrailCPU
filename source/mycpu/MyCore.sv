@@ -108,6 +108,23 @@ module MyCore (
         end
     end
 
+    u1 j_misalign_hazard;
+    u1 pred_pc_saved;
+    word_t pred_pc_save;
+    assign j_misalign_hazard= pred_taken&&hit_bit&&dataP_pc[2];
+    u1 zero_prej;
+    u1 hit_bit;
+    assign zero_prej=pred_taken&&~hit_bit;
+
+    always_ff @(posedge clk) begin
+        if (j_misalign_hazard||zero_prej) begin
+            pred_pc_save<=pre_pc;
+            pred_pc_saved<='1;
+        end else begin
+            {pred_pc_save,pred_pc_saved}<='0;
+        end
+    end
+
     pcselect pcselect_inst (
         .pc_selected,
         .pc_succ,
@@ -117,15 +134,13 @@ module MyCore (
         .entrance(32'hBFC0_0380),
 		.is_eret,
 		.is_INTEXC,
-        .pred_taken,
-        .pre_pc,
+        .pred_taken((pred_taken&&~zero_prej&&~j_misalign_hazard)||pred_pc_saved),
+        .pre_pc(pred_pc_saved? pred_pc_save:pre_pc),
         .decode_taken(is_jr_ra_decode)
     );
     //pipereg between pcselect and fetch1
 
-    u1 zero_prej;
-    u1 hit_bit;
-    assign zero_prej=pred_taken&&~hit_bit;
+
 
     fetch1_data_t dataF1_nxt,dataF1;
     assign dataF1_nxt.valid='1;
@@ -148,7 +163,6 @@ module MyCore (
 	end
     // word_t pc_f1;
     word_t dest_pc;
-
 
     bpu bpu (
         .clk,.resetn,
@@ -209,7 +223,7 @@ module MyCore (
     u1 delay_zeroprej;
 
     always_ff @(posedge clk) begin
-        delay_zeroprej<=zero_prej;
+        delay_zeroprej<=zero_prej||pred_pc_saved;
     end
 
     always_ff @(posedge clk) begin
@@ -227,12 +241,12 @@ module MyCore (
     end
     //前半部分静止，应当不发起ireq
     always_comb begin
-        dataF2_nxt[1].raw_instr= dataF1.pc[2]==1? iresp.data[63:32]:iresp.data[31:0];
+        dataF2_nxt[1].raw_instr= dataF1.pc[2]? iresp.data[63:32]:iresp.data[31:0];
         if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
             dataF2_nxt[1].raw_instr='0;
         end else
         if (rawinstr_saved) begin
-            dataF2_nxt[1].raw_instr=dataF1.pc[2]==1? raw_instrf2_save[63:32]:raw_instrf2_save[31:0];
+            dataF2_nxt[1].raw_instr=dataF1.pc[2]? raw_instrf2_save[63:32]:raw_instrf2_save[31:0];
         end else if (delay_flushF2) begin
             dataF2_nxt[1].raw_instr='0;
         end 
@@ -253,9 +267,9 @@ module MyCore (
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
     assign dataF2_nxt[0].cp0_ctl='0;
 
-    assign dataF2_nxt[0].pc= (dataF1.pc[2]==1||delay_zeroprej)? '0: dataF1.pc+4;
+    assign dataF2_nxt[0].pc= (dataF1.pc[2]||delay_zeroprej)? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/(~(dataF1.pc[2]==1)||delay_zeroprej) &&dataF1.valid;
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]||delay_zeroprej) &&dataF1.valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
