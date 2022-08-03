@@ -42,7 +42,7 @@ auto Confreg::load(addr_t addr) -> word_t {
 
     auto it = mem.find(addr);
     if (it == mem.end()) {
-        warn("CONFREG: load: ignored unknown destination 0x%04x.\n", addr);
+        // warn("CONFREG: load: ignored unknown destination 0x%04x.\n", addr);
         return 0;
     } else
         return it->second;
@@ -118,8 +118,8 @@ void Confreg::sync() {
     // commit to memory
     for (auto [addr, data] : changes) {
         auto it = mem.find(addr);
-        if (it == mem.end())
-            warn("CONFREG: store: ignored unknown destination 0x%04x.\n", addr);
+        if (it == mem.end());
+            // warn("CONFREG: store: ignored unknown destination 0x%04x.\n", addr);
         else
             it->second = data;
     }

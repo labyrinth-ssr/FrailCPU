@@ -165,6 +165,7 @@ module MyCore (
 		end
 	end
     // word_t pc_f1;
+    word_t dest_pc;
 
     bpu bpu (
         .clk,.resetn,
@@ -406,7 +407,8 @@ module MyCore (
         .clk,.resetn,
         .dataI,
         .dataE(dataE_nxt),
-        .e_wait
+        .e_wait,
+        .dest_pc
     );
 
     pipereg2 #(.T(execute_data_t))XM1reg(
