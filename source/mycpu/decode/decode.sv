@@ -16,8 +16,7 @@ module decode(
 );
     // decode_data_t dataD0;
     // assign {dataD0.valid,dataD0.raw_instr,dataD0.cp0ra,dataD0.pc,dataD0.imm,dataD0.is_slot,dataD0.rd1,dataD0.rd2,dataD0.cp0_ctl}='0;
-    u1 jump1,jump2;
-
+    u1 is_jr_ra1,is_jr_ra2;
     decoder decoder_inst1(
         .valid(dataF2[1].valid),
         .instr(dataF2[1].raw_instr),
@@ -27,7 +26,7 @@ module decode(
         .srcrega(dataD[1].ra1), 
         .srcregb(dataD[1].ra2), 
         .destreg(dataD[1].rdst),
-        .jump(jump1)
+        .is_jr_ra(is_jr_ra1)
     );
     //如果0是跳转，需要把这条的valid置0，其余随意。
     decoder decoder_inst2(
@@ -39,7 +38,7 @@ module decode(
         .srcrega(dataD[0].ra1), 
         .srcregb(dataD[0].ra2), 
         .destreg(dataD[0].rdst),
-        .jump(jump2)
+        .is_jr_ra(is_jr_ra2)
     );
 
 
@@ -67,6 +66,8 @@ module decode(
     assign dataD[1].valid=dataF2[1].valid;
     assign dataD[0].valid=dataF2[0].valid;
     // assign dataD[1].is_jr_ra
+    assign dataD[1].pre_b=dataF2[1].pre_b||is_jr_ra1;
+    assign dataD[0].pre_b=dataF2[0].pre_b||is_jr_ra2;
 
 
     
