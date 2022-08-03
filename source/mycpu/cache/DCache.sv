@@ -201,12 +201,12 @@ module DCache (
     always_comb begin
         plru_new = plru;
         for (int i = 0; i < SET_NUM; i++) begin
-            if (dreq_hit) begin
+            if (dreq_hit_1) begin
                 plru_new[i] = (dreq_1_addr.index == index_t'(i)) ? ~hit_line_1 : plru[i];
-                if (dreq_2.valid) begin      
-                    plru_new[i] = (dreq_2_addr.index == index_t'(i)) ? ~hit_line_2 : plru[i];    
-                end
-            end    
+            end  
+            if (dreq_hit_2) begin      
+                plru_new[i] = (dreq_2_addr.index == index_t'(i)) ? ~hit_line_2 : plru[i];    
+            end   
         end
     end
 
@@ -279,11 +279,11 @@ module DCache (
         for (int i = 0; i < ASSOCIATIVITY*SET_NUM; i++) begin
             unique case (state)
                 IDLE: begin
-                    if (dreq_hit & |dreq_1.strobe) begin
+                    if (dreq_hit_1 & |dreq_1.strobe) begin
                         cache_dirty_new[i] = ({hit_line_1, dreq_1_addr.index} == dirty_t'(i)) ? 1'b1 : cache_dirty[i];
-                        if (dreq_2.valid & |dreq_2.strobe) begin
-                            cache_dirty_new[i] = ({hit_line_2, dreq_2_addr.index} == dirty_t'(i)) ? 1'b1 : cache_dirty[i];
-                        end
+                    end
+                    if (dreq_hit_2 & |dreq_2.strobe) begin
+                        cache_dirty_new[i] = ({hit_line_2, dreq_2_addr.index} == dirty_t'(i)) ? 1'b1 : cache_dirty[i];
                     end
                 end
 
