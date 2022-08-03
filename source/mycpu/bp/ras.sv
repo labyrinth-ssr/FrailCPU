@@ -12,7 +12,7 @@ module ras #(
     input logic clk, resetn,
     input logic push, pop,
     input addr_t ret_pc_push,
-    output addr_t ret_pc_pop
+    output addr_t ret_pc_pop, fail
 );
     ras_addr_t top, top_nxt, ras_addr;// top == '0 when stack_num == 1 or stack_num == 0
     logic empty, empty_nxt, fuck_high, fuck_high_nxt, fuck_low, fuck_low_nxt;// hope you won't see fuck == 1
@@ -21,10 +21,12 @@ module ras #(
     addr_t w_ret_pc, r_ret_pc;
 
     assign ret_pc_pop = r_ret_pc;
+    assign fail = empty | ~(|overflow_counter);
 
     always_comb begin
         empty_nxt = empty;
-        if(top == '0 && pop) begin
+        if(push) empty_nxt = 1'b0;
+        else if(top == '0 && pop) begin
             empty_nxt = 1'b1;
         end
     end
