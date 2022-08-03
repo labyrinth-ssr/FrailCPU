@@ -56,6 +56,9 @@ module MyCore (
     u1 is_jr_ra_decode;
     assign is_jr_ra_decode=(dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
 
+    u1 save_slotD;
+    assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
+
     hazard hazard (
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(is_jr_ra_decode)
 	);
@@ -214,7 +217,7 @@ module MyCore (
         .in(dataF1_nxt),
         .out(dataF1),
         .en(~stallF2),
-        .flush(flushF2)
+        .flush(flushF2&&~save_slotD)
     );
     u1 rawinstr_saved;
     u64 raw_instrf2_save;
@@ -239,6 +242,11 @@ module MyCore (
         end
     end
     //前半部分静止，应当不发起ireq
+    u1 delay_save_slotD;
+    always_ff @(posedge clk) begin
+        delay_save_slotD<=save_slotD;
+    end
+
     always_comb begin
         dataF2_nxt[1].raw_instr= dataF1.pc[2]? iresp.data[63:32]:iresp.data[31:0];
         if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
@@ -250,14 +258,16 @@ module MyCore (
             dataF2_nxt[1].raw_instr='0;
         end 
     end
+
     always_comb begin
         dataF2_nxt[0].raw_instr=  iresp.data[63:32];
         if (rawinstr_saved) begin
             dataF2_nxt[0].raw_instr=raw_instrf2_save[63:32];
-        end else if (delay_flushF2) begin
+        end else if (delay_flushF2||save_slotD) begin
             dataF2_nxt[0].raw_instr='0;
         end
     end
+
     assign dataF2_nxt[1].pc=dataF1.pc;
     assign dataF2_nxt[1].pre_b=dataF1.pre_b;
     assign dataF2_nxt[0].pre_b='0;
@@ -266,10 +276,9 @@ module MyCore (
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
     assign dataF2_nxt[0].cp0_ctl='0;
 
-    assign dataF2_nxt[0].pc= (dataF1.pc[2]||delay_zeroprej)? '0: dataF1.pc+4;
+    assign dataF2_nxt[0].pc= (dataF1.pc[2]||delay_zeroprej||save_slotD)? '0: dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]||delay_zeroprej) &&dataF1.valid;
-
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]||delay_zeroprej||save_slotD) &&dataF1.valid;
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
         .clk,
