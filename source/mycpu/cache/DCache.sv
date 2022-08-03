@@ -93,35 +93,24 @@ module DCache (
     } info_t;
 
     localparam type meta_t = info_t [ASSOCIATIVITY-1:0];
-
-    index_t meta_addr_1, meta_addr_2;
-    meta_t meta_r_1, meta_r_2;
-    meta_t meta_w;
+   
+    //第一阶段读meta, 第二阶段(FETCH时)写meta
+    meta_t meta_ram [SET_NUM-1:0];
     logic meta_en;
-
-    assign meta_addr_1 = resetn ? ((state==FETCH_2) ? dreq_2_addr.index
-                                                    : dreq_1_addr.index)
-                                : reset_counter[INDEX_BITS-1:0];
-
-    assign meta_addr_2 = dreq_2_addr.index;
+    index_t meta_w_addr;
+    meta_t meta_w;
+    index_t meta_r_addr_1, meta_r_addr_2;
+    meta_t meta_r_1, meta_r_2;
     assign meta_en = (~resetn|state==FETCH_1|state==FETCH_2) ? 1'b1 : 0;
-    
-    LUTRAM_DualPort #(
-        .ADDR_WIDTH(INDEX_BITS),
-        .DATA_WIDTH($bits(meta_t)),
-        .BYTE_WIDTH($bits(meta_t)),
-        .READ_LATENCY(0)
-    ) meta_ram(
-        .clk(clk), 
-        .en_1(1'b1), 
-        .en_2(1'b1),
-        .addr_1(meta_addr_1), 
-        .addr_2(meta_addr_2),
-        .strobe(meta_en),  
-        .wdata(meta_w), 
-        .rdata_1(meta_r_1), 
-        .rdata_2(meta_r_2)
-    );
+    always_ff @(posedge clk) begin
+        if (meta_en) begin
+            meta_ram[meta_w_addr] <= meta_w;
+        end
+    end
+    assign meta_r_addr_1 = dreq_1_addr.index;
+    assign meta_r_addr_2 = dreq_2_addr.index;
+    assign meta_r_1 = meta_ram[meta_r_addr_1];
+    assign meta_r_2 = meta_ram[meta_r_addr_2];
 
     //cache_dirty
     logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty;
@@ -169,29 +158,46 @@ module DCache (
     assign miss_2 = dreq_2.valid & ~hit_2;
 /* ***************** */
 
+/* DCache_1 -> DCache_2 ************** */
     logic hit_reg;
     logic stall_finish_1;
     logic stall_finish_2;
+    assign stall_finish_1 = miss_1 & state == FETCH_1 & dcresp.last;
+    assign stall_finish_2 = miss_2 & state == FETCH_2 & dcresp.last;
     always_ff @(posedge clk) begin
         if (resetn) begin
             if (hit_reg & (miss_1 | miss_2)) begin
                 hit_reg <= '0; 
             end
-            else if (~hit_reg & ~dreq_hit)    
+            else if (~hit_reg & (stall_finish_1 | stall_finish_2)) begin
+                hit_reg <= 1'b1;
+            end    
+        end
+        else begin
+            hit_reg <= 1'b1;
+        end
+    end
+
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (hit_reg) begin
+                
+            end   
         end
         else begin
             
         end
     end
+/* ********************** */
+
     
-    //plru
+/* PLRU ********************** */
+    //第一阶段读写PLRU
     plru_t [SET_NUM-1 : 0] plru, plru_new;
     associativity_t replace_line_1, replace_line_2;
 
     assign replace_line_1 = plru[dreq_1_addr.index];
-    assign replace_line_2 = (dreq_1_addr.index == dreq_2_addr.index) ? ~hit_line_1
-                                                               : plru[dreq_2_addr.index];
-
+    assign replace_line_2 = (dreq_1_addr.index == dreq_2_addr.index) ? ~hit_line_1 : plru[dreq_2_addr.index];
 
     always_comb begin
         plru_new = plru;
@@ -213,6 +219,7 @@ module DCache (
             plru <= '0;
         end
     end
+/* ********************** */
 
 
     logic addr_same;
@@ -233,6 +240,8 @@ module DCache (
     word_t w_to_r_data;
     strobe_t w_to_r_strobe;
     assign w_to_r = addr_same & |dreq_1.strobe & ~|dreq_2.strobe;
+
+    
 
     //Port 1 : dreq_1 
     logic port_1_en;
@@ -464,29 +473,6 @@ module DCache (
         end
         
     end
-
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            data_ok_reg <= dreq_hit;
-
-            w_to_r_reg <= w_to_r;
-            w_to_r_data <= dreq_1.data;
-            w_to_r_strobe <= dreq_1.strobe;
-        end
-        else begin
-            data_ok_reg <= '0;
-
-            w_to_r_reg <= '0;
-            w_to_r_data <= '0;
-            w_to_r_strobe <= '0;
-        end
-    end
-
-    word_t w_to_r_resp_data;
-    assign w_to_r_resp_data = (get_mask(w_to_r_strobe)
-                                & w_to_r_data)
-                                | (get_mask(w_to_r_strobe ^ {4{1'b1}})
-                                & port_1_data_r);
 
     RAM_TrueDualPort #(
         .ADDR_WIDTH(DATA_ADDR_BITS),
