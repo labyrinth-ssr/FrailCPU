@@ -15,20 +15,19 @@ module ras #(
     output addr_t ret_pc_pop, fail
 );
     ras_addr_t top, top_nxt, ras_addr;// top == '0 when stack_num == 1 or stack_num == 0
-    logic empty, empty_nxt, fuck_high, fuck_high_nxt, fuck_low, fuck_low_nxt;// hope you won't see fuck == 1
+    logic empty, empty_nxt, overflow, overflow_nxt, fuck_high, fuck_high_nxt, fuck_low, fuck_low_nxt;// hope you won't see fuck == 1
     logic [RAS_SIZE-1:0] overflow_counter;
     logic [RAS_SIZE-1:0] overflow_counter_nxt;
     addr_t w_ret_pc, r_ret_pc;
 
     assign ret_pc_pop = r_ret_pc;
-    assign fail = empty | ~(|overflow_counter);
+    assign fail = empty | overflow;
 
     always_comb begin
         empty_nxt = empty;
         if(push) empty_nxt = 1'b0;
-        else if(top == '0 && pop) begin
-            empty_nxt = 1'b1;
-        end
+        else if(top == '0 && pop) empty_nxt = 1'b1;
+
     end
 
     always_ff @(posedge clk) begin
@@ -40,10 +39,24 @@ module ras #(
     end
 
     always_comb begin
+        overflow_nxt = overflow;
+        if(push && (&top)) overflow_nxt = 1'b1;
+        else if(~(|overflow_counter)) overflow_nxt = 1'b0;
+    end
+
+    always_ff @(posedge clk) begin
+        if(~resetn) begin
+            overflow <= 1'b0;
+        end else begin
+            overflow <= overflow_nxt;
+        end
+    end
+
+    always_comb begin
         top_nxt = top;
         if(push && ~(&top) && ~empty) begin // push && top is not '1 && stack is not empty (when stack_num == 0 or stack_num == 1 top = 0)
             top_nxt = top + 1;
-        end else if(pop && (|top)) begin // pop && top is not '0
+        end else if(pop && (|top) && ~overflow) begin // pop && top is not '0
             top_nxt = top - 1;
         end
     end
