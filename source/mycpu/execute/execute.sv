@@ -15,8 +15,7 @@
         input clk,resetn,
         input issue_data_t [1:0] dataI,
         output execute_data_t [1:0] dataE,
-        output e_wait,
-        output word_t dest_pc
+        output e_wait
     );
 
     word_t a[1:0],b[1:0],extend_b[1:0];
@@ -75,7 +74,6 @@
     assign slot_pc=dataI[1].pc+4;
     word_t raw_instr;
     assign raw_instr=dataI[1].raw_instr;
-    assign dest_pc=slot_pc+target_offset;
     always_comb begin
         dataE[1].target='0;
         if (dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b) begin

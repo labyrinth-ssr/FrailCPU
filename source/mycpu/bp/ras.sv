@@ -12,7 +12,8 @@ module ras #(
     input logic clk, resetn,
     input logic push, pop,
     input addr_t ret_pc_push,
-    output addr_t ret_pc_pop, fail
+    output addr_t ret_pc_pop, 
+    output u1 fail
 );
     ras_addr_t top, top_nxt, ras_addr;// top == '0 when stack_num == 1 or stack_num == 0
     logic empty, empty_nxt, fuck_high, fuck_high_nxt, fuck_low, fuck_low_nxt;// hope you won't see fuck == 1
