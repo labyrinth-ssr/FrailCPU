@@ -10,7 +10,7 @@ module rpct #(
     
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
-    localparam TAG_BITS = 30 - INDEX_BITS,
+    localparam TAG_BITS = 18,
     localparam type tag_t = logic [TAG_BITS-1:0],
     localparam type index_t = logic [INDEX_BITS-1:0],
     localparam type associativity_t = logic [ASSOCIATIVITY_BITS-1:0],
@@ -35,7 +35,7 @@ module rpct #(
 );
 
     function tag_t get_tag(addr_t addr);
-        return addr[31:2+INDEX_BITS];
+        return addr[2+TAG_BITS-1:2];
     endfunction
 
     function index_t get_index(addr_t addr);

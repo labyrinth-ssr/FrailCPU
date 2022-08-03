@@ -8,13 +8,13 @@
 
 module bht#(
     parameter int ASSOCIATIVITY = 2,
-    parameter int SET_NUM = 16,
-    parameter int BH_BITS = 2,
+    parameter int SET_NUM = 32,
+    parameter int BH_BITS = 4,
     parameter int COUNTER_BITS = 2,
 
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
-    localparam TAG_BITS = 30,
+    localparam TAG_BITS = 18,
     localparam type tag_t = logic [TAG_BITS-1:0],
     localparam type index_t = logic [INDEX_BITS-1:0],
     localparam type associativity_t = logic [ASSOCIATIVITY_BITS-1:0],
@@ -51,7 +51,7 @@ module bht#(
 );
 
     function tag_t get_tag(addr_t addr);
-        return addr[31:2];
+        return addr[2+TAG_BITS-1:2];
     endfunction
 
     function index_t get_index(addr_t addr);
@@ -212,23 +212,23 @@ module bht#(
         end 
     end
 
-    logic [2**BH_BITS-1:0] counter_strobe;
+    // logic [2**BH_BITS-1:0] counter_strobe;
 
-    always_comb begin : counter_strobe_b
-        counter_strobe = '0;
-        if(in_bht) begin
-            for (int i = 0; i < 2**BH_BITS; i++) begin
-                if (bhr_t'(i) == r_pc_replace.bhr) begin
-                    counter_strobe[i] = 1'b1;
-                end else begin
-                    counter_strobe[i] = 1'b0;
-                end
-            end    
-        end else if (is_write) begin
+    // always_comb begin : counter_strobe_b
+    //     counter_strobe = '0;
+    //     if(in_bht) begin
+    //         for (int i = 0; i < 2**BH_BITS; i++) begin
+    //             if (bhr_t'(i) == r_pc_replace.bhr) begin
+    //                 counter_strobe[i] = 1'b1;
+    //             end else begin
+    //                 counter_strobe[i] = 1'b0;
+    //             end
+    //         end    
+    //     end else if (is_write) begin
 
-            counter_strobe = '1;
-        end 
-    end
+    //         counter_strobe = '1;
+    //     end 
+    // end
 
     ram_addr_t reset_addr;
 
@@ -279,7 +279,7 @@ module bht#(
     LUTRAM_DualPort #(
         .ADDR_WIDTH(INDEX_BITS+ASSOCIATIVITY_BITS),
         .DATA_WIDTH(COUNTER_BITS * (2**BH_BITS)),
-        .BYTE_WIDTH(COUNTER_BITS),
+        .BYTE_WIDTH(COUNTER_BITS * (2**BH_BITS)),
         .READ_LATENCY(0)
     ) counter_ram(
         .clk(clk), 
@@ -287,7 +287,7 @@ module bht#(
         .en_1(in_bht | is_write | ~resetn), //port1 for replace
         .addr_1(resetn ? replace_addr : reset_addr),
         .rdata_1(r_counter_set_replace),
-        .strobe(resetn ? counter_strobe : '1),  
+        .strobe(1'b1),  
         .wdata(resetn ? w_counter_set_replace : '1),
 
         .en_2(1'b1), //port2 for predict
