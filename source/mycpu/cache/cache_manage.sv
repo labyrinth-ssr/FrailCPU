@@ -81,10 +81,15 @@ module cache_manage (
 
 
     //ibus cache
-    ibus_req_t ibus_cache_req;
+    ibus_req_t ibus_cache_req_1;
+    ibus_req_t ibus_cache_req_2;
     ibus_resp_t ibus_cache_resp;
 
-    assign ibus_cache_req = mmu_ireq;
+    assign ibus_cache_req_1 = mmu_ireq;
+    always_comb begin
+        ibus_cache_req_2 = mmu_ireq;
+        ibus_cache_req_2.addr = mmu_ireq.addr + 4;
+    end
     assign mmu_iresp = ibus_cache_resp;
 
     //dbus cache
@@ -171,7 +176,8 @@ module cache_manage (
     ICache icache (
         .clk, 
         .resetn,
-        .ireq(ibus_cache_req),
+        .ireq_1(ibus_cache_req_1),
+        .ireq_2(ibus_cache_req_2),
         .iresp(ibus_cache_resp),
         .icreq(i_cbus_req),
         .icresp(i_cbus_resp)
