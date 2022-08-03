@@ -55,7 +55,7 @@ module MyCore (
 	);
 
     assign ireq.addr=dataP_pc;
-	assign ireq.valid=~(pc_except || is_eret||is_EXC || excpM ||dataE[1].branch_taken);
+	assign ireq.valid=~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
     fetch_data_t [1:0] dataF2_nxt ,dataF2 ;
@@ -65,30 +65,34 @@ module MyCore (
     execute_data_t [1:0] dataM1_nxt,dataM1;
     memory_data_t [1:0] dataM2_nxt,dataM2;
 
-    always_comb begin
-        pc_succ=dataP_pc+8;
-        if (dataP_pc[2]==1) begin
-            pc_succ=dataP_pc+4;
-        end
-    end
+    // always_comb begin
+    assign pc_succ=dataP_pc+8;
+    //     if (dataP_pc[2]==1) begin
+    //         pc_succ=dataP_pc+4;
+    //     end
+    // end
 
-    word_t jpc_save,pc_nxt;
-    u1 jpc_saved;
+        word_t jpc_save,ipc_save,pc_nxt;
+    u1 jpc_saved,ipc_saved;
     always_ff @(posedge clk) begin
-        if (reset) begin
-            jpc_save<='0;
-			jpc_saved<='0;
+		if ((stallF)&&(is_EXC||is_eret)) begin
+			ipc_save<=pc_selected;
+			ipc_saved<='1;
         end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (~stallF) begin
+			ipc_save<='0;
+			ipc_saved<='0;
             jpc_save<='0;
 			jpc_saved<='0;
 		end
 	end
 
     always_comb begin
-        if (jpc_saved&&~is_INTEXC) begin
+        if (ipc_saved) begin
+            pc_nxt=ipc_save;
+        end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -154,12 +158,12 @@ module MyCore (
     end
     //前半部分静止，应当不发起ireq
     always_comb begin
-        dataF2_nxt[1].raw_instr= dataF1.pc[2]==1? iresp.data[63:32]:iresp.data[31:0];
+        dataF2_nxt[1].raw_instr=  iresp.data[31:0];
         if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
             dataF2_nxt[1].raw_instr='0;
         end else
         if (rawinstr_saved) begin
-            dataF2_nxt[1].raw_instr=dataF1.pc[2]==1? raw_instrf2_save[63:32]:raw_instrf2_save[31:0];
+            dataF2_nxt[1].raw_instr= raw_instrf2_save[31:0];
         end else if (delay_flushF2) begin
             dataF2_nxt[1].raw_instr='0;
         end 
@@ -178,9 +182,9 @@ module MyCore (
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
     assign dataF2_nxt[0].cp0_ctl='0;
 
-    assign dataF2_nxt[0].pc= dataF1.pc[2]==1? '0: dataF1.pc+4;
+    assign dataF2_nxt[0].pc= dataF1.pc+4;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/~(dataF1.pc[2]==1)&&dataF1.valid;
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/dataF1.valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(

@@ -38,6 +38,10 @@ end
                 flushM2='1;
                 flushW='1;
             end
+            if (i_wait) begin
+                excp_iwait_nxt=1'b1;
+                stallF ='1;
+            end
         end else if (d_wait) begin
             stallF='1;stallF2='1;stallD='1;stallI='1;stallE='1;stallI_de='1;stallM='1; flushM2='1;
         end else if (branchM) begin
