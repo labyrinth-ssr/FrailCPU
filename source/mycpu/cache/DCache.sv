@@ -95,11 +95,34 @@ module DCache (
 
 
 
+
+
+
+
+
+
     //for meta reset
     index_t reset_counter;
     always_ff @(posedge clk) begin
         reset_counter <= reset_counter + 1;
     end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     //stage1
     addr_t dreq_1_addr, dreq_2_addr;
@@ -199,6 +222,24 @@ module DCache (
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //第一阶段读meta, 第二阶段(FETCH时)写meta
     assign dreq_1_addr = dreq_1.addr;
     assign dreq_2_addr = dreq_2.addr;
@@ -262,6 +303,21 @@ module DCache (
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //stage1 计算hit 
     for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
         assign hit_1_bits[i] = meta_r_1[i].valid && meta_r_1[i].tag == dreq_1_addr.tag;
@@ -291,6 +347,11 @@ module DCache (
     // assign miss_1 = dreq_1.valid & ~hit_1 & ((dreq_2.valid & hit_2) | ~dreq_2.valid);
     // assign miss_2 = dreq_2.valid & ~hit_2;
     // assign miss = (dreq_1.valid & ~hit_1) | (dreq_2.valid & ~hit_2);
+
+
+
+
+
 
 
 
@@ -372,13 +433,25 @@ module DCache (
 
 
 
-    
+
+
+
+
+
+
+
+
+
+
+
+
+    //process PLRU 
     assign process_dreq_1_addr = process_dreq_1.addr;
     assign process_dreq_2_addr = process_dreq_2.addr;
     assign process_cache_hit_1 = process_hit.hit_1 & process_dreq_1.valid & ~process_dreq_1.is_uncached;
     assign process_cache_hit_2 = process_hit.hit_2 & process_dreq_2.valid & ~process_dreq_2.is_uncached;
 
-    //process PLRU 
+    
     assign index_equal = process_dreq_1_addr.index==process_dreq_2_addr.index;
     assign process_replace_line_1 = (index_equal & process_hit.hit_2) ? ~process_hit.hit_line_2 : plru[process_dreq_1_addr.index];
     assign process_replace_line_2 = (index_equal & process_hit.hit_1) ? ~process_hit.hit_line_1 : plru[process_dreq_2_addr.index];
@@ -436,6 +509,7 @@ module DCache (
 
 
 
+
     //process dirty
     always_comb begin
         cache_dirty_new = cache_dirty;
@@ -471,8 +545,6 @@ module DCache (
             cache_dirty <= '0;
         end
     end
-
-
 
 
 
@@ -541,9 +613,6 @@ module DCache (
 
 
 
-
-
-
     assign finish_state = (process_dreq_2.valid & process_dreq_2.is_uncached) ? state==UNCACHE_2
                             : (process_dreq_2.valid & ~process_dreq_2.is_uncached & ~process_hit.hit_2) ? state==FETCH_2
                             : (process_dreq_1.valid & process_dreq_1.is_uncached) ? state==UNCACHE_1 : state==FETCH_1;
@@ -558,6 +627,11 @@ module DCache (
             finish_reg <= '0;
         end
     end
+
+
+
+
+
 
 
 
@@ -595,18 +669,27 @@ module DCache (
 
 
 
-
-
-
-
-
-
-
-
-
-
     assign cache_dirty_1 = (cache_dirty[{process_replace_line_1, process_dreq_1_addr.index}] & process_meta_r_1[process_replace_line_1].valid);
     assign cache_dirty_2 = (cache_dirty[{process_replace_line_2, process_dreq_2_addr.index}] & process_meta_r_2[process_replace_line_2].valid); 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     //FSM
@@ -717,6 +800,35 @@ module DCache (
         end
     end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     always_ff @(posedge clk) begin
         if (resetn) begin
             if (finish) begin
@@ -754,6 +866,22 @@ module DCache (
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //Cbus
     always_comb begin
         cbus_addr = '0;
@@ -780,9 +908,6 @@ module DCache (
             end
         endcase
     end
-
-
-
 
 
 
@@ -843,15 +968,6 @@ module DCache (
 
 
 
-
-
-
-
-
-
-
-
-
     always_ff @(posedge clk) begin
         if (resetn) begin
             data_ok_reg <= process_hit.dreq_en | finish_reg;
@@ -889,6 +1005,10 @@ module DCache (
     assign dresp.data_1 = process_dreq_1.is_uncached ? uncached_data_1 : port_1_data_r;
     assign dresp.data_2 = process_dreq_2.is_uncached ? uncached_data_2
                                                     : w_to_r_reg ? w_to_r_resp_data : port_2_data_r;
+
+
+
+
 
 
 

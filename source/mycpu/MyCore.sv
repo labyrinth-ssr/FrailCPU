@@ -29,7 +29,7 @@ module MyCore (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp,
     output dbus_req_t [1:0]  dreq,
-    input  dbus_resp_t [1:0] dresp,
+    input  dbus_resp_t dresp,
     input logic[5:0] ext_int
 );
     /**
@@ -48,7 +48,7 @@ module MyCore (
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
-    assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
+    assign d_wait= ~dresp.addr_ok;
 
     hazard hazard (
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset
@@ -321,34 +321,34 @@ module MyCore (
         .flush(flushM)
     );
 
-u1 req1_finish,req2_finish;
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
-                req1_finish <= '1;
-            end
-            else if (dresp[0].addr_ok) begin
-                req1_finish <= '0;
-            end
-        end else begin
-            req1_finish <= '0;
-        end   
-    end
+// u1 req1_finish,req2_finish;
+//     always_ff @(posedge clk) begin
+//         if (resetn) begin
+//             if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
+//                 req1_finish <= '1;
+//             end
+//             else if (dresp[0].addr_ok) begin
+//                 req1_finish <= '0;
+//             end
+//         end else begin
+//             req1_finish <= '0;
+//         end   
+//     end
 
-    //如果没有。
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
-                req2_finish <= '1;
-            end
-            else if (dresp[1].addr_ok) begin
-                req2_finish <= '0;
-            end
-        end 
-        else begin
-            req2_finish <= '0;
-        end   
-    end
+//     //如果没有。
+//     always_ff @(posedge clk) begin
+//         if (resetn) begin
+//             if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
+//                 req2_finish <= '1;
+//             end
+//             else if (dresp[1].addr_ok) begin
+//                 req2_finish <= '0;
+//             end
+//         end 
+//         else begin
+//             req2_finish <= '0;
+//         end   
+//     end
 
     memory memory(
 		.dataE(dataE),
