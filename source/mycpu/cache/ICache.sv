@@ -116,23 +116,6 @@ module ICache (
         end
     end
 
-    //plru_ram
-    // plru_t [SET_NUM-1 : 0] plru_ram;
-
-    // //plru_r -> replace_line
-    // //hit_line + plru_r -> plru_new
-    // associativity_t replace_line;
-    // plru_t plru_new;
-    // /*
-    // double miss -> stall forever
-    // */
-    // plru plru(
-    //     .plru_old(plru_ram[ireq_addr.index]),
-    //     .hit_line,
-    //     .plru_new,
-    //     .replace_line
-    // );
-
     //plru
     plru_t [SET_NUM-1 : 0] plru, plru_new;
     associativity_t replace_line;
@@ -226,20 +209,6 @@ module ICache (
         end
     end
 
-    // always_ff @(posedge clk) begin
-    //     if (resetn) begin
-    //         if (ireq_hit) begin
-    //             for (int i = 0; i < SET_NUM; i++) begin
-    //                 plru_ram[i] <= (ireq_addr.index == index_t'(i)) ? plru_new
-    //                                                                 : plru_ram[i];
-    //             end
-    //         end    
-    //     end
-    //     else begin
-    //         plru_ram <= '0;                                            
-    //     end
-        
-    // end
 
     always_ff @(posedge clk) begin
         if (resetn) begin
