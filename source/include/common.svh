@@ -172,7 +172,8 @@ typedef struct packed {
 typedef struct packed {
     logic  addr_ok;  // is the address accepted by cache?
     logic  data_ok;  // is the field "data" valid?
-    word_t data;     // the data read from cache
+    word_t data_1;
+    word_t data_2;     // the data read from cache
 } dbus_resp_t;
 
 /**
