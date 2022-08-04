@@ -125,6 +125,30 @@ module ICache (
         end
     end
 
+    for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
+        assign hit_2_bits[i] = meta_r_2[i].valid && meta_r_2[i].tag == ireq_2_addr.tag;
+    end
+    assign hit_2 = |hit_2_bits;
+    always_comb begin
+        hit_line_2 = 0;
+        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+            hit_line_2 |= hit_2_bits[i] ? associativity_t'(i) : 0;
+        end
+    end
+    
+    //hit && miss
+    logic ireq_hit_1, ireq_hit_2;
+    logic ireq_avail;
+    logic ireq_hit;
+    
+    assign ireq_avail = state == IDLE;
+    assign ireq_hit_1 = ireq_1.valid & ireq_avail & hit_1;
+    assign ireq_hit_2 = ireq_2.valid & ireq_avail & hit_2;
+    assign ireq_hit = (ireq_hit_1 & ireq_hit_2) | (ireq_hit_1 & ~ireq_2.valid);
+
+    data_addr_t miss_addr;
+    addr_t cbus_addr;
+    
     //plru
     plru_t [SET_NUM-1 : 0] plru, plru_new;
     associativity_t replace_line_1, replace_line_2;
@@ -190,10 +214,6 @@ module ICache (
         end
     end
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ff36b7acba7b728aea7ead268552086049f7843b
     always_ff @(posedge clk) begin
         if (resetn) begin
             unique case (state)

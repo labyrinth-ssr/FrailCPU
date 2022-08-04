@@ -30,14 +30,14 @@ module MyCore (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp,
     output dbus_req_t [1:0]  dreq,
-    input  dbus_resp_t [1:0] dresp,
+    input  dbus_resp_t dresp,
     input logic[5:0] ext_int
 );
     /**
      * TODO (Lab1) your code here :)
      */
     
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait;
     u1 is_INTEXC,is_EXC;
@@ -49,7 +49,7 @@ module MyCore (
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
-    assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
+    // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     u1 pred_taken;
     word_t pre_pc;
     u1 jr_ra_fail;
@@ -63,9 +63,10 @@ module MyCore (
 
     u1 save_slotD;
     assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
+    assign d_wait= ~dresp.addr_ok;
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(jrD)
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(jrD),.flushM3
 	);
 
     assign ireq.addr=dataP_pc;
@@ -346,7 +347,7 @@ module MyCore (
     //     end
     // end
 
-    bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in;
+    bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in,dataM3_in;
     bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ;
 
     issue issue_inst(
@@ -373,6 +374,7 @@ module MyCore (
         .dataM2_in,
         .dataI_in,
         .dataEnxt_in,
+        .dataM3_in,
         // .rdstE,
         // .ra1I,.ra2I,
         // .cp0ra,.lo,.hi
@@ -446,40 +448,40 @@ module MyCore (
         .flush(flushM)
     );
 
-u1 req1_finish,req2_finish;
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
-                req1_finish <= '1;
-            end
-            else if (dresp[0].addr_ok) begin
-                req1_finish <= '0;
-            end
-        end else begin
-            req1_finish <= '0;
-        end   
-    end
+// u1 req1_finish,req2_finish;
+//     always_ff @(posedge clk) begin
+//         if (resetn) begin
+//             if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
+//                 req1_finish <= '1;
+//             end
+//             else if (dresp[0].addr_ok) begin
+//                 req1_finish <= '0;
+//             end
+//         end else begin
+//             req1_finish <= '0;
+//         end   
+//     end
 
-    //如果没有。
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
-                req2_finish <= '1;
-            end
-            else if (dresp[1].addr_ok) begin
-                req2_finish <= '0;
-            end
-        end 
-        else begin
-            req2_finish <= '0;
-        end   
-    end
+//     //如果没有。
+//     always_ff @(posedge clk) begin
+//         if (resetn) begin
+//             if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
+//                 req2_finish <= '1;
+//             end
+//             else if (dresp[1].addr_ok) begin
+//                 req2_finish <= '0;
+//             end
+//         end 
+//         else begin
+//             req2_finish <= '0;
+//         end   
+//     end
 
     memory memory(
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
 		.dreq,
-        .req_finish({req1_finish,req2_finish}),
+        // .req_finish('0),
         .excpM
 		// .exception(is_eret||is_INTEXC)
 	);
@@ -501,7 +503,7 @@ u1 req1_finish,req2_finish;
 		.clk,.reset,
 		.in(dataM2_nxt),
 		.out(dataM2),
-		.en(~stallM3),
+		.en('1),
 		.flush(flushM3)
 	);
 	
@@ -527,7 +529,7 @@ u1 req1_finish,req2_finish;
 
     writeback writeback(
         // .clk,.reset,
-        .dataM(dataM2),
+        .dataM(dataM3),
         .dataW,
         .lo_rd,.hi_rd,.cp0_rd
         // .valid_i,.valid_j,.valid_k

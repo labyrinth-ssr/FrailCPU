@@ -5,7 +5,7 @@
 
 module hazard
 (
-    output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,flushM3
+    output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,flushM3,
     input u1 branchM,i_wait,d_wait,e_wait,overflowI,branchD,
     input u1 excpW,excpM,
     input u1 clk,reset

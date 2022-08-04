@@ -18,16 +18,13 @@ module VTop (
     ibus_req_t  ireq;
     ibus_resp_t iresp;
     dbus_req_t  [1:0] dreq;
-    dbus_resp_t  [1:0] dresp;
+    dbus_resp_t dresp;
 
     MyCore core(.*);
     cache_manage cache_manage(
         .dreq_1(dreq[1]),
-        .dresp_1(dresp[1]),
-
         .dreq_2(dreq[0]),
-        .dresp_2(dresp[0]),
-
+        .dresp(dresp),
         .creq(oreq),
         .cresp(oresp),
         .*

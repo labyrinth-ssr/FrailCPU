@@ -14,7 +14,7 @@ module memory
     input execute_data_t [1:0] dataE,
     output execute_data_t [1:0] dataE2,
     output dbus_req_t [1:0]  dreq,
-    input u1 [1:0]  req_finish,
+    // input u1 [1:0]  req_finish,
     output u1 excpM
     // input u1 exception
 );
@@ -42,18 +42,18 @@ for (genvar i=0; i<2; ++i) begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
             if (i==1) begin
-                dreq[i].valid = ~req_finish[1]  ;
+                dreq[i].valid = '1  ;
             end else begin
-                dreq[i].valid = ~req_finish[0]  ;
+                dreq[i].valid = '1  ;
             end
             dreq[i].strobe = '0;
             dreq[i].addr = dataE[i].alu_out;
             dreq[i].size=dataE[i].ctl.msize;
         end else if (dataE[i].ctl.memwrite) begin
             if (i==1) begin
-                dreq[i].valid = ~req_finish[1]  ;
+                dreq[i].valid = '1  ;
             end else begin
-                dreq[i].valid = ~req_finish[0]  ;
+                dreq[i].valid = '1  ;
             end
             dreq[i].addr = dataE[i].alu_out;
             dreq[i].data=wd[i];
