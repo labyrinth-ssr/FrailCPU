@@ -544,12 +544,12 @@ module MyCore (
         {hi_data,lo_data}='0;
         {valid_j,valid_k}='0;
         for (int i=1; i>=0; --i) begin
-            if (dataM2[i].ctl.hiwrite) begin
-                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srca:dataM2[i].hilo[63:32];
+            if (dataM3[i].ctl.hiwrite) begin
+                hi_data=dataM3[i].ctl.op==MTHI? dataM3[i].srca:dataM3[i].hilo[63:32];
                 valid_j=i[0];
             end 
-            if (dataM2[i].ctl.lowrite) begin
-                lo_data=dataM2[i].ctl.op==MTLO? dataM2[i].srca:dataM2[i].hilo[31:0];
+            if (dataM3[i].ctl.lowrite) begin
+                lo_data=dataM3[i].ctl.op==MTLO? dataM3[i].srca:dataM3[i].hilo[31:0];
                 valid_k=i[0];
             end
         end
@@ -558,47 +558,47 @@ module MyCore (
     hilo hilo(
     .clk,.reset,
     .hi(hi_rd), .lo(lo_rd),
-    .hi_write(dataM2[1].ctl.hiwrite||dataM2[0].ctl.hiwrite), .lo_write(dataM2[1].ctl.lowrite||dataM2[0].ctl.lowrite),
+    .hi_write(dataM3[1].ctl.hiwrite||dataM3[0].ctl.hiwrite), .lo_write(dataM3[1].ctl.lowrite||dataM3[0].ctl.lowrite),
     .hi_data , .lo_data
     );
     
     u1 valid_i,valid_m,valid_n;
-    assign valid_i= dataM2[1].ctl.cp0toreg;
-    assign valid_m= dataM2[1].ctl.cp0write;
-    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET;
-    assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
+    assign valid_i= dataM3[1].ctl.cp0toreg;
+    assign valid_m= dataM3[1].ctl.cp0write;
+    assign valid_n=dataM3[1].cp0_ctl.ctype==EXCEPTION||dataM3[1].cp0_ctl.ctype==ERET;
+    assign is_eret=dataM3[1].cp0_ctl.ctype==ERET || dataM3[0].cp0_ctl.ctype==ERET;
     word_t cp0_rd;
 
-//   assign dataM2_save1.pc=dataM2[1].pc;
-//   assign dataM2_save1.valid=dataM2[1].valid;
-//   assign dataM2_save1.is_slot=dataM2[1].is_slot;
-//   assign dataM2_save1.jump=dataM2[1].ctl.branch||dataM2[1].ctl.jump;
-//   assign dataM2_save2.pc=dataM2[0].pc;
-//   assign dataM2_save2.valid=dataM2[0].valid;
-//   assign dataM2_save2.is_slot=dataM2[0].is_slot;
-//   assign dataM2_save2.jump=dataM2[0].ctl.branch||dataM2[0].ctl.jump;
+//   assign dataM3_save1.pc=dataM3[1].pc;
+//   assign dataM3_save1.valid=dataM3[1].valid;
+//   assign dataM3_save1.is_slot=dataM3[1].is_slot;
+//   assign dataM3_save1.jump=dataM3[1].ctl.branch||dataM3[1].ctl.jump;
+//   assign dataM3_save2.pc=dataM3[0].pc;
+//   assign dataM3_save2.valid=dataM3[0].valid;
+//   assign dataM3_save2.is_slot=dataM3[0].is_slot;
+//   assign dataM3_save2.jump=dataM3[0].ctl.branch||dataM3[0].ctl.jump;
    u1 inter_valid;
 
-	assign inter_valid=~i_wait&&dataM2[1].valid;
+	assign inter_valid=~i_wait&&dataM3[1].valid;
     cp0 cp0(
         .clk,.reset,
-        .ra(dataM2[valid_i].cp0ra),//直接读写的指令一次发射一条
-        .wa(dataM2[valid_m].cp0ra),
-        .wd(dataM2[valid_m].srcb),
+        .ra(dataM3[valid_i].cp0ra),//直接读写的指令一次发射一条
+        .wa(dataM3[valid_m].cp0ra),
+        .wd(dataM3[valid_m].srcb),
         .rd(cp0_rd),
         .epc,
-        .valid(dataM2[valid_m].ctl.cp0write),
+        .valid(dataM3[valid_m].ctl.cp0write),
         .is_eret,
-        .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
-        .ctype(dataM2[valid_n].cp0_ctl.ctype),
-        .pc(dataM2[valid_n].pc),
-        .etype(dataM2[valid_n].cp0_ctl.etype),
+        .vaddr(dataM3[valid_n].cp0_ctl.vaddr),
+        .ctype(dataM3[valid_n].cp0_ctl.ctype),
+        .pc(dataM3[valid_n].pc),
+        .etype(dataM3[valid_n].cp0_ctl.etype),
         .ext_int,
-        .is_slot(dataM2[valid_n].is_slot),
+        .is_slot(dataM3[valid_n].is_slot),
         .is_INTEXC,
         .inter_valid,
         .is_EXC,
-        .int_pc(dataM2[1].pc)
+        .int_pc(dataM3[1].pc)
         // .pc_valid(dataM2[valid_n].valid)
         // .dataM2_save({dataM2_save1,dataM2_save2})
     );
