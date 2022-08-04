@@ -9,8 +9,8 @@
 
 module decode(
     input fetch_data_t [1:0] dataF2,
-    output decode_data_t [1:0] dataD,
-    input u1 jr_ra_fail
+    output decode_data_t [1:0] dataD
+    // input u1 jr_ra_fail
     // input word_t rd1[1:0],
     // input word_t rd2[1:0],
     // output creg_addr_t ra1[1:0],ra2[1:0]

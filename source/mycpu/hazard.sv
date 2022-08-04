@@ -6,12 +6,12 @@
 module hazard
 (
     output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,
-    input u1 branchI,i_wait,d_wait,e_wait,overflowI,branchD,
+    input u1 branchI,i_wait,d_wait,e_wait,overflowI,
     input u1 excpW,excpM,
     input u1 clk,reset
 );
 // u1 branch_stall,lwstall,multi_stall;
-u1 excp_iwait,excp_iwait_nxt,branch_iwait,branch_iwait_nxt,branchD_iwait,branchD_iwait_nxt;
+u1 excp_iwait,excp_iwait_nxt,branch_iwait,branch_iwait_nxt/*,branchD_iwait,branchD_iwait_nxt*/;
 // u64 int_save;
 //
 always_ff @(posedge clk) begin
@@ -20,13 +20,13 @@ always_ff @(posedge clk) begin
     end else begin
         excp_iwait<=excp_iwait_nxt;
         branch_iwait<=branch_iwait_nxt;
-        branchD_iwait<=branch_iwait_nxt;
+        // branchD_iwait<=branch_iwait_nxt;
         // misalign_iwait<=misalign_iwait_nxt;        
     end
 end
 
     always_comb begin
-        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;branchD_iwait_nxt='0;
+        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;/*branchD_iwait_nxt='0;*/
         stallM='0;stallE='0;excp_iwait_nxt=excp_iwait;stallM2='0;flushW='0;branch_iwait_nxt=branch_iwait;flushM2='0;/*misalign_iwait_nxt=misalign_iwait;*/
         if (excpW||excpM) begin
             flushF2='1;
@@ -52,6 +52,7 @@ end
             flushD='1;
             flushI='1;
             flush_que='1;
+            flush_que_pre
             if (i_wait) begin
                 branch_iwait_nxt=1'b1;
                 stallF ='1;
@@ -72,14 +73,14 @@ end
             flushF2='1;flushD='1;
             excp_iwait_nxt='0;
         end
-        if (~(i_wait||e_wait)&&branch_iwait) begin
+        if (~stallF&&branch_iwait) begin
             flushF2='1;flushD='1;
             branch_iwait_nxt='0;
         end
-        if (~i_wait&&branchD_iwait) begin
-            flushF2='1;flushD='1;
-            branchD_iwait_nxt='0;
-        end
+        // if (~stallF&&branchD_iwait) begin
+        //     flushF2='1;flushD='1;
+        //     branchD_iwait_nxt='0;
+        // end
     end
 endmodule
 

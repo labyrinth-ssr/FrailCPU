@@ -53,19 +53,13 @@ module MyCore (
     u1 pred_taken;
     word_t pre_pc;
     u1 jr_ra_fail;
-
-
-    u1 is_jr_ra_decode;
-    assign is_jr_ra_decode=(dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
-    u1 jrD;
-    // assign jrD=is_jr_ra_decode&&~jr_ra_fail;
-    assign jrD='0;
-
-    u1 save_slotD;
-    assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
+    decode_data_t candidate1,candidate2;
+    // assign jrD='0;
+    // u1 save_slotD;
+    // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(jrD)
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset
 	);
 
     assign ireq.addr=dataP_pc;
@@ -124,11 +118,9 @@ module MyCore (
     // u1 jr_pc_saved;
     // word_t jr_pc_save;
     // assign j_misalign_hazard= pred_taken&&hit_bit&&dataP_pc[2];pred_pc_saved,pred_pc_save,
-    u1 zero_prej;
-    u1 hit_bit;
-    assign zero_prej=pred_taken&&~hit_bit;
-    u1 jrD_misalign;
-    assign jrD_misalign=jrD&&save_slotD;
+
+    // u1 jrD_misalign;
+    // assign jrD_misalign=jrD&&save_slotD;
 
     // always_ff @(posedge clk) begin
     //     if (jrD_misalign) begin
@@ -142,6 +134,14 @@ module MyCore (
     //     end
     // end
 
+    u1 is_jr_ra_decode;
+    assign is_jr_ra_decode=candidate1.ctl.op==JR&&candidate1.ra1==31;
+    u1 jrD;
+    assign jrD=is_jr_ra_decode&&~jr_ra_fail;
+    u1 zero_prej;
+    u1 hit_bit;
+    assign zero_prej=pred_taken&&~hit_bit;
+
     pcselect pcselect_inst (
         .pc_selected,
         .pc_succ,
@@ -153,9 +153,9 @@ module MyCore (
 		.is_INTEXC,
         .pred_taken(pred_taken&&~zero_prej),
         .pre_pc(pre_pc),
-        .decode_taken(jrD&&~save_slotD),
-        .refetchD_pc(dataD_nxt[0].pc),
-        .select_refetchD(jrD_misalign),
+        // .decode_taken(jrD&&~save_slotD),
+        // .refetchD_pc(dataD_nxt[0].pc),
+        // .select_refetchD(jrD_misalign),
         .zero_prej
     );
     //pipereg between pcselect and fetch1
@@ -205,8 +205,8 @@ module MyCore (
     );
 
 
-    u1 branch_valid_i;
-    assign branch_valid_i=dataD_nxt[1].ctl.branch;
+    // u1 branch_valid_i;
+    // assign branch_valid_i=dataD_nxt[1].ctl.branch;
 
     // always_comb begin
     //     decode_pre_pc='0;
@@ -308,8 +308,8 @@ module MyCore (
 
     decode decode_inst(
         .dataF2(dataF2),
-        .dataD(dataD_nxt),
-        .jr_ra_fail
+        .dataD(dataD_nxt)
+        // .jr_ra_fail
         // .rd1,.rd2,
         // .ra1,.ra2
     );
@@ -358,7 +358,9 @@ module MyCore (
         .flush_que,
         .stallI,
         .overflow(overflowI),
-        .stallI_de
+        .stallI_de,
+        .candidate1,
+        .candidate2
     );
 
     word_t raw_instr;
@@ -372,7 +374,9 @@ module MyCore (
     word_t dest_pcI;
     always_comb begin
         branch_targetI='0;
-        if (dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b) begin
+        if (jrD) begin
+            branch_targetI=pre_pc;
+        end else if (dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b) begin
             branch_targetI=slot_pc+target_offset;
         end else if (dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b) begin
             branch_targetI=dataI_nxt[1].pc+8;  
@@ -401,7 +405,7 @@ module MyCore (
         .srca(dataI_nxt[1].rd1),.srcb(dataI_nxt[1].rd2),
         .valid(dataI_nxt[1].ctl.branch)
     );
-    assign branch_takenI=(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b)
+    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b);
 

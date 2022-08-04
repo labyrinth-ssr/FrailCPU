@@ -16,8 +16,11 @@ module issue(
     input bypass_output_t [1:0] bypass_inra1,
     input bypass_output_t [1:0] bypass_inra2,
     input u1 flush_que,
+    input u1 pred_flush_que,
     input u1 stallI,stallI_de,
-    output u1 overflow
+    output u1 overflow,
+    output decode_data_t candidate1,candidate2,
+    // input u1 jrI
 );
 localparam ISSUE_QUEUE_SIZE = 16;
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
@@ -46,7 +49,7 @@ u1 que_empty;
 assign que_empty= head_even==tail_even && head_odd==tail_odd;
 
 u1 issue_en1,issue_en2;
-decode_data_t candidate1,candidate2;
+// decode_data_t candidate1,candidate2;
 
 always_comb begin
     candidate1='0;
