@@ -374,13 +374,17 @@ module MyCore (
     assign is_jr_ra_decode=candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~jr_pred_finish&&~candidate2_invalid;
 
     u1 jr_predicted;
+    word_t jr_predicted_pc;
     always_ff @(posedge clk) begin
         if (reset) begin
             jr_predicted<='0;
+            jr_predicted_pc<='0;
         end else if (jrD) begin
             jr_predicted<='1;
+            jr_predicted_pc<=pre_pc;
         end else if (issue_en_1) begin
             jr_predicted<='0;
+            jr_predicted_pc<='0;
         end
     end
 
@@ -446,7 +450,7 @@ module MyCore (
         .srca(dataI_nxt[1].rd1),.srcb(dataI_nxt[1].rd2),
         .valid(dataI_nxt[1].ctl.branch)
     );
-    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)
+    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~(jr_predicted&&jr_predicted_pc==branch_targetI))
     ||(dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b);
 
@@ -479,7 +483,7 @@ module MyCore (
     //         print_cnt_j<='0;
     //     end else begin
     //         print_cnt_j <= print_cnt_j + 1;
-    //         if (dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)begin
+    //         if (dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~(jr_predicted&&jr_predicted_pc==branch_targetI))begin
     //             fail_j <= fail_j + 1;
     //         end
     //         if(dataI_nxt[1].ctl.jump) begin
