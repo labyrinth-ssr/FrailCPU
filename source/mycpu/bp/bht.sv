@@ -61,8 +61,8 @@ module bht#(
     meta_t [ASSOCIATIVITY-1:0] w_meta;
     addr_t r_pc_predict, r_pc_replace, w_pc_replace;
     counter_t r_counter_set_predict, r_counter_set_replace, w_counter_set_replace;
-    associativity_t pc_hit_line, pcp4_hit_line, hit_line, replace_line;
-    ram_addr_t predict_addr, replace_addr;
+    associativity_t pc_hit_line, pcp4_hit_line, hit_line, replace_line, in_bht_line;
+    ram_addr_t predict_addr, replace_addr, counter_addr;
     logic in_bht, pc_hit, pcp4_hit;
 
     // for predict
@@ -118,9 +118,11 @@ module bht#(
 
     always_comb begin
         in_bht = 1'b0;
+        in_bht_line = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
             if (r_meta_in_bht[i].valid && r_meta_in_bht[i].tag == get_tag(executed_branch_pc)) begin
                 in_bht = 1'b1;
+                in_bht_line = associativity_t'(i);
             end
         end 
     end
@@ -190,7 +192,10 @@ module bht#(
             endcase
     end
 
-    assign w_counter_set_replace = w_counter;
+    assign w_counter_set_replace = in_bht ? w_counter : 2'b11;
+
+    assign counter_addr.index = get_index(executed_branch_pc);
+    assign counter_addr.line = in_bht ? in_bht_line : replace_line;
 
     // always_comb begin : w_counter_set_replace_b 
     //     w_counter_set_replace = '0;
@@ -280,7 +285,7 @@ module bht#(
         .clk(clk), 
 
         .en_1(in_bht | is_write | ~resetn), //port1 for replace
-        .addr_1(resetn ? replace_addr : reset_addr),
+        .addr_1(resetn ? counter_addr : reset_addr),
         .rdata_1(r_counter_set_replace),
         .strobe(1'b1),  
         .wdata(resetn ? w_counter_set_replace : 2'b11),

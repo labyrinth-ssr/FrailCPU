@@ -6,7 +6,7 @@
 
 module rpct #(
     parameter int ASSOCIATIVITY = 2,
-    parameter int SET_NUM = 8,
+    parameter int SET_NUM = 4,
     
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
