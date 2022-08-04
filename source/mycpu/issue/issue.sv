@@ -19,11 +19,17 @@ module issue(
     input u1 pred_flush_que,
     input u1 stallI,stallI_de,
     output u1 overflow,
-    output decode_data_t candidate1,candidate2,
+    output decode_data_t candidate1,
+    output u1 issue_en_1
+    // output u1 predicted_jr
     // input u1 jrI
 );
+assign issue_en_1=issue_en1;
+// u1 jr_predicted
 localparam ISSUE_QUEUE_SIZE = 16;
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
+
+
 
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
@@ -49,7 +55,7 @@ u1 que_empty;
 assign que_empty= head_even==tail_even && head_odd==tail_odd;
 
 u1 issue_en1,issue_en2;
-// decode_data_t candidate1,candidate2;
+decode_data_t candidate2;
 
 always_comb begin
     candidate1='0;
@@ -85,6 +91,9 @@ assign overflow= push(tail_odd)==head_odd || push(tail_even)==head_even;
 always_ff @(posedge clk) begin
     if (reset||flush_que) begin
         {tail_even,tail_odd}<='0;
+    end else if (pred_flush_que) begin
+        tail_even<=pop(head_even);
+        tail_odd<=pop(head_odd);
     end else if (~stallI)begin
         if (odd_larger(tail_odd,tail_even)&&dataD[1].valid) begin
             issue_queue_odd[tail_odd]<=dataD[1];

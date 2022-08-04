@@ -37,7 +37,7 @@ module MyCore (
      * TODO (Lab1) your code here :)
      */
     
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,pred_flush_que;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait;
     u1 is_INTEXC,is_EXC;
@@ -59,7 +59,7 @@ module MyCore (
     // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI(jrD),.pred_flush_que
 	);
 
     assign ireq.addr=dataP_pc;
@@ -135,11 +135,12 @@ module MyCore (
     // end
 
     u1 is_jr_ra_decode;
-    assign is_jr_ra_decode=candidate1.ctl.op==JR&&candidate1.ra1==31;
+    u1 issue_en_1;
     u1 jrD;
-    assign jrD=is_jr_ra_decode&&~jr_ra_fail;
     u1 zero_prej;
     u1 hit_bit;
+    assign jrD=is_jr_ra_decode&&~jr_ra_fail;
+    
     assign zero_prej=pred_taken&&~hit_bit;
 
     pcselect pcselect_inst (
@@ -346,6 +347,31 @@ module MyCore (
 
     bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in;
     bypass_output_t [1:0]bypass_outra1 ,bypass_outra2;
+    u1 jr_pred_finish;
+
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            jr_pred_finish<='0;
+        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1) begin
+            jr_pred_finish<='1;
+        end else if (issue_en_1) begin
+            jr_pred_finish<='0;
+        end
+    end
+
+    assign is_jr_ra_decode=candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~jr_pred_finish;
+
+    u1 jr_predicted;
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            jr_predicted<='0;
+        end else if (jrD) begin
+            jr_predicted<='1;
+        end else if (issue_en_1) begin
+            jr_predicted<='0;
+        end
+    end
+
 
     issue issue_inst(
         .clk,.reset,
@@ -360,8 +386,11 @@ module MyCore (
         .overflow(overflowI),
         .stallI_de,
         .candidate1,
-        .candidate2
+        .issue_en_1,
+        .pred_flush_que
     );
+
+
 
     word_t raw_instr;
     assign raw_instr=dataI_nxt[1].raw_instr;
@@ -405,9 +434,47 @@ module MyCore (
         .srca(dataI_nxt[1].rd1),.srcb(dataI_nxt[1].rd2),
         .valid(dataI_nxt[1].ctl.branch)
     );
-    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b)
+    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)
     ||(dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b);
+
+        real fail_b;
+    real total_b;
+    logic[28:0] print_cnt;
+    always_ff @(posedge clk)begin
+        if(print_cnt[15] == 1)begin
+            $display("b-type success rate:%.2f %%", (total_b-fail_b)/total_b*100);
+            print_cnt<='0;
+            // $display("b-type pred-fail_b rate:%.2f %%", (total_b-fail_b)/total_b*100);
+        end else begin
+            print_cnt <= print_cnt + 1;
+            if ((dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
+                ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b))begin
+                fail_b <= fail_b + 1;
+            end
+            if(dataI_nxt[1].ctl.branch) begin
+                total_b <= total_b + 1;
+            end
+        end
+    end
+
+    real fail_j;
+    real total_j;
+    logic[28:0] print_cnt_j;
+    always_ff @(posedge clk)begin
+        if(print_cnt_j[15] == 1)begin
+            $display("j-type success rate:%.2f %%", (total_j-fail_j)/total_j*100);
+            print_cnt_j<='0;
+        end else begin
+            print_cnt_j <= print_cnt_j + 1;
+            if (dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)begin
+                fail_j <= fail_j + 1;
+            end
+            if(dataI_nxt[1].ctl.jump) begin
+                total_j <= total_j + 1;
+            end
+        end
+    end
 
 
     bypass_issue_t [1:0] dataI_in,issue_bypass_out;
