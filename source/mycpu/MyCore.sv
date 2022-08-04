@@ -17,7 +17,7 @@
 `include "issue/issue.sv"
 `include "execute/execute.sv"
 `include "memory/memory.sv"
-`include "memory/memory2.sv"
+`include "memory/memory3.sv"
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
@@ -77,7 +77,8 @@ module MyCore (
     issue_data_t [1:0] dataI_nxt,dataI;
     execute_data_t [1:0] dataE_nxt,dataE;
     execute_data_t [1:0] dataM1_nxt,dataM1;
-    memory_data_t [1:0] dataM2_nxt,dataM2;
+    execute_data_t [1:0] dataM2_nxt,dataM2;
+    memory_data_t [1:0] dataM3_nxt,dataM3;
 
     // always_comb begin
     assign pc_succ=dataP_pc+8;
@@ -89,7 +90,9 @@ module MyCore (
     word_t jpc_save,ipc_save,pc_nxt,dpc_save;
     u1 jpc_saved,ipc_saved,dpc_saved;
     always_ff @(posedge clk) begin
-		if ((stallF)&&(is_EXC||is_eret)) begin
+        if (reset) begin
+            {jpc_save,ipc_save,dpc_save,jpc_saved,ipc_saved,dpc_saved}<='0;
+        end else if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
         end else if (stallF && dataE[1].branch_taken) begin
@@ -220,13 +223,12 @@ module MyCore (
     //         end
     //     end
     // end
-
     // pc_branch pc_branch_decode(
     //     .branch(dataD_nxt[1].ctl.branch_type),
     //     .branch_condition,
-
     // );
     // assign flushF2=flushF2_hazard||zero_prej;
+
     pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
         .reset,
@@ -395,13 +397,21 @@ module MyCore (
         assign dataM1_in[i].cp0toreg=dataM1[i].ctl.cp0toreg;
         assign dataM1_in[i].regwrite=dataM1[i].ctl.regwrite;
 
-        assign dataM2_in[i].data=dataW[i].wd;
+        assign dataM2_in[i].data=dataM2[i].alu_out;
         assign dataM2_in[i].rdst=dataM2[i].rdst;
         assign dataM2_in[i].memtoreg=dataM2[i].ctl.memtoreg;
         assign dataM2_in[i].lotoreg=dataM2[i].ctl.lotoreg;
         assign dataM2_in[i].hitoreg=dataM2[i].ctl.hitoreg;
         assign dataM2_in[i].cp0toreg=dataM2[i].ctl.cp0toreg;
         assign dataM2_in[i].regwrite=dataM2[i].ctl.regwrite;
+
+        assign dataM3_in[i].data=dataW[i].wd;
+        assign dataM3_in[i].rdst=dataM3[i].rdst;
+        assign dataM3_in[i].memtoreg=dataM3[i].ctl.memtoreg;
+        assign dataM3_in[i].lotoreg=dataM3[i].ctl.lotoreg;
+        assign dataM3_in[i].hitoreg=dataM3[i].ctl.hitoreg;
+        assign dataM3_in[i].cp0toreg=dataM3[i].ctl.cp0toreg;
+        assign dataM3_in[i].regwrite=dataM3[i].ctl.regwrite;
 
         assign dataEnxt_in[i].rdst=dataI[i].rdst;
         // assign dataEnxt_in[i].lowrite=dataI[i].ctl.lowrite;
@@ -483,21 +493,32 @@ u1 req1_finish,req2_finish;
 		.en(~stallM2),
 		.flush(flushM2)
 	);
+
+    assign dataM2_nxt[1]=dataM1[1];
+    assign dataM2_nxt[0]=dataM1[0];
+
+    pipereg2 #(.T(execute_data_t)) M2M3reg(
+		.clk,.reset,
+		.in(dataM2_nxt),
+		.out(dataM2),
+		.en(~stallM3),
+		.flush(flushM3)
+	);
 	
-	memory2 memory2(
+	memory3 memory3(
         .clk,
-		.dataE(dataM1),
-		.dataM(dataM2_nxt),
+		.dataE(dataM2),
+		.dataM(dataM3_nxt),
 		.dresp,
         .dreq,
         .d_wait,
         .resetn
 	);
 
-	pipereg2 #(.T(memory_data_t)) M2Wreg(
+	pipereg2 #(.T(memory_data_t)) M3Wreg(
 		.clk,.reset,
-		.in(dataM2_nxt),
-		.out(dataM2),
+		.in(dataM3_nxt),
+		.out(dataM3),
 		.en(1'b1),
 		.flush(flushW)
 	);

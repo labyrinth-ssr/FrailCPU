@@ -9,7 +9,7 @@
 `endif
 
 
-module memory2
+module memory3
     (
     input clk,
     input execute_data_t [1:0] dataE,
