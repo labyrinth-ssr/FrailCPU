@@ -54,35 +54,14 @@ module DCache (
         offset_t offset;
         align_t align;
     };
-    localparam type buffer_t = word_t [DATA_PER_LINE-1:0];
-    localparam type record_t = logic [DATA_PER_LINE-1:0];
 
-    localparam type plru_t = logic [ASSOCIATIVITY-2:0];
-
-    localparam type state_t = enum logic[2:0] {
-        IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2
+    localparam type reg_t = struct packed {
+        logic hit_1;
+        logic hit_2;
+        logic dreq_en;
+        associativity_t hit_line_1;
+        associativity_t hit_line_2;
     };
-
-    function word_t get_mask(input strobe_t strobe);
-        return {{8{strobe[3]}}, {8{strobe[2]}}, {8{strobe[1]}}, {8{strobe[0]}}};
-    endfunction
-    
-    addr_t dreq_1_addr, dreq_2_addr;
-    assign dreq_1_addr = dreq_1.addr;
-    assign dreq_2_addr = dreq_2.addr;
-
-    index_t reset_counter;
-    always_ff @(posedge clk) begin
-        reset_counter <= reset_counter + 1;
-    end
-
-     //state
-    state_t state;
-
-    //buffer
-    buffer_t buffer;
-    offset_t buffer_offset;
-    offset_t offset_count;
 
     //meta_ram
     typedef struct packed {
@@ -92,45 +71,198 @@ module DCache (
 
     localparam type meta_t = info_t [ASSOCIATIVITY-1:0];
 
-    index_t meta_addr_1, meta_addr_2;
-    meta_t meta_r_1, meta_r_2;
-    meta_t meta_w;
-    logic meta_en;
+    localparam type buffer_t = word_t [DATA_PER_LINE-1:0];
+    localparam type record_t = logic [DATA_PER_LINE-1:0];
 
-    assign meta_addr_1 = resetn ? ((state==FETCH_2) ? dreq_2_addr.index
-                                                    : dreq_1_addr.index)
-                                : reset_counter[INDEX_BITS-1:0];
+    localparam type plru_t = logic [ASSOCIATIVITY-2:0];
 
-    assign meta_addr_2 = dreq_2_addr.index;
-    assign meta_en = (~resetn|state==FETCH_1|state==FETCH_2) ? 1'b1 : 0;
+    localparam type state_t = enum logic[2:0] {
+        IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2, UNCACHE_1, UNCACHE_2
+    };
+
+    function word_t get_mask(input strobe_t strobe);
+        return {{8{strobe[3]}}, {8{strobe[2]}}, {8{strobe[1]}}, {8{strobe[0]}}};
+    endfunction
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //for meta reset
+    index_t reset_counter;
+    always_ff @(posedge clk) begin
+        reset_counter <= reset_counter + 1;
+    end
+
+    //stage1
+    addr_t dreq_1_addr, dreq_2_addr;
+
+    //process
+    addr_t process_dreq_1_addr, process_dreq_2_addr;
+    dbus_req_t process_dreq_1, process_dreq_2;
+    meta_t process_meta_r_1, process_meta_r_2;
+
+    //state
+    state_t state;
+
+    //FETCH && WRITEBACK
+    data_addr_t miss_addr;
+    addr_t cbus_addr;
+
+    //buffer
+    buffer_t buffer;
+    offset_t buffer_offset; //DCache -> Buffer
+    offset_t offset_count; //Buffer -> 内存
+    logic delay_counter; //WRITEBACK DCache 读延迟
+
+    //dota_ok 延迟
+    logic data_ok_reg;
     
-    LUTRAM_DualPort #(
-        .ADDR_WIDTH(INDEX_BITS),
-        .DATA_WIDTH($bits(meta_t)),
-        .BYTE_WIDTH($bits(meta_t)),
-        .READ_LATENCY(0)
-    ) meta_ram(
-        .clk(clk), 
-        .en_1(1'b1), 
-        .en_2(1'b1),
-        .addr_1(meta_addr_1), 
-        .addr_2(meta_addr_2),
-        .strobe(meta_en),  
-        .wdata(meta_w), 
-        .rdata_1(meta_r_1), 
-        .rdata_2(meta_r_2)
-    );
+    //meta_ram
+    meta_t meta_ram [SET_NUM-1:0];
+    logic meta_en;
+    index_t meta_w_addr;
+    meta_t meta_w;
+    index_t meta_r_addr_1, meta_r_addr_2;
+    meta_t meta_r_1, meta_r_2;
 
     //cache_dirty
-    logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty;
-    logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty_new;
-    
+    logic [ASSOCIATIVITY*SET_NUM-1:0] cache_dirty, cache_dirty_new;
 
-    //计算hit
+    //plru
+    plru_t [SET_NUM-1 : 0] plru, plru_new;
+    associativity_t process_replace_line_1, process_replace_line_2; //process
+
+    //判断hit
     logic hit_1, hit_2;
     logic [ASSOCIATIVITY-1:0] hit_1_bits, hit_2_bits;
     associativity_t hit_line_1, hit_line_2;
 
+    //hit && miss
+    logic dreq_hit_1, dreq_hit_2;
+    logic dreq_hit;
+    logic miss_1;
+    logic miss_2;
+    logic miss;
+
+    reg_t hit_reg;
+    logic en;
+
+    //DCache_1 -> DCache_2
+    logic stall_finish_1;
+    logic stall_finish_2;
+
+    logic addr_same;
+    logic w_to_w;
+    word_t w_to_w_data;
+
+    logic w_to_r;
+    logic w_to_r_reg;
+    word_t w_to_r_data;
+    strobe_t w_to_r_strobe;
+
+    //Port1
+    logic port_1_en;
+    strobe_t port_1_wen;
+    data_addr_t port_1_addr;
+    word_t port_1_data_w, port_1_data_r;
+
+    //Port2
+    logic port_2_en;
+    strobe_t port_2_wen;
+    data_addr_t port_2_addr;
+    word_t port_2_data_w, port_2_data_r;
+
+    //FETCH结束,下一周期addr_ok
+    logic finish, finish_reg;
+
+    //
+    associativity_t replace_line_1_reg, replace_line_2_reg;
+
+
+
+
+
+
+
+
+
+    //第一阶段读meta, 第二阶段(FETCH时)写meta
+    assign dreq_1_addr = dreq_1.addr;
+    assign dreq_2_addr = dreq_2.addr;
+    assign meta_en = (~resetn|state==FETCH_1|state==FETCH_2) ? 1'b1 : 0;
+    assign meta_w_addr = resetn ? ((state==FETCH_2) ? dreq_2_addr.index
+                                                    : dreq_1_addr.index)
+                                : reset_counter[INDEX_BITS-1:0];
+    always_ff @(posedge clk) begin
+        if (meta_en) begin
+            meta_ram[meta_w_addr] <= meta_w;
+        end
+    end
+    assign meta_r_addr_1 = dreq_1_addr.index;
+    assign meta_r_addr_2 = dreq_2_addr.index;
+    assign meta_r_1 = meta_ram[meta_r_addr_1];
+    assign meta_r_2 = meta_ram[meta_r_addr_2];
+    //meta_w
+    always_comb begin
+        meta_w = '0;
+        if (resetn) begin
+            unique case (state)
+                FETCH_1: begin
+                    meta_w = process_meta_r_1;
+                    for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                        if (process_replace_line_1 == associativity_t'(i)) begin
+                            meta_w[i].tag = process_dreq_1_addr.tag;
+                            meta_w[i].valid = 1'b1;
+                        end
+                        else begin
+                        end
+                    end
+                    
+                end
+                FETCH_2: begin
+                    meta_w = process_meta_r_2;
+                    for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                        if (process_replace_line_2 == associativity_t'(i)) begin
+                            meta_w[i].tag = process_dreq_2_addr.tag;
+                            meta_w[i].valid = 1'b1;
+                        end
+                        else begin
+                        end
+                    end
+                end
+                
+                default: begin   
+                end
+            endcase    
+        end
+        else begin
+        end
+    end
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //stage1 计算hit 
     for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
         assign hit_1_bits[i] = meta_r_1[i].valid && meta_r_1[i].tag == dreq_1_addr.tag;
     end
@@ -153,64 +285,117 @@ module DCache (
         end
     end
     
-    //hit && miss
-    logic dreq_hit_1, dreq_hit_2;
-    logic dreq_avail;
-    logic dreq_hit;
-    
-    assign dreq_avail = state == IDLE;
-    assign dreq_hit_1 = dreq_1.valid & dreq_avail & hit_1;
-    assign dreq_hit_2 = dreq_2.valid & dreq_avail & hit_2;
-    assign dreq_hit = (dreq_hit_1 & dreq_hit_2) | (dreq_hit_1 & ~dreq_2.valid);
-
-    data_addr_t miss_addr;
-    addr_t cbus_addr;
-
-    //plru
-    // plru_t [SET_NUM-1 : 0] plru;
-    // plru_t plru_r_1, plru_r_2;
-    // associativity_t replace_line_1, replace_line_2;
-    // plru_t plru_new_1, plru_new_2;
-
-    // assign plru_r_1 = plru[dreq_1_addr.index];
-    // assign plru_r_2 = (dreq_1_addr.index == dreq_2_addr.index) ? plru_new_1
-    //                                                            : plru[dreq_2_addr.index];
-
-    // plru port_1_plru(
-    //     .plru_old(plru_r_1),
-    //     .hit_line(hit_line_1),
-    //     .plru_new(plru_new_1),
-    //     .replace_line(replace_line_1)
-    // );
-
-    // plru port_2_plru(
-    //     .plru_old(plru_r_2),
-    //     .hit_line(hit_line_2),
-    //     .plru_new(plru_new_2),
-    //     .replace_line(replace_line_2)
-    // );
-    
-    //plru
-    plru_t [SET_NUM-1 : 0] plru, plru_new;
-    associativity_t replace_line_1, replace_line_2;
-
-    assign replace_line_1 = plru[dreq_1_addr.index];
-    assign replace_line_2 = (dreq_1_addr.index == dreq_2_addr.index) ? ~hit_line_1
-                                                               : plru[dreq_2_addr.index];
+    assign dreq_hit_1 = ~dreq_1.is_uncached & hit_1;
+    assign dreq_hit_2 = ~dreq_2.is_uncached & hit_2;
+    assign dreq_en = (~dreq_1.valid|dreq_hit_1) & (~dreq_2.valid|dreq_hit_2);
+    // assign miss_1 = dreq_1.valid & ~hit_1 & ((dreq_2.valid & hit_2) | ~dreq_2.valid);
+    // assign miss_2 = dreq_2.valid & ~hit_2;
+    // assign miss = (dreq_1.valid & ~hit_1) | (dreq_2.valid & ~hit_2);
 
 
-    always_comb begin
-        plru_new = plru;
-        for (int i = 0; i < SET_NUM; i++) begin
-            if (dreq_hit_1) begin
-                plru_new[i] = (dreq_1_addr.index == index_t'(i)) ? ~hit_line_1 : plru[i];
-            end  
-            if (dreq_hit_2) begin      
-                plru_new[i] = (dreq_2_addr.index == index_t'(i)) ? ~hit_line_2 : plru[i];    
-            end   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* DCache_1 -> DCache_2 ************** */
+    // assign stall_finish_1 = miss_1 & state == FETCH_1 & dcresp.last;
+    // assign stall_finish_2 = miss_2 & state == FETCH_2 & dcresp.last;
+
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (en & ~dreq_hit) begin
+                en <= '0; 
+            end
+            else if (~en & finish) begin
+                en <= 1'b1;
+            end    
+        end
+        else begin
+            en <= 1'b1;
         end
     end
 
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (en) begin
+                hit_reg.hit_1 <= hit_1;
+                hit_reg.hit_2 <= hit_2;
+                hit_reg.hit_line_1 <= hit_line_1;
+                hit_reg.hit_line_2 <= hit_line_2;
+                // hit_reg.dreq_hit_1 <= dreq_hit_1;
+                // hit_reg.dreq_hit_2 <= dreq_hit_2;
+                hit_reg.dreq_en <= dreq_en;
+                process_dreq_1 <= dreq_1;
+                process_dreq_2 <= dreq_2;
+                process_meta_r_1 <= meta_r_1;
+                process_meta_r_2 <= meta_r_2;    
+            end
+            
+        end
+        else begin
+            hit_reg <= '0;
+            process_dreq_1 <= '0;
+            process_dreq_2 <= '0;
+            process_meta_r_1 <= '0;
+            process_meta_r_2 <= '0; 
+        end
+    end
+    /* ********************** */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    assign process_dreq_1_addr = process_dreq_1.addr;
+    assign process_dreq_2_addr = process_dreq_2.addr;
+    assign cache_hit_1 = hit_reg.hit_1 & process_dreq_1.valid & ~process_dreq_1.is_uncached;
+    assign cache_hit_2 = hit_reg.hit_2 & process_dreq_2.valid & ~process_dreq_2.is_uncached;
+
+    //process PLRU 
+    assign index_equal = process_dreq_1_addr.index==process_dreq_2_addr.index;
+    assign process_replace_line_1 = (index_equal & hit_reg.hit_2) ? ~hit_reg.hit_line_2 : plru[process_dreq_1_addr.index];
+    assign process_replace_line_2 = (index_equal & hit_reg.hit_1) ? ~hit_reg.hit_line_1 : plru[process_dreq_2_addr.index];
+                                        
+    always_comb begin
+        plru_new = plru;
+        for (int i = 0; i < SET_NUM; i++) begin
+            if (process_dreq_1_addr.index == index_t'(i)) begin
+                plru_new[i] = cache_hit_1 ? ~hit_reg.hit_line_1
+                            : (state==FETCH_1 & dcresp.last) ? ~process_replace_line_1 : plru[i];
+            end
+            if (process_dreq_2_addr.index == index_t'(i)) begin
+                plru_new[i] = cache_hit_2 ? ~hit_reg.hit_line_2
+                            : (state==FETCH_2 & dcresp.last) ? ~process_replace_line_2 : plru[i];
+            end
+        end
+    end
     always_ff @(posedge clk) begin
         if (resetn) begin
             plru <= plru_new;
@@ -220,61 +405,38 @@ module DCache (
         end
     end
 
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            if (state==FETCH_1 & dcresp.last) begin
+                replace_line_1_reg <= process_replace_line_1;
+            end
+            if (state==FETCH_2 & dcresp.last) begin
+                replace_line_2_reg <= process_replace_line_2;
+            end
+        end
+        else begin
+            plru <= '0;
+        end
+    end
+    /* ********************** */
 
-    logic addr_same;
-    assign addr_same = (dreq_1_addr[31:2] == dreq_2_addr[31:2]) & (dreq_1.valid & dreq_2.valid);
 
-    //plru_r -> replace_line
-    //hit_line + plru_r -> plru_new
-    /*
-    double miss -> stall forever
-    */
-    //W -> W
-    logic w_to_w;
-    word_t w_to_w_data;
-    assign w_to_w = addr_same & |dreq_1.strobe & |dreq_2.strobe;
-    assign w_to_w_data = (get_mask(dreq_2.strobe)
-                        & dreq_2.data)
-                        | (get_mask(dreq_1.strobe ^ dreq_2.strobe)
-                        & dreq_1.data);
 
-    //W -> R
-    logic w_to_r;
-    logic w_to_r_reg;
-    word_t w_to_r_data;
-    strobe_t w_to_r_strobe;
-    assign w_to_r = addr_same & |dreq_1.strobe & ~|dreq_2.strobe;
 
-    //Port 1 : dreq_1 
-    logic port_1_en;
-    strobe_t port_1_wen;
-    data_addr_t port_1_addr;
-    word_t port_1_data_w, port_1_data_r;
-    assign port_1_en = (dreq_hit_1 & ~w_to_w);       
-    assign port_1_wen = dreq_1.strobe;                    
-    assign port_1_addr = {hit_line_1, dreq_1_addr.index, dreq_1_addr.offset};                   
-    assign port_1_data_w = dreq_1.data;
-                                  
 
-    //Port 2 : dreq_2 & cbus
-    logic port_2_en;
-    strobe_t port_2_wen;
-    data_addr_t port_2_addr;
-    word_t port_2_data_w, port_2_data_r;
-    assign port_2_en = (state==IDLE) ? dreq_hit_2 : 1;
-    assign port_2_wen = (state==IDLE) ? (w_to_w ? (dreq_1.strobe | dreq_2.strobe) : dreq_2.strobe)
-                                      : (state==FETCH_1|state==FETCH_2) ? {BYTE_PER_DATA{1'b1}}
-                                                                        : '0;
-    assign port_2_addr = (state==IDLE) ? {hit_line_2, dreq_2_addr.index, dreq_2_addr.offset}
-                                       : miss_addr;
-    assign port_2_data_w = (state==IDLE) ? (w_to_w ? w_to_w_data : dreq_2.data)
-                                         : dcresp.data;
 
-    logic data_ok_reg;
-    
 
-    logic delay_counter;
 
+
+
+
+
+
+
+
+
+
+    //process dirty
     always_comb begin
         cache_dirty_new = cache_dirty;
         for (int i = 0; i < ASSOCIATIVITY*SET_NUM; i++) begin
@@ -286,23 +448,22 @@ module DCache (
                     if (dreq_hit_2 & |dreq_2.strobe) begin
                         cache_dirty_new[i] = ({hit_line_2, dreq_2_addr.index} == dirty_t'(i)) ? 1'b1 : cache_dirty[i];
                     end
+                    if (cache_hit_1 & |process_dreq_1.strobe) begin
+                        cache_dirty_new[i] = ({hit_reg.hit_line_1, process_dreq_1_addr.index} == dirty_t'(i)) ? 1'b1 : cache_dirty[i];
+                    end
                 end
-
                 FETCH_1: begin
-                    cache_dirty_new[i] = ({replace_line_1, dreq_1_addr.index} == dirty_t'(i)) ? '0 : cache_dirty[i];
+                    cache_dirty_new[i] = ({process_replace_line_1, process_dreq_1_addr.index} == dirty_t'(i)) ? (|process_dreq_1.strobe ? 1'b1 : '0) : cache_dirty[i];
                 end
             
                 FETCH_2: begin
-                    cache_dirty_new[i] = ({replace_line_2, dreq_2_addr.index} == dirty_t'(i)) ? '0 : cache_dirty[i];
                 end
 
                 default: begin   
                 end
             endcase
-        end
-         
+        end     
     end
-
     always_ff @(posedge clk) begin
         if (resetn) begin
             cache_dirty <= cache_dirty_new;
@@ -312,57 +473,171 @@ module DCache (
         end
     end
 
-    //hit时更新plru
-    // always_ff @(posedge clk) begin
-    //     if (resetn) begin
-    //         if (dreq_hit) begin
-    //             for (int i = 0; i < SET_NUM; i++) begin
-    //                 plru[i] <= (dreq_1_addr.index == index_t'(i)) ? ((dreq_1_addr.index == dreq_2_addr.index & dreq_2.valid) ? plru_new_2
-    //                                                                                                                             : plru_new_1)
-    //                                                                 : plru[i];
-    //             end
-    //             if (dreq_1_addr.index != dreq_2_addr.index & dreq_2.valid) begin
-    //                 for (int i = 0; i < SET_NUM; i++) begin
-    //                     plru[i] <= (dreq_2_addr.index == index_t'(i)) ? plru_new_2
-    //                                                                     : plru[i];
-    //                 end
-    //             end
-    //         end    
-    //     end
-    //     else begin
-    //         plru <= '0;
-    //     end    
-    // end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    assign addr_same = (process_dreq_1_addr[31:2] == process_dreq_2_addr[31:2]) & (process_dreq_1.valid & process_dreq_2.valid) & (process_dreq_1.is_uncached & process_dreq_2.is_uncached);
+
+    //W -> W
+    assign w_to_w = addr_same & |process_dreq_1.strobe & |process_dreq_2.strobe;
+    assign w_to_w_data = (get_mask(process_dreq_2.strobe)
+                        & process_dreq_2.data)
+                        | (get_mask(process_dreq_1.strobe ^ process_dreq_2.strobe)
+                        & process_dreq_1.data);
+
+    //W -> R
+    assign w_to_r = addr_same & |process_dreq_1.strobe & ~|process_dreq_2.strobe;
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            w_to_r_reg <= w_to_r;
+
+            w_to_r_data <= process_dreq_1.data;
+            w_to_r_strobe <= process_dreq_1.strobe;
+        end
+        else begin
+            w_to_r_reg <= '0;
+
+            w_to_r_data <= '0;
+            w_to_r_strobe <= '0;
+        end
+    end
+    word_t w_to_r_resp_data;
+    assign w_to_r_resp_data = (get_mask(w_to_r_strobe)
+                                & w_to_r_data)
+                                | (get_mask(w_to_r_strobe ^ {4{1'b1}})
+                                & port_1_data_r);
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    assign finish = (process_dreq_2.valid & ~hit_reg.hit_2) ? (state==FETCH_2 & dcresp.last)
+                                                           : (state==FETCH_1 & dcresp.last);
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            finish_reg <= finish;
+        end
+        else begin
+            finish_reg <= '0;
+        end
+    end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //Port 1 : dreq_1 
+    assign port_1_en = (hit_reg.dreq_hit | finish_reg) & ~w_to_w;       
+    assign port_1_wen = process_dreq_1.strobe;                    
+    assign port_1_addr.line = hit_reg.dreq_hit_1 ? hit_reg.hit_line_1
+                                                 : replace_line_1_reg;   
+    assign port_1_addr.index = process_dreq_1_addr.index;   
+    assign port_1_addr.offset = process_dreq_1_addr.offset;                   
+    assign port_1_data_w = process_dreq_1.data;
+                                  
+
+    //Port 2 : dreq_2 & cbus
+    assign port_2_en = (state==IDLE) ? (hit_reg.dreq_hit | finish_reg) : 1;
+    assign port_2_wen = (state==IDLE) ? (w_to_w ? (process_dreq_1.strobe | process_dreq_2.strobe) : process_dreq_2.strobe)
+                                      : (state==FETCH_1|state==FETCH_2) ? {BYTE_PER_DATA{1'b1}}
+                                                                        : '0;
+    assign port_2_addr = (state==IDLE) ? (hit_reg.dreq_hit_1 ? {hit_reg.hit_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset} 
+                                                            : {replace_line_2_reg, process_dreq_2_addr.index, process_dreq_2_addr.offset})
+                                       : miss_addr;
+    assign port_2_data_w = (state==IDLE) ? (w_to_w ? w_to_w_data : process_dreq_2.data)
+                                         : dcresp.data;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //FSM
     always_ff @(posedge clk) begin
         if (resetn) begin
             unique case (state)
                 IDLE: begin
-                    if (dreq_1.valid & ~hit_1) begin
-                        if (cache_dirty[{replace_line_1, dreq_1_addr.index}] & meta_r_1[replace_line_1].valid) begin
-                            state <= WRITEBACK_1;
+                    if (~finish_reg) begin
+                        if (process_dreq_1.valid & ~hit_reg.hit_1) begin
+                            if (cache_dirty[{process_replace_line_1, process_dreq_1_addr.index}] & process_meta_r_1[process_replace_line_1].valid) begin
+                                state <= WRITEBACK_1;
+                            end
+                            else begin
+                                state <= FETCH_1;
+                            end
+                            miss_addr <= {process_replace_line_1, process_dreq_1_addr.index, process_dreq_1_addr.offset};
+                            offset_count <= process_dreq_1_addr.offset;
                         end
+
+                        else if (hit_reg.hit_1 & process_dreq_2.valid & ~hit_reg.hit_2) begin
+                            if (cache_dirty[{process_replace_line_2, process_dreq_2_addr.index}] & process_meta_r_2[process_replace_line_2].valid) begin
+                                state <= WRITEBACK_2;
+                            end
+                            else begin
+                                state <= FETCH_2;
+                            end
+                            miss_addr <= {process_replace_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset};
+                            offset_count <= process_dreq_2_addr.offset;
+                        end
+
                         else begin
-                            state <= FETCH_1;
                         end
-                        miss_addr <= {replace_line_1, dreq_1_addr.index, dreq_1_addr.offset};
-                        offset_count <= dreq_1_addr.offset;
+    
                     end
-
-                    else if (hit_1 & dreq_2.valid & ~hit_2) begin
-                        if (cache_dirty[{replace_line_2, dreq_2_addr.index}] & meta_r_2[replace_line_2].valid) begin
-                            state <= WRITEBACK_2;
-                        end
-                        else begin
-                            state <= FETCH_2;
-                        end
-                        miss_addr <= {replace_line_2, dreq_2_addr.index, dreq_2_addr.offset};
-                        offset_count <= dreq_2_addr.offset;
-                    end
-
-                    else begin
-                    end
-
+                    
                     delay_counter <= '0;
                 end
 
@@ -435,25 +710,34 @@ module DCache (
         end
     end
 
+    //Cbus
     always_comb begin
         cbus_addr = '0;
         unique case (state)
             FETCH_1: begin
-                cbus_addr = dreq_1_addr;
+                cbus_addr = process_dreq_1_addr;
             end
 
             WRITEBACK_1: begin
-                cbus_addr = dreq_1_addr;
-                cbus_addr.tag = meta_r_1[replace_line_1].tag;
+                cbus_addr = process_dreq_1_addr;
+                cbus_addr.tag = process_meta_r_1[process_replace_line_1].tag;
             end
 
             FETCH_2: begin
-                cbus_addr = dreq_2_addr;
+                cbus_addr = process_dreq_2_addr;
             end
 
             WRITEBACK_2: begin
-                cbus_addr = dreq_2_addr;
-                cbus_addr.tag = meta_r_2[replace_line_2].tag;
+                cbus_addr = process_dreq_2_addr;
+                cbus_addr.tag = process_meta_r_2[process_replace_line_2].tag;
+            end
+
+            UNCACHE_1: begin
+                cbus_addr = process_dreq_1_addr;
+            end
+
+            UNCACHE_2: begin
+                cbus_addr = process_dreq_2_addr;
             end
 
             default: begin   
@@ -461,66 +745,26 @@ module DCache (
         endcase
     end
 
-    always_comb begin
-        meta_w = meta_r_1;
-        if (resetn) begin
-            unique case (state)
-                FETCH_1: begin
-                    for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                        if (replace_line_1 == associativity_t'(i)) begin
-                            meta_w[i].tag = dreq_1_addr.tag;
-                            meta_w[i].valid = 1'b1;
-                        end
-                        else begin
-                        end
-                    end
-                    
-                end
 
-                FETCH_2: begin
-                    for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                        if (replace_line_2 == associativity_t'(i)) begin
-                            meta_w[i].tag = dreq_2_addr.tag;
-                            meta_w[i].valid = 1'b1;
-                        end
-                        else begin
-                        end
-                    end
-                end
-                
-                default: begin   
-                end
-            endcase    
-        end
-        else begin
-            meta_w = '0;
-        end
-        
-    end
 
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            data_ok_reg <= dreq_hit;
 
-            w_to_r_reg <= w_to_r;
-            w_to_r_data <= dreq_1.data;
-            w_to_r_strobe <= dreq_1.strobe;
-        end
-        else begin
-            data_ok_reg <= '0;
 
-            w_to_r_reg <= '0;
-            w_to_r_data <= '0;
-            w_to_r_strobe <= '0;
-        end
-    end
 
-    word_t w_to_r_resp_data;
-    assign w_to_r_resp_data = (get_mask(w_to_r_strobe)
-                                & w_to_r_data)
-                                | (get_mask(w_to_r_strobe ^ {4{1'b1}})
-                                & port_1_data_r);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     RAM_TrueDualPort #(
         .ADDR_WIDTH(DATA_ADDR_BITS),
         .DATA_WIDTH(DATA_WIDTH),
@@ -544,23 +788,61 @@ module DCache (
     );
 
 
-    //DBus
-    assign dresp_1.addr_ok = dreq_hit;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            data_ok_reg <= hit_reg.dreq_hit | finish_reg;
+        end
+        else begin
+            data_ok_reg <= '0;
+        end
+    end
+
+    //DBus !!!!
+    assign dresp_1.addr_ok = hit_reg.dreq_hit | finish_reg;
     assign dresp_1.data_ok = data_ok_reg;
     assign dresp_1.data = port_1_data_r;
 
-    assign dresp_2.addr_ok = dreq_hit;
+    assign dresp_2.addr_ok = hit_reg.dreq_hit | finish_reg;
     assign dresp_2.data_ok = data_ok_reg;
     assign dresp_2.data = w_to_r_reg ? w_to_r_resp_data : port_2_data_r;
 
     //CBus
-    assign dcreq.valid = state == FETCH_1 | state == FETCH_2 | (state == WRITEBACK_1 & delay_counter) | (state == WRITEBACK_2 & delay_counter);     
-    assign dcreq.is_write = state == WRITEBACK_1 | state == WRITEBACK_2;  
+    assign dcreq.valid = state==FETCH_1 | state==FETCH_2 | (state==WRITEBACK_1 & delay_counter) | (state==WRITEBACK_2 & delay_counter) | state==UNCACHE_1 | state==UNCACHE_2;     
+    assign dcreq.is_write = state==WRITEBACK_1 | state==WRITEBACK_2 | (state==UNCACHE_1 & |process_dreq_1.strobe) | (state==UNCACHE_2 & |process_dreq_2.strobe);  
     assign dcreq.size = MSIZE4;      
     assign dcreq.addr = cbus_addr;      
     assign dcreq.strobe = {BYTE_PER_DATA{1'b1}};   
-    assign dcreq.data = buffer[offset_count];      
-    assign dcreq.len = MLEN16;  
+    assign dcreq.data = state==UNCACHE_1 ? process_dreq_1.data
+                        : state==UNCACHE_2 ? process_dreq_2.data : buffer[offset_count];    
+    assign dcreq.len = (state==UNCACHE_1 | state==UNCACHE_2) ? MLEN1 : MLEN16;  
 
     `UNUSED_OK({clk, resetn, dreq_1, dreq_2, dcresp});
 endmodule

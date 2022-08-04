@@ -166,6 +166,7 @@ typedef struct packed {
     msize_t  size;    // number of bytes
     strobe_t strobe;  // which bytes are enabled? set to zeros for read request
     word_t   data;    // the data to write
+    logic is_uncached;
 } dbus_req_t;
 
 typedef struct packed {
