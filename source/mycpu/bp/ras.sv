@@ -10,7 +10,7 @@ module ras #(
     localparam type ras_addr_t = logic [RAS_ADDR_BITS-1:0]
 ) (
     input logic clk, resetn,
-    input logic push, pop,
+    input logic push, pop, flush_ras,
     input addr_t ret_pc_push,
     output addr_t ret_pc_pop, 
     output u1 fail
@@ -34,7 +34,7 @@ module ras #(
     end
 
     always_ff @(posedge clk) begin
-        if(~resetn) begin
+        if(~resetn | flush_ras) begin
             empty <= 1'b1;
         end else begin
             empty <= empty_nxt;
@@ -48,7 +48,7 @@ module ras #(
     end
 
     always_ff @(posedge clk) begin
-        if(~resetn) begin
+        if(~resetn | flush_ras) begin
             overflow <= 1'b0;
         end else begin
             overflow <= overflow_nxt;
@@ -65,7 +65,7 @@ module ras #(
     end
 
     always_ff @(posedge clk) begin
-        if(~resetn) begin
+        if(~resetn | flush_ras) begin
             top <= '0;
         end else begin
             top <= top_nxt;
@@ -82,7 +82,7 @@ module ras #(
     end
 
     always_ff @(posedge clk) begin
-        if(~resetn) begin
+        if(~resetn | flush_ras) begin
             overflow_counter <= '0;
         end else begin
             overflow_counter <= overflow_counter_nxt;
@@ -97,7 +97,7 @@ module ras #(
     end
 
     always_ff @(posedge clk) begin
-        if(~resetn) begin
+        if(~resetn | flush_ras) begin
             fuck_high <= '0;
         end else begin
             fuck_high <= fuck_high_nxt;
@@ -112,7 +112,7 @@ module ras #(
     end
 
     always_ff @(posedge clk) begin
-        if(~resetn) begin
+        if(~resetn | flush_ras) begin
             fuck_low <= '0;
         end else begin
             fuck_low <= fuck_low_nxt;
