@@ -64,13 +64,13 @@ module cache_manage (
     always_comb begin
         mmu_dreq_1 = dreq_1;
         mmu_dreq_1.addr = mmu_dreq_1_addr;
-        mmu_dreq_1.is_uncached = dreq_1.addr[31:29]==3'b101;
     end
+    assign dreq_1_uncache = dreq_1.addr[31:29]==3'b101;
     always_comb begin
         mmu_dreq_2 = dreq_2;
         mmu_dreq_2.addr = mmu_dreq_2_addr;
-        mmu_dreq_2.is_uncached = dreq_2.addr[31:29]==3'b101;
     end
+    assign dreq_2_uncache = dreq_2.addr[31:29]==3'b101;
     assign dresp = mmu_dresp;
 
 
@@ -99,7 +99,9 @@ module cache_manage (
         .clk, 
         .resetn,
         .dreq_1(mmu_dreq_1),
+        .dreq_1_is_uncached(dreq_1_uncache),
         .dreq_2(mmu_dreq_2),
+        .dreq_2_is_uncached(dreq_2_uncache),
         .dresp(mmu_dresp),
         .dcreq(d_cbus_req),
         .dcresp(d_cbus_resp)

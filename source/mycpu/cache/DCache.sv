@@ -10,7 +10,9 @@ module DCache (
     input logic clk, resetn,
 
     input  dbus_req_t  dreq_1,
+    input logic dreq_1_is_uncached,
     input  dbus_req_t  dreq_2,
+    input logic dreq_2_is_uncached,
     output dbus_resp_t dresp,
     output cbus_req_t  dcreq,
     input  cbus_resp_t dcresp
@@ -178,6 +180,8 @@ module DCache (
 
     logic process_cache_hit_1, process_cache_hit_2;
 
+    logic process_dreq_1_is_uncached, process_dreq_2_is_uncached;
+
     //DCache_1 -> DCache_2
     logic stall_finish_1;
     logic stall_finish_2;
@@ -219,6 +223,7 @@ module DCache (
     logic cache_dirty_1, cache_dirty_2;
     logic fetch_1_end, fetch_2_end, writeback_1_end, writeback_2_end, uncache_1_end, uncache_2_end;
 
+    word_t data_1, data_2;
 
 
 
@@ -341,8 +346,8 @@ module DCache (
         end
     end
     
-    assign cache_hit_1 = ~dreq_1.is_uncached & hit_1;
-    assign cache_hit_2 = ~dreq_2.is_uncached & hit_2;
+    assign cache_hit_1 = ~dreq_1_is_uncached & hit_1;
+    assign cache_hit_2 = ~dreq_2_is_uncached & hit_2;
     assign dreq_en = (~dreq_1.valid|cache_hit_1) & (~dreq_2.valid|cache_hit_2);
     // assign miss_1 = dreq_1.valid & ~hit_1 & ((dreq_2.valid & hit_2) | ~dreq_2.valid);
     // assign miss_2 = dreq_2.valid & ~hit_2;
@@ -405,7 +410,9 @@ module DCache (
                 process_dreq_1 <= dreq_1;
                 process_dreq_2 <= dreq_2;
                 process_meta_r_1 <= meta_r_1;
-                process_meta_r_2 <= meta_r_2;    
+                process_meta_r_2 <= meta_r_2;   
+                process_dreq_1_is_uncached <= dreq_1_is_uncached;
+                process_dreq_2_is_uncached <= dreq_2_is_uncached; 
             end
             
         end
@@ -415,6 +422,8 @@ module DCache (
             process_dreq_2 <= '0;
             process_meta_r_1 <= '0;
             process_meta_r_2 <= '0; 
+            process_dreq_1_is_uncached <= '0;
+            process_dreq_2_is_uncached <= '0; 
         end
     end
     /* ********************** */
@@ -448,8 +457,8 @@ module DCache (
     //process PLRU 
     assign process_dreq_1_addr = process_dreq_1.addr;
     assign process_dreq_2_addr = process_dreq_2.addr;
-    assign process_cache_hit_1 = process_hit.hit_1 & process_dreq_1.valid & ~process_dreq_1.is_uncached;
-    assign process_cache_hit_2 = process_hit.hit_2 & process_dreq_2.valid & ~process_dreq_2.is_uncached;
+    assign process_cache_hit_1 = process_hit.hit_1 & process_dreq_1.valid & ~process_dreq_1_is_uncached;
+    assign process_cache_hit_2 = process_hit.hit_2 & process_dreq_2.valid & ~process_dreq_2_is_uncached;
 
     
     assign index_equal = process_dreq_1_addr.index==process_dreq_2_addr.index;
@@ -561,7 +570,7 @@ module DCache (
 
 
     
-    assign addr_same = (process_dreq_1_addr[31:2] == process_dreq_2_addr[31:2]) & (process_dreq_1.valid & process_dreq_2.valid) & (process_dreq_1.is_uncached & process_dreq_2.is_uncached);
+    assign addr_same = (process_dreq_1_addr[31:2] == process_dreq_2_addr[31:2]) & (process_dreq_1.valid & process_dreq_2.valid) & (process_dreq_1_is_uncached & process_dreq_2_is_uncached);
 
     //W -> W
     assign w_to_w = addr_same & |process_dreq_1.strobe & |process_dreq_2.strobe;
@@ -613,9 +622,9 @@ module DCache (
 
 
 
-    assign finish_state = (process_dreq_2.valid & process_dreq_2.is_uncached) ? state==UNCACHE_2
-                            : (process_dreq_2.valid & ~process_dreq_2.is_uncached & ~process_hit.hit_2) ? state==FETCH_2
-                            : (process_dreq_1.valid & process_dreq_1.is_uncached) ? state==UNCACHE_1 : state==FETCH_1;
+    assign finish_state = (process_dreq_2.valid & process_dreq_2_is_uncached) ? state==UNCACHE_2
+                            : (process_dreq_2.valid & ~process_dreq_2_is_uncached & ~process_hit.hit_2) ? state==FETCH_2
+                            : (process_dreq_1.valid & process_dreq_1_is_uncached) ? state==UNCACHE_1 : state==FETCH_1;
     assign finish = finish_state & dcresp.last;
     
 
@@ -649,7 +658,7 @@ module DCache (
 
 
     //Port 1 : dreq_1 
-    assign port_1_en = (process_hit.dreq_en | finish_reg) & ~w_to_w & ~process_dreq_1.is_uncached;       
+    assign port_1_en = (process_hit.dreq_en | finish_reg) & ~w_to_w & ~process_dreq_1_is_uncached;       
     assign port_1_wen = process_dreq_1.strobe;                    
     assign port_1_addr.line = process_hit.hit_1 ? process_hit.hit_line_1 : replace_line_1_reg;   
     assign port_1_addr.index = process_dreq_1_addr.index;   
@@ -658,7 +667,7 @@ module DCache (
                                   
 
     //Port 2 : dreq_2 & cbus
-    assign port_2_en = (state==IDLE) ? ((process_hit.dreq_en | finish_reg) & ~process_dreq_1.is_uncached) : 1;
+    assign port_2_en = (state==IDLE) ? ((process_hit.dreq_en | finish_reg) & ~process_dreq_1_is_uncached) : 1;
     assign port_2_wen = (state==IDLE) ? (w_to_w ? (process_dreq_1.strobe | process_dreq_2.strobe) : process_dreq_2.strobe)
                                       : (state==FETCH_1|state==FETCH_2) ? {BYTE_PER_DATA{1'b1}} : '0;
     assign port_2_addr = (state==IDLE) ? (process_hit.hit_1 ? {process_hit.hit_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset} 
@@ -697,7 +706,7 @@ module DCache (
         if (resetn) begin
             unique case (state)
                 IDLE: begin
-                    if (process_dreq_1.valid & process_dreq_1.is_uncached & ~uncache_1_end) begin
+                    if (process_dreq_1.valid & process_dreq_1_is_uncached & ~uncache_1_end) begin
                         state <= UNCACHE_1;
                     end
                     else if (process_dreq_1.valid & ~process_hit.hit_1 & ~fetch_1_end) begin
@@ -705,7 +714,7 @@ module DCache (
                         miss_addr <= {process_replace_line_1, process_dreq_1_addr.index, process_dreq_1_addr.offset};
                         offset_count <= process_dreq_1_addr.offset;
                     end
-                    else if (process_dreq_2.valid & process_dreq_2.is_uncached & ~uncache_2_end) begin
+                    else if (process_dreq_2.valid & process_dreq_2_is_uncached & ~uncache_2_end) begin
                         state <= UNCACHE_2;
                     end
                     else if (process_dreq_2.valid & ~process_hit.hit_2 & fetch_2_end) begin
@@ -1002,9 +1011,10 @@ module DCache (
     //DBus !!!!
     assign dresp.addr_ok = process_hit.dreq_en | finish_reg;
     assign dresp.data_ok = data_ok_reg;
-    assign dresp.data_1 = process_dreq_1.is_uncached ? uncached_data_1 : port_1_data_r;
-    assign dresp.data_2 = process_dreq_2.is_uncached ? uncached_data_2
+    assign data_1 = process_dreq_1_is_uncached ? uncached_data_1 : port_1_data_r;
+    assign data_2 = process_dreq_2_is_uncached ? uncached_data_2
                                                     : w_to_r_reg ? w_to_r_resp_data : port_2_data_r;
+    assign dresp.data = {data_2, data_1};
 
 
 

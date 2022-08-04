@@ -166,14 +166,12 @@ typedef struct packed {
     msize_t  size;    // number of bytes
     strobe_t strobe;  // which bytes are enabled? set to zeros for read request
     word_t   data;    // the data to write
-    logic is_uncached;
 } dbus_req_t;
 
 typedef struct packed {
     logic  addr_ok;  // is the address accepted by cache?
     logic  data_ok;  // is the field "data" valid?
-    word_t data_1;
-    word_t data_2;     // the data read from cache
+    double_word_t data;     // the data read from cache
 } dbus_resp_t;
 
 /**
