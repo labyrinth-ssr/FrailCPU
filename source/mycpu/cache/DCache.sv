@@ -181,6 +181,7 @@ module DCache (
     logic process_cache_hit_1, process_cache_hit_2;
 
     logic process_dreq_1_is_uncached, process_dreq_2_is_uncached;
+    logic uncache_1_flag, uncache_2_flag;
 
     //DCache_1 -> DCache_2
     logic stall_finish_1;
@@ -208,7 +209,7 @@ module DCache (
     word_t port_2_data_w, port_2_data_r;
 
     //FETCH结束,下一周期addr_ok
-    logic finish_state;
+    state_t finish_state;
     logic finish, finish_reg;
 
     //
@@ -224,6 +225,8 @@ module DCache (
     logic fetch_1_end, fetch_2_end, writeback_1_end, writeback_2_end, uncache_1_end, uncache_2_end;
 
     word_t data_1, data_2;
+
+    logic same_line;
 
 
 
@@ -249,8 +252,8 @@ module DCache (
     assign dreq_1_addr = dreq_1.addr;
     assign dreq_2_addr = dreq_2.addr;
     assign meta_en = (~resetn|state==FETCH_1|state==FETCH_2) ? 1'b1 : 0;
-    assign meta_w_addr = resetn ? ((state==FETCH_2) ? dreq_2_addr.index
-                                                    : dreq_1_addr.index)
+    assign meta_w_addr = resetn ? ((state==FETCH_2) ? process_dreq_2_addr.index
+                                                    : process_dreq_1_addr.index)
                                 : reset_counter[INDEX_BITS-1:0];
     always_ff @(posedge clk) begin
         if (meta_en) begin
@@ -467,14 +470,19 @@ module DCache (
                                         
     always_comb begin
         plru_new = plru;
-        for (int i = 0; i < SET_NUM; i++) begin
-            if (process_dreq_1_addr.index == index_t'(i)) begin
-                plru_new[i] = process_cache_hit_1 ? ~process_hit.hit_line_1
-                            : (state==FETCH_1 & dcresp.last) ? ~process_replace_line_1 : plru[i];
+        for (int i = 0; i < SET_NUM; i++) begin         
+            if (process_cache_hit_1) begin
+                plru_new[i] = process_dreq_1_addr.index == index_t'(i) ? ~process_hit.hit_line_1 : plru[i];
             end
-            if (process_dreq_2_addr.index == index_t'(i)) begin
-                plru_new[i] = process_cache_hit_2 ? ~process_hit.hit_line_2
-                            : (state==FETCH_2 & dcresp.last) ? ~process_replace_line_2 : plru[i];
+            else if (state==FETCH_1 & dcresp.last) begin
+                plru_new[i] = process_dreq_1_addr.index == index_t'(i) ? ~process_replace_line_1 : plru[i];
+            end
+
+            if (process_cache_hit_2) begin
+                plru_new[i] = process_dreq_2_addr.index == index_t'(i) ? ~process_hit.hit_line_2 : plru[i];
+            end
+            else if (state==FETCH_2 & dcresp.last) begin
+                plru_new[i] = process_dreq_2_addr.index == index_t'(i) ? ~process_replace_line_2 : plru[i];
             end
         end
     end
@@ -497,7 +505,8 @@ module DCache (
             end
         end
         else begin
-            plru <= '0;
+            replace_line_1_reg <= '0;
+            replace_line_2_reg <= '0;
         end
     end
     /* ********************** */
@@ -622,10 +631,10 @@ module DCache (
 
 
 
-    assign finish_state = (process_dreq_2.valid & process_dreq_2_is_uncached) ? state==UNCACHE_2
-                            : (process_dreq_2.valid & ~process_dreq_2_is_uncached & ~process_hit.hit_2) ? state==FETCH_2
-                            : (process_dreq_1.valid & process_dreq_1_is_uncached) ? state==UNCACHE_1 : state==FETCH_1;
-    assign finish = finish_state & dcresp.last;
+    assign finish_state = (process_dreq_2.valid & process_dreq_2_is_uncached) ? UNCACHE_2
+                            : (process_dreq_2.valid & ~process_dreq_2_is_uncached & ~process_hit.hit_2 & ~same_line) ? FETCH_2
+                            : (process_dreq_1.valid & process_dreq_1_is_uncached) ? UNCACHE_1 : FETCH_1;
+    assign finish = state==finish_state & dcresp.last;
     
 
     always_ff @(posedge clk) begin
@@ -670,7 +679,7 @@ module DCache (
     assign port_2_en = (state==IDLE) ? ((process_hit.dreq_en | finish_reg) & ~process_dreq_1_is_uncached) : 1;
     assign port_2_wen = (state==IDLE) ? (w_to_w ? (process_dreq_1.strobe | process_dreq_2.strobe) : process_dreq_2.strobe)
                                       : (state==FETCH_1|state==FETCH_2) ? {BYTE_PER_DATA{1'b1}} : '0;
-    assign port_2_addr = (state==IDLE) ? (process_hit.hit_1 ? {process_hit.hit_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset} 
+    assign port_2_addr = (state==IDLE) ? (process_hit.hit_2 ? {process_hit.hit_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset} 
                                                             : {replace_line_2_reg, process_dreq_2_addr.index, process_dreq_2_addr.offset})
                                        : miss_addr;
     assign port_2_data_w = (state==IDLE) ? (w_to_w ? w_to_w_data : process_dreq_2.data)
@@ -698,104 +707,105 @@ module DCache (
 
 
 
-
+    assign same_line = process_dreq_1_addr[31:OFFSET_BITS+DATA_BITS]==process_dreq_2_addr[31:OFFSET_BITS+DATA_BITS];
 
 
     //FSM
     always_ff @(posedge clk) begin
         if (resetn) begin
-            unique case (state)
-                IDLE: begin
-                    if (process_dreq_1.valid & process_dreq_1_is_uncached & ~uncache_1_end) begin
-                        state <= UNCACHE_1;
+            if (~finish_reg) begin
+                unique case (state)
+                    IDLE: begin
+                        if (process_dreq_1.valid & process_dreq_1_is_uncached & ~uncache_1_end) begin
+                            state <= UNCACHE_1;
+                        end
+                        else if (process_dreq_1.valid & ~process_hit.hit_1 & ~fetch_1_end) begin
+                            state <= (cache_dirty_1 & ~writeback_1_end) ? WRITEBACK_1 : FETCH_1;
+                            miss_addr <= {process_replace_line_1, process_dreq_1_addr.index, process_dreq_1_addr.offset};
+                            offset_count <= process_dreq_1_addr.offset;
+                        end
+                        else if (process_dreq_2.valid & process_dreq_2_is_uncached & ~uncache_2_end) begin
+                            state <= UNCACHE_2;
+                        end
+                        else if (process_dreq_2.valid & ~process_hit.hit_2 & ~fetch_2_end & ~same_line) begin
+                            state <= (cache_dirty_2 & writeback_2_end) ? WRITEBACK_2 : FETCH_2;
+                            miss_addr <= {process_replace_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset};
+                            offset_count <= process_dreq_2_addr.offset;
+                        end
+                        else begin
+                        end
+                        delay_counter <= '0;
                     end
-                    else if (process_dreq_1.valid & ~process_hit.hit_1 & ~fetch_1_end) begin
-                        state <= (cache_dirty_1 & ~writeback_1_end) ? WRITEBACK_1 : FETCH_1;
-                        miss_addr <= {process_replace_line_1, process_dreq_1_addr.index, process_dreq_1_addr.offset};
-                        offset_count <= process_dreq_1_addr.offset;
-                    end
-                    else if (process_dreq_2.valid & process_dreq_2_is_uncached & ~uncache_2_end) begin
-                        state <= UNCACHE_2;
-                    end
-                    else if (process_dreq_2.valid & ~process_hit.hit_2 & fetch_2_end) begin
-                        state <= (cache_dirty_2 & writeback_2_end) ? WRITEBACK_2 : FETCH_2;
-                        miss_addr <= {process_replace_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset};
-                        offset_count <= process_dreq_2_addr.offset;
-                    end
-                    else begin
-                    end
-                    delay_counter <= '0;
-                end
 
-                FETCH_1: begin
-                    if (dcresp.ready) begin
-                        state  <= dcresp.last ? IDLE : FETCH_1; 
+                    FETCH_1: begin
+                        if (dcresp.ready) begin
+                            state  <= dcresp.last ? IDLE : FETCH_1; 
+                            miss_addr.offset <= miss_addr.offset + 1;  
+                        end
+                        
+                    end
+
+                    WRITEBACK_1: begin
+                        if (dcresp.ready) begin
+                            state  <= dcresp.last ? FETCH_1 : WRITEBACK_1;
+                            offset_count <= offset_count + 1;
+                        end
+
                         miss_addr.offset <= miss_addr.offset + 1;  
-                    end
-                    
-                end
+                        buffer_offset <= miss_addr.offset;
 
-                WRITEBACK_1: begin
-                    if (dcresp.ready) begin
-                        state  <= dcresp.last ? FETCH_1 : WRITEBACK_1;
-                        offset_count <= offset_count + 1;
-                    end
+                        for (int i = 0; i < DATA_PER_LINE; i++) begin
+                            buffer[i] <= (buffer_offset == offset_t'(i)) ? port_2_data_r : buffer[i];
+                        end
+                        
+                        if (dcresp.last) begin
+                            miss_addr.offset <= dreq_1_addr.offset;  
+                        end
 
-                    miss_addr.offset <= miss_addr.offset + 1;  
-                    buffer_offset <= miss_addr.offset;
+                        delay_counter <= 1'b1;
 
-                    for (int i = 0; i < DATA_PER_LINE; i++) begin
-                        buffer[i] <= (buffer_offset == offset_t'(i)) ? port_2_data_r : buffer[i];
-                    end
-                    
-                    if (dcresp.last) begin
-                        miss_addr.offset <= dreq_1_addr.offset;  
+                        
                     end
 
-                    delay_counter <= 1'b1;
+                    FETCH_2: begin
+                        if (dcresp.ready) begin
+                            state  <= dcresp.last ? IDLE : FETCH_2;
+                            miss_addr.offset <= miss_addr.offset + 1;  
+                        end
+                        
+                    end
 
-                    
-                end
+                    WRITEBACK_2: begin
+                        if (dcresp.ready) begin
+                            state  <= dcresp.last ? FETCH_2 : WRITEBACK_2;
+                            offset_count <= offset_count + 1;
+                        end
 
-                FETCH_2: begin
-                    if (dcresp.ready) begin
-                        state  <= dcresp.last ? IDLE : FETCH_2;
                         miss_addr.offset <= miss_addr.offset + 1;  
-                    end
-                    
-                end
+                        buffer_offset <= miss_addr.offset;
+                        for (int i = 0; i < DATA_PER_LINE; i++) begin
+                            buffer[i] <= (buffer_offset == offset_t'(i)) ? port_2_data_r : buffer[i];
+                        end
 
-                WRITEBACK_2: begin
-                    if (dcresp.ready) begin
-                        state  <= dcresp.last ? FETCH_2 : WRITEBACK_2;
-                        offset_count <= offset_count + 1;
-                    end
+                        if (dcresp.last) begin
+                            miss_addr.offset <= dreq_2_addr.offset;  
+                        end
 
-                    miss_addr.offset <= miss_addr.offset + 1;  
-                    buffer_offset <= miss_addr.offset;
-                    for (int i = 0; i < DATA_PER_LINE; i++) begin
-                        buffer[i] <= (buffer_offset == offset_t'(i)) ? port_2_data_r : buffer[i];
+                        delay_counter <= 1'b1;
                     end
 
-                    if (dcresp.last) begin
-                        miss_addr.offset <= dreq_2_addr.offset;  
+                    UNCACHE_1: begin
+                        state  <= dcresp.last ? IDLE : UNCACHE_1; 
                     end
 
-                    delay_counter <= 1'b1;
-                    writeback_1_end <= 1'b1;
-                end
+                    UNCACHE_2: begin
+                        state  <= dcresp.last ? IDLE : UNCACHE_2; 
+                    end
 
-                UNCACHE_1: begin
-                    state  <= dcresp.last ? IDLE : UNCACHE_1; 
-                end
-
-                UNCACHE_2: begin
-                    state  <= dcresp.last ? IDLE : UNCACHE_2; 
-                end
-
-                default: begin   
-                end
-            endcase  
+                    default: begin   
+                    end
+                endcase  
+            end
         end
         else begin
             state <= IDLE;
@@ -840,13 +850,21 @@ module DCache (
 
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (finish) begin
+            if (finish_reg) begin
                 fetch_1_end <= '0;
                 writeback_1_end <= '0;
                 fetch_2_end <= '0;
                 writeback_2_end <= '0;
                 uncache_1_end <= '0;
                 uncache_2_end <= '0;
+            end
+            else if (finish) begin
+                fetch_1_end <= 1'b1;
+                writeback_1_end <= 1'b1;
+                fetch_2_end <= 1'b1;
+                writeback_2_end <= 1'b1;
+                uncache_1_end <= 1'b1;
+                uncache_2_end <= 1'b1;
             end
             else begin
                 fetch_1_end <= state==FETCH_1 ? 1'b1 : fetch_1_end;
@@ -895,7 +913,7 @@ module DCache (
     always_comb begin
         cbus_addr = '0;
         unique case (state)
-            FETCH_1|UNCACHE_1: begin
+            FETCH_1: begin
                 cbus_addr = process_dreq_1_addr;
             end
 
@@ -904,13 +922,21 @@ module DCache (
                 cbus_addr.tag = process_meta_r_1[process_replace_line_1].tag;
             end
 
-            FETCH_2|UNCACHE_2: begin
+            FETCH_2: begin
                 cbus_addr = process_dreq_2_addr;
             end
 
             WRITEBACK_2: begin
                 cbus_addr = process_dreq_2_addr;
                 cbus_addr.tag = process_meta_r_2[process_replace_line_2].tag;
+            end
+
+            UNCACHE_1: begin
+                cbus_addr = process_dreq_1_addr;
+            end
+
+            UNCACHE_2: begin
+                cbus_addr = process_dreq_2_addr;
             end
 
             default: begin   
@@ -1008,11 +1034,22 @@ module DCache (
         end
     end
 
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            uncache_1_flag <= process_dreq_1_is_uncached;
+            uncache_2_flag <= process_dreq_2_is_uncached;
+        end 
+        else begin
+            uncache_1_flag <= '0;
+            uncache_2_flag <= '0;
+        end   
+    end
+
     //DBus !!!!
-    assign dresp.addr_ok = process_hit.dreq_en | finish_reg;
+    assign dresp.addr_ok = en;
     assign dresp.data_ok = data_ok_reg;
-    assign data_1 = process_dreq_1_is_uncached ? uncached_data_1 : port_1_data_r;
-    assign data_2 = process_dreq_2_is_uncached ? uncached_data_2
+    assign data_1 = uncache_1_flag ? uncached_data_1 : port_1_data_r;
+    assign data_2 = uncache_2_flag ? uncached_data_2
                                                     : w_to_r_reg ? w_to_r_resp_data : port_2_data_r;
     assign dresp.data = {data_2, data_1};
 
