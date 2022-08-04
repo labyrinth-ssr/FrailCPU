@@ -16,7 +16,6 @@ module memory3
     output memory_data_t [1:0] dataM,
     input  dbus_resp_t dresp,
     input dbus_req_t [1:0] dreq,
-    input logic d_wait,
     input logic resetn
 );
 u1 uncache;
