@@ -137,7 +137,7 @@ module DCache (
     //state
     state_t state;
 
-    //FETCH && WRITEBACK
+    //FETCH & WRITEBACK
     data_addr_t miss_addr;
     addr_t cbus_addr;
 
@@ -171,7 +171,7 @@ module DCache (
     logic [ASSOCIATIVITY-1:0] hit_1_bits, hit_2_bits;
     associativity_t hit_line_1, hit_line_2;
 
-    //hit && miss
+    //hit & miss
     logic cache_hit_1, cache_hit_2;
     logic dreq_en;
 
@@ -183,9 +183,6 @@ module DCache (
     logic process_dreq_1_is_uncached, process_dreq_2_is_uncached;
     logic uncache_1_flag, uncache_2_flag;
 
-    //DCache_1 -> DCache_2
-    logic stall_finish_1;
-    logic stall_finish_2;
 
     logic addr_same;
     logic w_to_w;
@@ -328,7 +325,7 @@ module DCache (
 
     //stage1 计算hit 
     for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
-        assign hit_1_bits[i] = meta_r_1[i].valid && meta_r_1[i].tag == dreq_1_addr.tag;
+        assign hit_1_bits[i] = meta_r_1[i].valid & meta_r_1[i].tag == dreq_1_addr.tag;
     end
     assign hit_1 = |hit_1_bits;
     always_comb begin
@@ -339,7 +336,7 @@ module DCache (
     end
 
     for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
-        assign hit_2_bits[i] = meta_r_2[i].valid && meta_r_2[i].tag == dreq_2_addr.tag;
+        assign hit_2_bits[i] = meta_r_2[i].valid & meta_r_2[i].tag == dreq_2_addr.tag;
     end
     assign hit_2 = |hit_2_bits;
     always_comb begin
@@ -407,8 +404,6 @@ module DCache (
                 process_hit.hit_2 <= hit_2;
                 process_hit.hit_line_1 <= hit_line_1;
                 process_hit.hit_line_2 <= hit_line_2;
-                // process_hit.dreq_hit_1 <= dreq_hit_1;
-                // process_hit.dreq_hit_2 <= dreq_hit_2;
                 process_hit.dreq_en <= dreq_en;
                 process_dreq_1 <= dreq_1;
                 process_dreq_2 <= dreq_2;
@@ -503,6 +498,9 @@ module DCache (
             if (state==FETCH_2 & dcresp.last) begin
                 replace_line_2_reg <= process_replace_line_2;
             end
+            else if (same_line & dcresp.last) begin
+                replace_line_2_reg <= process_replace_line_1;
+            end
         end
         else begin
             replace_line_1_reg <= '0;
@@ -579,7 +577,7 @@ module DCache (
 
 
     
-    assign addr_same = (process_dreq_1_addr[31:2] == process_dreq_2_addr[31:2]) & (process_dreq_1.valid & process_dreq_2.valid) & (process_dreq_1_is_uncached & process_dreq_2_is_uncached);
+    assign addr_same = (process_dreq_1_addr[31:2] == process_dreq_2_addr[31:2]) & (process_dreq_1.valid & process_dreq_2.valid) & (~process_dreq_1_is_uncached & ~process_dreq_2_is_uncached);
 
     //W -> W
     assign w_to_w = addr_same & |process_dreq_1.strobe & |process_dreq_2.strobe;
@@ -676,7 +674,7 @@ module DCache (
                                   
 
     //Port 2 : dreq_2 & cbus
-    assign port_2_en = (state==IDLE) ? ((process_hit.dreq_en | finish_reg) & ~process_dreq_1_is_uncached) : 1;
+    assign port_2_en = (state==IDLE) ? ((process_hit.dreq_en | finish_reg) & ~process_dreq_2_is_uncached) : 1;
     assign port_2_wen = (state==IDLE) ? (w_to_w ? (process_dreq_1.strobe | process_dreq_2.strobe) : process_dreq_2.strobe)
                                       : (state==FETCH_1|state==FETCH_2) ? {BYTE_PER_DATA{1'b1}} : '0;
     assign port_2_addr = (state==IDLE) ? (process_hit.hit_2 ? {process_hit.hit_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset} 
@@ -707,13 +705,13 @@ module DCache (
 
 
 
-    assign same_line = process_dreq_1_addr[31:OFFSET_BITS+DATA_BITS]==process_dreq_2_addr[31:OFFSET_BITS+DATA_BITS];
+    assign same_line = process_dreq_1_addr[31:OFFSET_BITS+DATA_BITS]==process_dreq_2_addr[31:OFFSET_BITS+DATA_BITS] & process_dreq_1.valid & ~process_dreq_1_is_uncached;
 
 
     //FSM
     always_ff @(posedge clk) begin
         if (resetn) begin
-            if (~finish_reg) begin
+            if (~en) begin
                 unique case (state)
                     IDLE: begin
                         if (process_dreq_1.valid & process_dreq_1_is_uncached & ~uncache_1_end) begin
@@ -728,7 +726,7 @@ module DCache (
                             state <= UNCACHE_2;
                         end
                         else if (process_dreq_2.valid & ~process_hit.hit_2 & ~fetch_2_end & ~same_line) begin
-                            state <= (cache_dirty_2 & writeback_2_end) ? WRITEBACK_2 : FETCH_2;
+                            state <= (cache_dirty_2 & ~writeback_2_end) ? WRITEBACK_2 : FETCH_2;
                             miss_addr <= {process_replace_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset};
                             offset_count <= process_dreq_2_addr.offset;
                         end
@@ -763,8 +761,6 @@ module DCache (
                         end
 
                         delay_counter <= 1'b1;
-
-                        
                     end
 
                     FETCH_2: begin
@@ -857,14 +853,6 @@ module DCache (
                 writeback_2_end <= '0;
                 uncache_1_end <= '0;
                 uncache_2_end <= '0;
-            end
-            else if (finish) begin
-                fetch_1_end <= 1'b1;
-                writeback_1_end <= 1'b1;
-                fetch_2_end <= 1'b1;
-                writeback_2_end <= 1'b1;
-                uncache_1_end <= 1'b1;
-                uncache_2_end <= 1'b1;
             end
             else begin
                 fetch_1_end <= state==FETCH_1 ? 1'b1 : fetch_1_end;
@@ -1005,7 +993,7 @@ module DCache (
 
     always_ff @(posedge clk) begin
         if (resetn) begin
-            data_ok_reg <= process_hit.dreq_en | finish_reg;
+            data_ok_reg <= en;
         end
         else begin
             data_ok_reg <= '0;
@@ -1050,7 +1038,7 @@ module DCache (
     assign dresp.data_ok = data_ok_reg;
     assign data_1 = uncache_1_flag ? uncached_data_1 : port_1_data_r;
     assign data_2 = uncache_2_flag ? uncached_data_2
-                                                    : w_to_r_reg ? w_to_r_resp_data : port_2_data_r;
+                    : w_to_r_reg ? w_to_r_resp_data : port_2_data_r;
     assign dresp.data = {data_2, data_1};
 
 
@@ -1082,9 +1070,11 @@ module DCache (
     //CBus
     assign dcreq.valid = state==FETCH_1 | state==FETCH_2 | (state==WRITEBACK_1 & delay_counter) | (state==WRITEBACK_2 & delay_counter) | state==UNCACHE_1 | state==UNCACHE_2;     
     assign dcreq.is_write = state==WRITEBACK_1 | state==WRITEBACK_2 | (state==UNCACHE_1 & |process_dreq_1.strobe) | (state==UNCACHE_2 & |process_dreq_2.strobe);  
-    assign dcreq.size = MSIZE4;      
+    assign dcreq.size = state==UNCACHE_1 ? process_dreq_1.size
+                        : state==UNCACHE_2 ? process_dreq_2.size : MSIZE4;      
     assign dcreq.addr = cbus_addr;      
-    assign dcreq.strobe = {BYTE_PER_DATA{1'b1}};   
+    assign dcreq.strobe = state==UNCACHE_1 ? process_dreq_1.strobe
+                        : state==UNCACHE_2 ? process_dreq_2.strobe : {BYTE_PER_DATA{1'b1}};    
     assign dcreq.data = state==UNCACHE_1 ? process_dreq_1.data
                         : state==UNCACHE_2 ? process_dreq_2.data : buffer[offset_count];    
     assign dcreq.len = (state==UNCACHE_1 | state==UNCACHE_2) ? MLEN1 : MLEN16;  
