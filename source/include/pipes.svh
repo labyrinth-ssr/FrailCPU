@@ -172,9 +172,9 @@ typedef struct packed {
 	creg_addr_t rdst;
 	u1 pre_b;
 	u1 is_jr_ra;
-	u1 branch_taken;
-	word_t target;
-	word_t dest_pc;
+	// u1 branch_taken;
+	// word_t target;
+	// word_t dest_pc;
 
 	cp0_control_t cp0_ctl;
 } issue_data_t;

@@ -191,16 +191,17 @@ module MyCore (
         .jr_ra_fail,
         // .decode_ret_pc,
         // .decode_taken,//预测跳转
-        .exe_pc(dataE[1].pc),
-        .is_taken(dataE[1].branch_taken),
-        .dest_pc(dataE[1].dest_pc),
-        .ret_pc(dataE[1].pc+8),
-        .is_jal(dataE[1].ctl.op==JAL),
-        .is_jalr(dataE[1].ctl.op==JALR),
-        .is_branch(dataE[1].ctl.branch),
-        .is_j(dataE[1].ctl.op==J),
-        .is_jr_ra_exe(dataE[1].is_jr_ra),
-        .pos(hit_bit)
+        .exe_pc(dataI_nxt[1].pc),
+        .is_taken(branch_takenI),
+        .dest_pc(dest_pcI),
+        .ret_pc(dataI_nxt[1].pc+8),
+        .is_jal(dataI_nxt[1].ctl.op==JAL),
+        .is_jalr(dataI_nxt[1].ctl.op==JALR),
+        .is_branch(dataI_nxt[1].ctl.branch),
+        .is_j(dataI_nxt[1].ctl.op==J),
+        .is_jr_ra_exe(dataI_nxt[1].is_jr_ra),
+        .pos(hit_bit),
+        .flush_ras('0)
     );
 
 

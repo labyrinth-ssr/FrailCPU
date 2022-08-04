@@ -253,6 +253,45 @@
         end
     end
 
+
+    // real fail_b;
+    // real total_b;
+    // logic[28:0] print_cnt;
+    // always_ff @(posedge clk)begin
+    //     if(print_cnt[15] == 1)begin
+    //         $display("b-type success rate:%.2f %%", (total_b-fail_b)/total_b*100);
+    //         print_cnt<='0;
+    //         // $display("b-type pred-fail_b rate:%.2f %%", (total_b-fail_b)/total_b*100);
+    //     end else begin
+    //         print_cnt <= print_cnt + 1;
+    //         if ((dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
+    //             ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b))begin
+    //             fail_b <= fail_b + 1;
+    //         end
+    //         if(dataI[1].ctl.branch) begin
+    //             total_b <= total_b + 1;
+    //         end
+    //     end
+    // end
+
+    // real fail_j;
+    // real total_j;
+    // logic[28:0] print_cnt_j;
+    // always_ff @(posedge clk)begin
+    //     if(print_cnt_j[15] == 1)begin
+    //         $display("j-type success rate:%.2f %%", (total_j-fail_j)/total_j*100);
+    //         print_cnt_j<='0;
+    //     end else begin
+    //         print_cnt_j <= print_cnt_j + 1;
+    //         if (dataI[1].ctl.jump&&~dataI[1].pre_b)begin
+    //             fail_j <= fail_j + 1;
+    //         end
+    //         if(dataI[1].ctl.jump) begin
+    //             total_j <= total_j + 1;
+    //         end
+    //     end
+    // end
+
     endmodule
 
 `endif

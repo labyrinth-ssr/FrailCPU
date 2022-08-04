@@ -462,10 +462,11 @@ module DCache (
     end
 
     always_comb begin
-        meta_w = meta_r_1;
+        meta_w = '0;
         if (resetn) begin
             unique case (state)
                 FETCH_1: begin
+                    meta_w = meta_r_1;
                     for (int i = 0; i < ASSOCIATIVITY; i++) begin
                         if (replace_line_1 == associativity_t'(i)) begin
                             meta_w[i].tag = dreq_1_addr.tag;
@@ -478,6 +479,7 @@ module DCache (
                 end
 
                 FETCH_2: begin
+                    meta_w = meta_r_2;
                     for (int i = 0; i < ASSOCIATIVITY; i++) begin
                         if (replace_line_2 == associativity_t'(i)) begin
                             meta_w[i].tag = dreq_2_addr.tag;
@@ -493,7 +495,6 @@ module DCache (
             endcase    
         end
         else begin
-            meta_w = '0;
         end
         
     end

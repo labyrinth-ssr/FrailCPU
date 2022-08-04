@@ -72,8 +72,8 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].srcb=dataE[i].srcb;
     assign dataE2[i].srca=dataE[i].srca;
     assign dataE2[i].hilo=dataE[i].hilo;
-    assign dataE2[i].branch_taken=dataE[i].branch_taken;
-    assign dataE2[i].target=dataE[i].target;
+    // assign dataE2[i].branch_taken=dataE[i].branch_taken;
+    // assign dataE2[i].target=dataE[i].target;
 end
 
 // assign dataE2[1].valid=dataE[1].valid;
