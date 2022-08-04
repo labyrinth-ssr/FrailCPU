@@ -172,6 +172,9 @@ typedef struct packed {
 	creg_addr_t rdst;
 	u1 pre_b;
 	u1 is_jr_ra;
+	u1 branch_taken;
+	word_t target;
+	word_t dest_pc;
 
 	cp0_control_t cp0_ctl;
 } issue_data_t;
@@ -190,12 +193,9 @@ typedef struct packed {
 	// u64 sextimm;
 	word_t srcb;
 	word_t srca;
-	word_t target;
-	u1 branch_taken;
 	u1 is_slot;
 	u1 is_jr_ra;
 	u1 penalty_taken;
-	word_t dest_pc;
 	// word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;
 	cp0_control_t cp0_ctl;

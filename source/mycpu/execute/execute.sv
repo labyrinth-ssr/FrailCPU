@@ -19,8 +19,7 @@
     );
 
     word_t a[1:0],b[1:0],extend_b[1:0];
-    word_t target_offset;
-    u1 branch_condition;
+    
     word_t aluout;
     assign extend_b[1] = dataI[1].ctl.zeroext ? {16'b0, dataI[1].imm} : {{16{dataI[1].imm[15]}}, dataI[1].imm};
     assign extend_b[0] = dataI[0].ctl.zeroext ? {16'b0, dataI[0].imm } : {{16{dataI[0].imm [15]}}, dataI[0].imm };
@@ -57,38 +56,6 @@
 
     assign dataE[0].alu_out=aluout2;
     assign dataE[1].alu_out=dataI[1].ctl.is_link? dataI[1].pc+8:aluout;
-    
-    word_t slot_pc;
-    assign slot_pc=dataI[1].pc+4;
-    word_t raw_instr;
-    assign raw_instr=dataI[1].raw_instr;
-    always_comb begin
-        dataE[1].target='0;
-        if (dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b) begin
-            dataE[1].target=slot_pc+target_offset;
-        end else if (dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b) begin
-            dataE[1].target=dataI[1].pc+8;  
-        end else if (dataI[1].ctl.jr &&~dataI[1].pre_b) begin
-            dataE[1].target=dataI[1].rd1;
-        end else if (dataI[1].ctl.jump&&~dataI[1].pre_b) begin
-            dataE[1].target={slot_pc[31:28],raw_instr[25:0],2'b00};
-        end
-    end
-    assign dataE[0].dest_pc='0;
-
-    always_comb begin
-        dataE[1].dest_pc='0;
-        if (dataI[1].ctl.branch) begin
-            dataE[1].dest_pc=slot_pc+target_offset;
-        end else if (dataI[1].ctl.jr ) begin
-            dataE[1].dest_pc=dataI[1].rd1;
-        end else if (dataI[1].ctl.jump) begin
-            dataE[1].dest_pc={slot_pc[31:28],raw_instr[25:0],2'b00};
-        end
-    end
-
-    assign dataE[0].target='0;
-    assign dataE[0].branch_taken='0;
 
     // real fail_b;
     // real total_b;
@@ -127,20 +94,6 @@
     //         end
     //     end
     // end
-
-
-    assign target_offset={{15{raw_instr[15]}},raw_instr[14:0],2'b00};
-
-    pcbranch pcbranch_inst(
-        .branch(dataI[1].ctl.branch_type),
-        .branch_condition,
-        .srca(dataI[1].rd1),.srcb(dataI[1].rd2),
-        .valid(dataI[1].ctl.branch)
-    );
-
-    assign dataE[1].branch_taken=(dataI[1].ctl.jump&&~dataI[1].pre_b)
-    ||(dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
-    ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b);
 
     for (genvar i=0; i<2; ++i) begin
     assign dataE[i].srcb=dataI[i].rd2;

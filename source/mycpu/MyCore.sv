@@ -65,7 +65,7 @@ module MyCore (
     assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(jrD)
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(jrD)
 	);
 
     assign ireq.addr=dataP_pc;
@@ -92,13 +92,13 @@ module MyCore (
 		if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
-        end else if (stallF && dataE[1].branch_taken) begin
+        end else if (stallF && branch_takenI) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
-        end else if (stallF && jrD) begin
+        end /*else if (stallF && jrD) begin
             dpc_save<=pc_selected;
             dpc_saved<='1;
-        end else if (~stallF) begin
+        end*/ else if (~stallF) begin
 			ipc_save<='0;
 			ipc_saved<='0;
             jpc_save<='0;
@@ -113,9 +113,9 @@ module MyCore (
             pc_nxt=ipc_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
-        end else if (dpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
+        end /*else if (dpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
             pc_nxt=dpc_save;
-        end else begin
+        end */else begin
             pc_nxt=pc_selected;
         end
     end
@@ -142,12 +142,11 @@ module MyCore (
     //     end
     // end
 
-
     pcselect pcselect_inst (
         .pc_selected,
         .pc_succ,
-        .pc_branch(dataE[1].target),
-        .branch_taken(dataE[1].branch_taken),
+        .pc_branch(branch_targetI),
+        .branch_taken(branch_takenI),
         .epc,
         .entrance(32'hBFC0_0380),
 		.is_eret,
@@ -345,7 +344,7 @@ module MyCore (
     // end
 
     bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in;
-    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ;
+    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2;
 
     issue issue_inst(
         .clk,.reset,
@@ -360,6 +359,51 @@ module MyCore (
         .overflow(overflowI),
         .stallI_de
     );
+
+    word_t raw_instr;
+    assign raw_instr=dataI_nxt[1].raw_instr;
+    word_t slot_pc;
+    assign slot_pc=dataI_nxt[1].pc+4;
+    word_t target_offset;
+    u1 branch_condition;
+    word_t branch_targetI;
+    u1 branch_takenI;
+    word_t dest_pcI;
+    always_comb begin
+        branch_targetI='0;
+        if (dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b) begin
+            branch_targetI=slot_pc+target_offset;
+        end else if (dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b) begin
+            branch_targetI=dataI_nxt[1].pc+8;  
+        end else if (dataI_nxt[1].ctl.jr &&~dataI_nxt[1].pre_b) begin
+            branch_targetI=dataI_nxt[1].rd1;
+        end else if (dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b) begin
+            branch_targetI={slot_pc[31:28],raw_instr[25:0],2'b00};
+        end
+    end
+
+    always_comb begin
+        dest_pcI='0;
+        if (dataI_nxt[1].ctl.branch) begin
+            dest_pcI=slot_pc+target_offset;
+        end else if (dataI_nxt[1].ctl.jr ) begin
+            dest_pcI=dataI_nxt[1].rd1;
+        end else if (dataI_nxt[1].ctl.jump) begin
+            dest_pcI={slot_pc[31:28],raw_instr[25:0],2'b00};
+        end
+    end
+    assign target_offset={{15{raw_instr[15]}},raw_instr[14:0],2'b00};
+
+    pcbranch pcbranch_inst(
+        .branch(dataI_nxt[1].ctl.branch_type),
+        .branch_condition,
+        .srca(dataI_nxt[1].rd1),.srcb(dataI_nxt[1].rd2),
+        .valid(dataI_nxt[1].ctl.branch)
+    );
+    assign branch_takenI=(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b)
+    ||(dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
+    ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b);
+
 
     bypass_issue_t [1:0] dataI_in,issue_bypass_out;
     assign dataI_in=issue_bypass_out;
