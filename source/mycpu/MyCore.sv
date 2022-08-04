@@ -364,7 +364,7 @@ module MyCore (
     always_ff @(posedge clk) begin
         if (reset) begin
             jr_pred_finish<='0;
-        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1) begin
+        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~candidate2_invalid) begin
             jr_pred_finish<='1;
         end else if (issue_en_1) begin
             jr_pred_finish<='0;
@@ -446,7 +446,7 @@ module MyCore (
         .srca(dataI_nxt[1].rd1),.srcb(dataI_nxt[1].rd2),
         .valid(dataI_nxt[1].ctl.branch)
     );
-    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b)
+    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)
     ||(dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b);
 
