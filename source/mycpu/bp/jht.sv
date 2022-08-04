@@ -1,13 +1,15 @@
-`ifndef __RPCT_SV
-`define __RPCT_SV
+`ifndef __JHT_SV
+`define __JHT_SV
 
 `include "common.svh"
+`ifdef VERILATOR
+`include "../plru.sv"
+`endif 
 
-
-module rpct #(
+module jht#(
     parameter int ASSOCIATIVITY = 2,
     parameter int SET_NUM = 4,
-    
+
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
     localparam TAG_BITS = 18,
@@ -25,12 +27,14 @@ module rpct #(
     }
 ) (
     input logic clk, resetn,
-    input logic is_write, // if this instr write in to rpct (jr (ra))
-    input addr_t pc_check, jrra_pc,
+    input logic is_write, // if this instr write in to jht (j, jal)
+    input addr_t j_pc, executed_j_pc, dest_pc,
     /*
-    * pc_check is the pc to be predicted(from f1)
-    * jrra_pc is the pc of the jr (ra) or jalr (from exe)
+    * j_pc is the pc of the jump to be predicted(from f1)
+    * executed_j_pc is the pc of the jump to be executed(from exe)
+    * dest_pc is the branch dest of the executed_branch
     */
+    output addr_t predict_pc,
     output logic hit, hit_pc, hit_pcp4
 );
 
@@ -43,11 +47,12 @@ module rpct #(
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
-    meta_t [ASSOCIATIVITY-1:0] r_meta_in_rpct;
+    meta_t [ASSOCIATIVITY-1:0] r_meta_in_jht;
     meta_t [ASSOCIATIVITY-1:0] w_meta;
-    associativity_t replace_line, hit_line, pc_hit_line, pcp4_hit_line;
-    ram_addr_t replace_addr;
-    logic pc_hit, pcp4_hit;
+    addr_t r_pc_predict, r_pc_replace, w_pc_replace;
+    associativity_t pc_hit_line, pcp4_hit_line, hit_line, replace_line;
+    ram_addr_t predict_addr, replace_addr;
+    logic in_jht, pc_hit, pcp4_hit;
 
     // for predict
 
@@ -55,7 +60,7 @@ module rpct #(
         pc_hit = 1'b0;
         pc_hit_line = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(pc_check))) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(j_pc))) begin
                 pc_hit  = 1'b1;
                 pc_hit_line = associativity_t'(i);
             end
@@ -66,7 +71,7 @@ module rpct #(
         pcp4_hit = 1'b0;
         pcp4_hit_line = '0;
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(pc_check+4))) begin
+            if (r_meta_hit[i].valid && (r_meta_hit[i].tag == get_tag(j_pc+4))) begin
                 pcp4_hit = 1'b1;
                 pcp4_hit_line = associativity_t'(i);
             end
@@ -82,52 +87,63 @@ module rpct #(
         else if(pcp4_hit) hit_line = pcp4_hit_line;
     end
 
+    always_comb begin : predict_addr_index_b
+        predict_addr.index = '0;
+        if(pc_hit) predict_addr.index = get_index(j_pc);
+        else if(pcp4_hit) predict_addr.index = get_index(j_pc+4);
+    end
+    assign predict_addr.line = hit_line;
+
+    assign predict_pc = hit ? r_pc_predict : '0;
+
 
     // for repalce
 
-    // always_comb begin
-    //     in_bht = 1'b0;
-    //     for (int i = 0; i < ASSOCIATIVITY; i++) begin
-    //         if (r_meta_in_bht[i].valid && r_meta_in_bht[i].tag == get_tag(executed_branch_pc)) begin
-    //             in_bht = 1'b1;
-    //         end
-    //     end 
-    // end
+    always_comb begin
+        in_jht = 1'b0;
+        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+            if (r_meta_in_jht[i].valid && r_meta_in_jht[i].tag == get_tag(executed_j_pc)) begin
+                in_jht = 1'b1;
+            end
+        end 
+    end
 
     plru_t plru_ram [SET_NUM-1 : 0];
     plru_t plru_r, plru_new;
 
-    assign plru_r = plru_ram[get_index(pc_check)];
+    assign plru_r = plru_ram[get_index(j_pc)];
 
     assign replace_line[0] = plru_r[0];
     assign plru_new[0] = ~hit_line[0];
 
     always_ff @(posedge clk) begin
         if (hit) begin
-            plru_ram[get_index(pc_check)] <= plru_new;
+            plru_ram[get_index(j_pc)] <= plru_new;
         end
     end
 
     assign replace_addr.line = replace_line;
-    assign replace_addr.index = get_index(jrra_pc);
+    assign replace_addr.index = get_index(executed_j_pc);
 
+    assign w_pc_replace = (~in_jht && is_write) ? dest_pc : r_pc_replace;
 
-    always_comb begin : w_meta_block
+    always_comb begin : w_meta_b
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (/*~in_bht &&*/ is_write && associativity_t'(i) == replace_line) begin
+            if (~in_jht && is_write && associativity_t'(i) == replace_line) begin
                 w_meta[i].valid = 1'b1;
-                w_meta[i].tag = get_tag(jrra_pc);
+                w_meta[i].tag = get_tag(executed_j_pc);
             end else begin
-                w_meta[i] = r_meta_in_rpct[i];
+                w_meta[i] = r_meta_in_jht[i];
             end
         end 
     end
 
-    index_t reset_addr;
+    ram_addr_t reset_addr;
 
     always_ff @( posedge clk ) begin : reset
-            reset_addr <= reset_addr+1;
+        reset_addr <= reset_addr + 1;
     end
+
 
 
     LUTRAM_DualPort #(
@@ -138,15 +154,34 @@ module rpct #(
     ) meta_ram(
         .clk(clk),
 
-        .en_1(is_write | ~resetn), //port1 for replace
-        .addr_1(resetn ? replace_addr.index : reset_addr),
-        .rdata_1(r_meta_in_rpct),
-        .strobe(is_write | ~resetn),  
+        .en_1(1'b1), //port1 for replace
+        .addr_1(resetn ? replace_addr.index : reset_addr.index),
+        .rdata_1(r_meta_in_jht),
+        .strobe(1'b1),  
         .wdata(resetn ? w_meta : '0),
 
         .en_2(1'b1), //port2 for predict
-        .addr_2(get_index(pc_check)),
+        .addr_2(get_index(j_pc)),
         .rdata_2(r_meta_hit)
+    );
+
+    LUTRAM_DualPort #(
+        .ADDR_WIDTH($bits(ram_addr_t)),
+        .DATA_WIDTH($bits(addr_t)),
+        .BYTE_WIDTH($bits(addr_t)),
+        .READ_LATENCY(0)
+    ) dest_pc_ram(
+        .clk(clk),
+
+        .en_1(in_jht | is_write | ~resetn), //port1 for replace
+        .addr_1(resetn ? replace_addr : reset_addr),
+        .rdata_1(r_pc_replace),
+        .strobe(1'b1),  
+        .wdata(resetn ? w_pc_replace : '0),
+
+        .en_2(1'b1), //port2 for predict
+        .addr_2(predict_addr),
+        .rdata_2(r_pc_predict)
     );
 
 endmodule
