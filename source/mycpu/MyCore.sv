@@ -53,7 +53,7 @@ module MyCore (
     u1 pred_taken;
     word_t pre_pc;
     u1 jr_ra_fail;
-    decode_data_t candidate1,candidate2;
+    decode_data_t candidate1;
     // assign jrD='0;
     // u1 save_slotD;
     // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
@@ -162,6 +162,7 @@ module MyCore (
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
     assign dataF1_nxt.valid='1;
+    assign dataF1_nxt.nxt_valid=~zero_prej;
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
@@ -285,6 +286,17 @@ module MyCore (
         end
     end
 
+    u1 delay_zeroprej;
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            delay_zeroprej<='0;
+        end else if (zero_prej) begin
+            delay_zeroprej<='1;
+        end else if (~stallF2&&~zero_prej) begin
+            delay_zeroprej<='0;
+        end 
+    end
+
     assign dataF2_nxt[1].pc=dataF1.pc;
     assign dataF2_nxt[1].pre_b=dataF1.pre_b;
     assign dataF2_nxt[0].pre_b='0;
@@ -292,10 +304,10 @@ module MyCore (
     assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
     assign dataF2_nxt[0].cp0_ctl='0;
-
-    assign dataF2_nxt[0].pc= dataF1.pc+4;
+ 
+    assign dataF2_nxt[0].pc= dataF1.nxt_valid? dataF1.pc+4:'0;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/dataF1.valid;
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/dataF1.nxt_valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
@@ -359,7 +371,7 @@ module MyCore (
         end
     end
 
-    assign is_jr_ra_decode=candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~jr_pred_finish;
+    assign is_jr_ra_decode=candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~jr_pred_finish&&~candidate2_invalid;
 
     u1 jr_predicted;
     always_ff @(posedge clk) begin
@@ -372,6 +384,7 @@ module MyCore (
         end
     end
 
+    u1 candidate2_invalid;
 
     issue issue_inst(
         .clk,.reset,
@@ -387,10 +400,9 @@ module MyCore (
         .stallI_de,
         .candidate1,
         .issue_en_1,
-        .pred_flush_que
+        .pred_flush_que,
+        .candidate2_invalid
     );
-
-
 
     word_t raw_instr;
     assign raw_instr=dataI_nxt[1].raw_instr;
@@ -434,47 +446,47 @@ module MyCore (
         .srca(dataI_nxt[1].rd1),.srcb(dataI_nxt[1].rd2),
         .valid(dataI_nxt[1].ctl.branch)
     );
-    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)
+    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b);
 
-        real fail_b;
-    real total_b;
-    logic[28:0] print_cnt;
-    always_ff @(posedge clk)begin
-        if(print_cnt[15] == 1)begin
-            $display("b-type success rate:%.2f %%", (total_b-fail_b)/total_b*100);
-            print_cnt<='0;
-            // $display("b-type pred-fail_b rate:%.2f %%", (total_b-fail_b)/total_b*100);
-        end else begin
-            print_cnt <= print_cnt + 1;
-            if ((dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
-                ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b))begin
-                fail_b <= fail_b + 1;
-            end
-            if(dataI_nxt[1].ctl.branch) begin
-                total_b <= total_b + 1;
-            end
-        end
-    end
+    // real fail_b;
+    // real total_b;
+    // logic[28:0] print_cnt;
+    // always_ff @(posedge clk)begin
+    //     if(print_cnt[16] == 1)begin
+    //         $display("b-type success rate:%.2f %%", (total_b-fail_b)/total_b*100);
+    //         print_cnt<='0;
+    //         // $display("b-type pred-fail_b rate:%.2f %%", (total_b-fail_b)/total_b*100);
+    //     end else begin
+    //         print_cnt <= print_cnt + 1;
+    //         if ((dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
+    //             ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b))begin
+    //             fail_b <= fail_b + 1;
+    //         end
+    //         if(dataI_nxt[1].ctl.branch) begin
+    //             total_b <= total_b + 1;
+    //         end
+    //     end
+    // end
 
-    real fail_j;
-    real total_j;
-    logic[28:0] print_cnt_j;
-    always_ff @(posedge clk)begin
-        if(print_cnt_j[15] == 1)begin
-            $display("j-type success rate:%.2f %%", (total_j-fail_j)/total_j*100);
-            print_cnt_j<='0;
-        end else begin
-            print_cnt_j <= print_cnt_j + 1;
-            if (dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)begin
-                fail_j <= fail_j + 1;
-            end
-            if(dataI_nxt[1].ctl.jump) begin
-                total_j <= total_j + 1;
-            end
-        end
-    end
+    // real fail_j;
+    // real total_j;
+    // logic[28:0] print_cnt_j;
+    // always_ff @(posedge clk)begin
+    //     if(print_cnt_j[16] == 1)begin
+    //         $display("j-type success rate:%.2f %%", (total_j-fail_j)/total_j*100);
+    //         print_cnt_j<='0;
+    //     end else begin
+    //         print_cnt_j <= print_cnt_j + 1;
+    //         if (dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~jr_predicted)begin
+    //             fail_j <= fail_j + 1;
+    //         end
+    //         if(dataI_nxt[1].ctl.jump) begin
+    //             total_j <= total_j + 1;
+    //         end
+    //     end
+    // end
 
 
     bypass_issue_t [1:0] dataI_in,issue_bypass_out;

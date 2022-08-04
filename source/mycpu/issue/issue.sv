@@ -20,7 +20,8 @@ module issue(
     input u1 stallI,stallI_de,
     output u1 overflow,
     output decode_data_t candidate1,
-    output u1 issue_en_1
+    output u1 issue_en_1,
+    output u1 candidate2_invalid
     // output u1 predicted_jr
     // input u1 jrI
 );
@@ -28,6 +29,7 @@ assign issue_en_1=issue_en1;
 // u1 jr_predicted
 localparam ISSUE_QUEUE_SIZE = 16;
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
+assign candidate2_invalid=~candidate2.valid;
 
 
 

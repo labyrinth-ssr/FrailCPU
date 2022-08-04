@@ -129,6 +129,7 @@ typedef struct packed {
 	u1 valid;
 	u32 pc;
 	u1 pre_b;
+	u1 nxt_valid;
 	// int_type_t int_type;
     } fetch1_data_t;//
 
