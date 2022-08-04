@@ -26,7 +26,7 @@ module bpu #(
     input addr_t exe_pc, dest_pc, ret_pc,// exe
     // ret_pc for jal, jalr
     input logic is_branch, is_j, is_jal, is_jalr, is_jr_ra_exe,
-    input logic is_taken
+    input logic is_taken, flush_ras
 );
 
     logic bht_hit, jht_hit, rpct_hit;
@@ -94,7 +94,8 @@ module bpu #(
         .pop(is_jr_ra_decode | rpct_hit),
         .ret_pc_push(ret_pc),
         .ret_pc_pop(ras_pre_pc),
-        .fail(ras_fail)
+        .fail(ras_fail),
+        .flush_ras
     );
 
     rpct rpct (
