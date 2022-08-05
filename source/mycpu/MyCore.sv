@@ -37,7 +37,7 @@ module MyCore (
      * TODO (Lab1) your code here :)
      */
     
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF3,flushI,flush_que,stallF3,flushM2,stallI,stallI_de,flushM3,stallF2,flushF2;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait;
     u1 is_INTEXC,is_EXC;
@@ -75,14 +75,14 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.flushM3
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF3,.flushF3,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.flushM3,.stallF2,.flushF2
 	);
 
     assign ireq.addr=dataP_pc;
 	assign ireq.valid=~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
-    fetch_data_t [1:0] dataF2_nxt ,dataF2 ;
+    fetch_data_t [1:0] dataF3_nxt ,dataF3 ;
     decode_data_t [1:0] dataD_nxt ,dataD ;
     issue_data_t [1:0] dataI_nxt,dataI;
     execute_data_t [1:0] dataE_nxt,dataE;
@@ -174,6 +174,7 @@ module MyCore (
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
+    fetch1_data_t dataF2_nxt,dataF2;
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
@@ -247,9 +248,23 @@ module MyCore (
         .en(~stallF2),
         .flush(flushF2)
     );
+
+    assign dataF2_nxt=dataF1;
+
+    pipereg #(.T(fetch1_data_t))F2F3reg(
+        .clk,
+        .reset,
+        .in(dataF2_nxt),
+        .out(dataF2),
+        .en(~stallF3),
+        .flush(flushF3)
+    );
+    
+
+    
     u1 rawinstr_saved;
     u64 raw_instrf2_save;
-    u1 delay_flushF2;
+    u1 delay_flushF3;
     // u1 delay_zeroprej;
 
     // always_ff @(posedge clk) begin
@@ -258,13 +273,13 @@ module MyCore (
 
     always_ff @(posedge clk) begin
         if (reset) begin
-            {raw_instrf2_save,rawinstr_saved,delay_flushF2}<='0;
+            {raw_instrf2_save,rawinstr_saved,delay_flushF3}<='0;
         end else begin
-            delay_flushF2 <=flushF2;
-            if (stallF2&&~rawinstr_saved) begin
+            delay_flushF3 <=flushF3;
+            if (stallF3&&~rawinstr_saved) begin
                 raw_instrf2_save<=iresp.data;
                 rawinstr_saved<='1;
-            end else if (~stallF2) begin
+            end else if (~stallF3) begin
                 {raw_instrf2_save,rawinstr_saved}<='0;
             end
         end
@@ -276,50 +291,53 @@ module MyCore (
     // end
 
     always_comb begin
-        dataF2_nxt[1].raw_instr=  iresp.data[31:0];
+        dataF3_nxt[1].raw_instr=  iresp.data[31:0];
         if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
-            dataF2_nxt[1].raw_instr='0;
+            dataF3_nxt[1].raw_instr='0;
         end else
         if (rawinstr_saved) begin
-            dataF2_nxt[1].raw_instr= raw_instrf2_save[31:0];
-        end else if (delay_flushF2) begin
-            dataF2_nxt[1].raw_instr='0;
+            dataF3_nxt[1].raw_instr= raw_instrf2_save[31:0];
+        end else if (delay_flushF3) begin
+            dataF3_nxt[1].raw_instr='0;
         end 
     end
 
     always_comb begin
-        dataF2_nxt[0].raw_instr=  iresp.data[63:32];
+        dataF3_nxt[0].raw_instr=  iresp.data[63:32];
         if (rawinstr_saved) begin
-            dataF2_nxt[0].raw_instr=raw_instrf2_save[63:32];
-        end else if (delay_flushF2) begin
-            dataF2_nxt[0].raw_instr='0;
+            dataF3_nxt[0].raw_instr=raw_instrf2_save[63:32];
+        end else if (delay_flushF3) begin
+            dataF3_nxt[0].raw_instr='0;
         end
     end
 
-    assign dataF2_nxt[1].pc=dataF1.pc;
-    // assign dataF2_nxt[1].pre_b=dataF1.pre_b;
-    // assign dataF2_nxt[0].pre_b='0;
-    // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
-    assign dataF2_nxt[1].valid= dataF1.valid;
-    assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
-    assign dataF2_nxt[0].cp0_ctl='0;
+    assign dataF3_nxt[1].pc=dataF1.pc;
+    // assign dataF3_nxt[1].pre_b=dataF1.pre_b;
+    // assign dataF3_nxt[0].pre_b='0;
+    // assign dataF3_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
+    assign dataF3_nxt[1].valid= dataF1.valid;
+    assign dataF3_nxt[1].cp0_ctl=dataF1.cp0_ctl;
+    assign dataF3_nxt[0].cp0_ctl='0;
 
-    assign dataF2_nxt[0].pc= dataF1.pc+4;
-    // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/dataF1.valid;
+    assign dataF3_nxt[0].pc= dataF1.pc+4;
+    // assign dataF3_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
+    assign dataF3_nxt[0].valid=/*~pc_except&&*/dataF1.valid;
 
 
-    pipereg2 #(.T(fetch_data_t))F2Dreg(
+
+
+
+    pipereg2 #(.T(fetch_data_t))F3Dreg(
         .clk,
         .reset,
-        .in(dataF2_nxt),
-        .out(dataF2),
+        .in(dataF3_nxt),
+        .out(dataF3),
         .en(~stallD),
         .flush(flushD)
     );
 
     decode decode_inst(
-        .dataF2(dataF2),
+        .dataF3(dataF3),
         .dataD(dataD_nxt)
         // .jr_ra_fail
         // .rd1,.rd2,
