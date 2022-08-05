@@ -30,7 +30,7 @@ module DCache (
     localparam OFFSET_BITS = $clog2(DATA_PER_LINE);
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY);
     localparam INDEX_BITS = $clog2(SET_NUM);
-    localparam TAG_BITS = 32 - INDEX_BITS - OFFSET_BITS - DATA_BITS; 
+    localparam TAG_BITS = 28 - INDEX_BITS - OFFSET_BITS - DATA_BITS; 
 
     localparam DATA_ADDR_BITS = ASSOCIATIVITY_BITS + INDEX_BITS + OFFSET_BITS;
 
