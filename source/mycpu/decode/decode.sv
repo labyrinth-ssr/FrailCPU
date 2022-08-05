@@ -68,7 +68,9 @@ module decode(
     assign dataD[0].valid=dataF2[0].valid;
     // assign dataD[1].is_jr_ra
     assign dataD[1].pre_b=dataF2[1].pre_b;
+    assign dataD[1].pred_pc_jr=dataF2[1].pred_pc_jr;
     assign dataD[0].pre_b='0;
+    assign dataD[0].pred_pc_jr='0;
 
 // ||(is_jr_ra1&&~jr_ra_fail)
     

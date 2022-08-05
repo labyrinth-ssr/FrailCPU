@@ -66,10 +66,10 @@ typedef struct packed {
 // 	u1 exint;
 // } int_type_t;
 
-typedef struct packed {
-	u1 taken;
-	u32 pc;
-} bp_res_t;
+// typedef struct packed {
+// 	u1 taken;
+// 	u32 pc;
+// } bp_res_t;
 
 // typedef enum i3 {
 //      MSIZE1 = 3'b000,
@@ -101,11 +101,11 @@ typedef struct packed {
     logic shamt_valid;
     logic zeroext;
     logic cp0write;
-    logic is_eret;
+    // logic is_eret;
     logic hiwrite;
     logic lowrite;
-    logic is_bp;
-    logic is_sys;
+    // logic is_bp;
+    // logic is_sys;
     logic hitoreg, lotoreg, cp0toreg;
     logic is_link;
     logic mul_div_r;
@@ -129,6 +129,7 @@ typedef struct packed {
 	u1 valid;
 	u32 pc;
 	u1 pre_b;
+	word_t pred_pc_jr;
 	u1 nxt_valid;
 	// int_type_t int_type;
     } fetch1_data_t;//
@@ -140,6 +141,8 @@ typedef struct packed {
 	u32 pc;
 	cp0_control_t cp0_ctl;
 	u1 pre_b;
+	word_t pred_pc_jr;
+
 	// int_type_t int_type;
     } fetch_data_t;//
 
@@ -152,6 +155,7 @@ typedef struct packed {
 	creg_addr_t rdst,ra1,ra2;//2^5=32 assign the reg to be written
 	word_t pc;
 	u16 imm;
+	word_t pred_pc_jr;
 	u1 pre_b;
 	// u1 is_slot;
 	// u1 is_jr_ra;
@@ -162,15 +166,16 @@ typedef struct packed {
 typedef struct packed {
 	// int_type_t int_type;
 	u1 valid;
-	word_t rd1,rd2,lo_rd,hi_rd,cp0_rd;
+	word_t rd1,rd2;
 	control_t ctl;
 	u8 cp0ra;
 	u16 imm;
-	// creg_addr_t rd,ra1,ra2;//2^5=32 assign the reg to be written
+	// creg_addr_t rd,ra1,ra2;//2^5=32 assign the reg to be written,lo_rd,hi_rd,cp0_rd;
 	word_t pc;
 	u1 is_slot;
 	u32 raw_instr;
 	creg_addr_t rdst;
+	word_t pred_pc_jr;
 	u1 pre_b;
 	u1 is_jr_ra;
 	// u1 branch_taken;
@@ -195,8 +200,6 @@ typedef struct packed {
 	word_t srcb;
 	word_t srca;
 	u1 is_slot;
-	u1 is_jr_ra;
-	u1 penalty_taken;
 	// word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;
 	cp0_control_t cp0_ctl;
@@ -212,13 +215,10 @@ typedef struct packed {
 	u8 cp0ra;
 	u1 is_slot;
 	u64 hilo;
-
 	// word_t lo_rd,hi_rd,cp0_rd;
 	cp0_control_t cp0_ctl;
 	word_t srcb;
 	word_t srca;
-
-
 	// u64 target;
 	word_t rd;
 	// u64 rs1rd;

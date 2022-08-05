@@ -149,6 +149,7 @@ end
                 dataI[1].rdst=candidate1.rdst;
                 dataI[1].cp0_ctl=candidate1.cp0_ctl;
                 dataI[1].pre_b=candidate1.pre_b;
+                dataI[1].pred_pc_jr=candidate1.pred_pc_jr;
             end
             if (issue_en2) begin
                     dataI[0].ctl=candidate2.ctl;
@@ -162,6 +163,7 @@ end
                     dataI[0].rdst=candidate2.rdst;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
                     dataI[0].pre_b=candidate2.pre_b;
+                    dataI[0].pred_pc_jr=candidate2.pred_pc_jr;
                 end
             if (have_slot) begin
                 dataI[0].is_slot='1;

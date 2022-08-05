@@ -311,7 +311,7 @@ module decoder (
                         if (instr[20:0]==21'b11000) begin
                             cp0_ctl.ctype=ERET;
                         // cp0_ctl.valid='1;
-                        ctl.is_eret = 1'b1;
+                        // ctl.is_eret = 1'b1;
                         srcrega = '0;
                         srcregb = '0;
                         destreg = '0;
@@ -603,7 +603,7 @@ module decoder (
                         cp0_ctl.ctype=EXCEPTION;
                         cp0_ctl.valid='1;
                         cp0_ctl.etype.trap='1;
-                        ctl.is_bp = 1'b1;
+                        // ctl.is_bp = 1'b1;
                         srcrega = 'b0;
                         srcregb = 'b0;
                         destreg = 'b0;
@@ -614,7 +614,7 @@ module decoder (
                         cp0_ctl.valid='1;
                         cp0_ctl.etype.syscall='1;
                         ctl.alufunc = ALU_PASSA;
-                        ctl.is_sys = 1'b1;
+                        // ctl.is_sys = 1'b1;
                         srcrega = 'b0;
                         srcregb = 'b0;
                         destreg = 'b0;

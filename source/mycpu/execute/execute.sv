@@ -75,8 +75,8 @@
     assign dataE[0].cp0ra=dataI[0].cp0ra;
     assign dataE[1].cp0ra=dataI[1].cp0ra;
 
-    assign dataE[1].is_jr_ra=dataI[1].is_jr_ra;
-    assign dataE[0].is_jr_ra='0;
+    // assign dataE[1].is_jr_ra=dataI[1].is_jr_ra;
+    // assign dataE[0].is_jr_ra='0;
 
     u1 mult_done,div_done,nega,negb;
     word_t multia,multib;

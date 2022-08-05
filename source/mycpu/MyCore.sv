@@ -49,7 +49,7 @@ module MyCore (
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
-    assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
+    assign d_wait=(dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     u1 pred_taken;
     word_t pre_pc;
     u1 jr_ra_fail;
@@ -166,6 +166,7 @@ module MyCore (
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
+    assign dataF1_nxt.pred_pc_jr= pre_pc;
     always_comb begin
         dataF1_nxt.cp0_ctl.etype='0;
         dataF1_nxt.cp0_ctl.vaddr='0;
@@ -299,7 +300,9 @@ module MyCore (
 
     assign dataF2_nxt[1].pc=dataF1.pc;
     assign dataF2_nxt[1].pre_b=dataF1.pre_b;
+    assign dataF2_nxt[1].pred_pc_jr=dataF1.pred_pc_jr;
     assign dataF2_nxt[0].pre_b='0;
+    assign dataF2_nxt[0].pred_pc_jr='0;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
@@ -425,9 +428,9 @@ module MyCore (
             branch_targetI=slot_pc+target_offset;
         end else if (dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b) begin
             branch_targetI=dataI_nxt[1].pc+8;  
-        end else if (dataI_nxt[1].ctl.jr &&~dataI_nxt[1].pre_b) begin
+        end else if (dataI_nxt[1].ctl.jr /*&&~dataI_nxt[1].pre_b*/) begin
             branch_targetI=dataI_nxt[1].rd1;
-        end else if (dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b) begin
+        end else if (dataI_nxt[1].ctl.jump/*&&~dataI_nxt[1].pre_b*/) begin
             branch_targetI={slot_pc[31:28],raw_instr[25:0],2'b00};
         end
     end
@@ -450,7 +453,7 @@ module MyCore (
         .srca(dataI_nxt[1].rd1),.srcb(dataI_nxt[1].rd2),
         .valid(dataI_nxt[1].ctl.branch)
     );
-    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~dataI_nxt[1].pre_b&&~(jr_predicted&&jr_predicted_pc==branch_targetI))
+    assign branch_takenI= jrD||(dataI_nxt[1].ctl.jump&&~(dataI_nxt[1].pre_b&&dataI_nxt[1].pred_pc_jr==branch_targetI)&&~(jr_predicted&&jr_predicted_pc==branch_targetI))
     ||(dataI_nxt[1].ctl.branch&&branch_condition&&~dataI_nxt[1].pre_b)
     ||(dataI_nxt[1].ctl.branch&&~branch_condition&&dataI_nxt[1].pre_b);
 
