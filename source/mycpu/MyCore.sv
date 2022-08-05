@@ -63,7 +63,16 @@ module MyCore (
 
     u1 save_slotD;
     assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
+    logic dreq_valid;
     assign d_wait= ~dresp.addr_ok;
+    // always_ff @(posedge clk) begin
+    //     if (resetn) begin
+    //         dreq_valid <= dreq[0].valid | dreq[1].valid;
+    //     end
+    //     else begin
+    //         dreq_valid <= '0;
+    //     end
+    // end
 
     hazard hazard (
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(jrD),.flushM3
@@ -513,7 +522,6 @@ module MyCore (
 		.dataM(dataM3_nxt),
 		.dresp,
         .dreq,
-        .d_wait,
         .resetn
 	);
 
@@ -599,8 +607,6 @@ module MyCore (
         .inter_valid,
         .is_EXC,
         .int_pc(dataM3[1].pc)
-        // .pc_valid(dataM2[valid_n].valid)
-        // .dataM2_save({dataM2_save1,dataM2_save2})
     );
 
 endmodule

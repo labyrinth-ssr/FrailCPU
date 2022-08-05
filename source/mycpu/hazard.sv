@@ -75,7 +75,7 @@ end
             flushF2='1;flushD='1;
             excp_iwait_nxt='0;
         end
-        if (~(i_wait||e_wait)&&branch_iwait) begin
+        if (~(stallF)&&branch_iwait) begin
             flushF2='1;flushD='1;
             branch_iwait_nxt='0;
         end
