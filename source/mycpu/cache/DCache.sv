@@ -41,6 +41,7 @@ module DCache (
     localparam type tag_t = logic [TAG_BITS-1:0];
 
     localparam type dirty_t = logic [INDEX_BITS+ASSOCIATIVITY_BITS-1:0];
+    localparam type zero_t = logic [3:0];
 
     localparam type data_addr_t = struct packed {
         associativity_t line;
@@ -48,6 +49,7 @@ module DCache (
         offset_t offset;
     };
     localparam type addr_t = struct packed {
+        zero_t zero;
         tag_t tag;
         index_t index;
         offset_t offset;
