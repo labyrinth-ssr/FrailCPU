@@ -5,8 +5,8 @@
 
 module hazard
 (
-    output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,pred_flush_que,
-    input u1 branchI,i_wait,d_wait,e_wait,overflowI,jrI,flushM3,
+    output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,pred_flush_que,flushM3,
+    input u1 branchI,i_wait,d_wait,e_wait,overflowI,jrI,
     input u1 excpW,excpM,
     input u1 clk,reset
 );
@@ -26,7 +26,7 @@ always_ff @(posedge clk) begin
 end
 
     always_comb begin
-        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;branchD_iwait_nxt='0;
+        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;
         stallM='0;stallE='0;excp_iwait_nxt=excp_iwait;stallM2='0;flushW='0;branch_iwait_nxt=branch_iwait;flushM2='0;flushM3='0;pred_flush_que='0;
         if (excpW||excpM) begin
             flushF2='1;
@@ -53,6 +53,15 @@ end
             flushD='1;
             flushI='1;
             pred_flush_que='1;
+            if (i_wait) begin
+                branch_iwait_nxt=1'b1;
+                stallF ='1;
+            end
+        end else if (branchI) begin
+            flushF2='1;
+            flushD='1;
+            flushI='1;
+            flush_que='1;
             if (i_wait) begin
                 branch_iwait_nxt=1'b1;
                 stallF ='1;

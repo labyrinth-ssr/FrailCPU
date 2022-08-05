@@ -61,9 +61,9 @@ module MyCore (
     hazard hazard (
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI(jrD),.pred_flush_que,.flushM3);
     // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
-    u1 pred_taken;
-    word_t pre_pc;
-    u1 jr_ra_fail;
+    // u1 pred_taken;
+    // word_t pre_pc;
+    // u1 jr_ra_fail;
 
 
     // u1 is_jr_ra_decode;
