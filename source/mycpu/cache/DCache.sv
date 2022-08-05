@@ -30,7 +30,7 @@ module DCache (
     localparam OFFSET_BITS = $clog2(DATA_PER_LINE);
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY);
     localparam INDEX_BITS = $clog2(SET_NUM);
-    localparam TAG_BITS = 28 - INDEX_BITS - OFFSET_BITS - DATA_BITS; 
+    localparam TAG_BITS = 29 - INDEX_BITS - OFFSET_BITS - DATA_BITS; 
 
     localparam DATA_ADDR_BITS = ASSOCIATIVITY_BITS + INDEX_BITS + OFFSET_BITS;
 
@@ -41,7 +41,7 @@ module DCache (
     localparam type tag_t = logic [TAG_BITS-1:0];
 
     localparam type dirty_t = logic [INDEX_BITS+ASSOCIATIVITY_BITS-1:0];
-    localparam type zero_t = logic [3:0];
+    localparam type zero_t = logic [2:0];
 
     localparam type data_addr_t = struct packed {
         associativity_t line;
