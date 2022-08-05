@@ -6,7 +6,6 @@
 `include "ICache.sv"
 `include "DCache.sv"
 `include "../../util/CBusArbiter.sv"
-`include "../../util/DBusToCBus.sv"
 `endif 
 module cache_manage (
     input logic clk, resetn,
@@ -42,7 +41,7 @@ module cache_manage (
         .paddr(mmu_dreq_2_addr)
     );
 
-    //TU
+    //地址转换
     ibus_req_t mmu_ireq_1,mmu_ireq_2;
     ibus_resp_t mmu_iresp;
 

@@ -217,9 +217,7 @@ typedef struct packed {
     word_t data;   // the data from AXI bus
 } cbus_resp_t;
 
-/**
- * AXI-related typedefs
- */
+
 typedef enum i2 {
     AXI_BURST_FIXED,
     AXI_BURST_INCR,

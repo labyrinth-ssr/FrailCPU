@@ -4,7 +4,6 @@
 `include "common.svh"
 `ifdef VERILATOR
 
-`include "../plru.sv"
 `endif 
 module DCache (
     input logic clk, resetn,
@@ -85,14 +84,11 @@ module DCache (
     endfunction
 
 
-
-
     //for meta reset
     index_t reset_counter;
     always_ff @(posedge clk) begin
         reset_counter <= reset_counter + 1;
     end
-
 
 
     //stage1
@@ -152,7 +148,7 @@ module DCache (
     logic process_dreq_1_is_uncached, process_dreq_2_is_uncached;
     logic uncache_1_flag, uncache_2_flag;
 
-
+    //w_to_w  w_to_r
     logic addr_same;
     logic w_to_w;
     word_t w_to_w_data;
@@ -178,7 +174,6 @@ module DCache (
     state_t finish_state;
     logic finish, finish_reg;
 
-    //
     associativity_t replace_line_1_reg, replace_line_2_reg;
 
     //uncache_data 寄存器
@@ -186,17 +181,16 @@ module DCache (
 
 
     //FSM
-
     logic cache_dirty_1, cache_dirty_2;
     logic fetch_1_end, fetch_2_end, writeback_1_end, writeback_2_end, uncache_1_end, uncache_2_end;
 
     word_t data_1, data_2;
 
+    //防止重复FETCH
     logic same_line;
 
 
-
-    //第一阶段读meta, 第二阶段(FETCH时)写meta
+    //第一阶段读meta, 第二阶段写meta
     assign dreq_1_addr = dreq_1.addr;
     assign dreq_2_addr = dreq_2.addr;
     assign meta_en = (~resetn|state==FETCH_1|state==FETCH_2) ? 1'b1 : 0;
@@ -250,7 +244,6 @@ module DCache (
     end
 
 
-
     //stage1 计算hit 
     for (genvar i = 0; i < ASSOCIATIVITY; i++) begin
         assign hit_1_bits[i] = meta_r_1[i].valid & meta_r_1[i].tag == dreq_1_addr.tag;
@@ -277,15 +270,7 @@ module DCache (
     assign cache_hit_1 = ~dreq_1_is_uncached & hit_1;
     assign cache_hit_2 = ~dreq_2_is_uncached & hit_2;
     assign dreq_en = (~dreq_1.valid|cache_hit_1) & (~dreq_2.valid|cache_hit_2);
-    // assign miss_1 = dreq_1.valid & ~hit_1 & ((dreq_2.valid & hit_2) | ~dreq_2.valid);
-    // assign miss_2 = dreq_2.valid & ~hit_2;
-    // assign miss = (dreq_1.valid & ~hit_1) | (dreq_2.valid & ~hit_2);
 
-
-
-    /* DCache_1 -> DCache_2 ************** */
-    // assign stall_finish_1 = miss_1 & state == FETCH_1 & dcresp.last;
-    // assign stall_finish_2 = miss_2 & state == FETCH_2 & dcresp.last;
 
     always_ff @(posedge clk) begin
         if (resetn) begin
@@ -328,12 +313,10 @@ module DCache (
             process_dreq_2_is_uncached <= '0; 
         end
     end
-    /* ********************** */
 
 
 
-
-    //process PLRU 
+    //PLRU 
     assign process_dreq_1_addr = process_dreq_1.addr;
     assign process_dreq_2_addr = process_dreq_2.addr;
     assign process_cache_hit_1 = process_hit.hit_1 & process_dreq_1.valid & ~process_dreq_1_is_uncached;
@@ -388,10 +371,9 @@ module DCache (
             replace_line_2_reg <= '0;
         end
     end
-    /* ********************** */
 
 
-    //process dirty
+    //dirty
     always_comb begin
         cache_dirty_new = cache_dirty;
         for (int i = 0; i < ASSOCIATIVITY*SET_NUM; i++) begin
@@ -431,12 +413,14 @@ module DCache (
     
     assign addr_same = (process_dreq_1_addr[31:2] == process_dreq_2_addr[31:2]) & (process_dreq_1.valid & process_dreq_2.valid) & (~process_dreq_1_is_uncached & ~process_dreq_2_is_uncached);
 
+
     //W -> W
     assign w_to_w = addr_same & |process_dreq_1.strobe & |process_dreq_2.strobe;
     assign w_to_w_data = (get_mask(process_dreq_2.strobe)
                         & process_dreq_2.data)
                         | (get_mask(process_dreq_1.strobe ^ process_dreq_2.strobe)
                         & process_dreq_1.data);
+
 
     //W -> R
     assign w_to_r = addr_same & |process_dreq_1.strobe & ~|process_dreq_2.strobe;
@@ -615,7 +599,6 @@ module DCache (
 
 
 
-
     always_ff @(posedge clk) begin
         if (resetn) begin
             if (finish_reg) begin
@@ -644,7 +627,6 @@ module DCache (
             uncache_2_end <= '0;
         end
     end
-
 
 
     //Cbus
@@ -683,7 +665,6 @@ module DCache (
     end
 
 
-
     
     RAM_TrueDualPort #(
         .ADDR_WIDTH(DATA_ADDR_BITS),
@@ -706,7 +687,6 @@ module DCache (
         .wdata_2(port_2_data_w),
         .rdata_2(port_2_data_r)
     );
-
 
 
 
@@ -752,7 +732,7 @@ module DCache (
         end   
     end
 
-    //DBus !!!!
+    //DBus 
     assign dresp.addr_ok = en;
     assign dresp.data_ok = data_ok_reg;
     assign data_1 = uncache_1_flag ? uncached_data_1 : port_1_data_r;
