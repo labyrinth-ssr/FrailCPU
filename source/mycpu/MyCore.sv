@@ -48,7 +48,7 @@ module MyCore (
     u1 pc_except;
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
-    assign i_wait=ireq.valid && ~iresp.addr_ok;
+    assign i_wait=~iresp.addr_ok;
     // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     // u1 pred_taken;
     // word_t pre_pc;
@@ -290,12 +290,21 @@ module MyCore (
     //     delay_save_slotD<=save_slotD;
     // end
 
+    u1 rawinstr_saved_delay;
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            rawinstr_saved_delay<='0;
+        end else begin
+            rawinstr_saved_delay<=rawinstr_saved;
+        end
+    end
+
     always_comb begin
         dataF3_nxt[1].raw_instr=  iresp.data[31:0];
-        if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
+        if (dataF2.cp0_ctl.ctype==EXCEPTION) begin
             dataF3_nxt[1].raw_instr='0;
         end else
-        if (rawinstr_saved) begin
+        if (rawinstr_saved||rawinstr_saved_delay) begin
             dataF3_nxt[1].raw_instr= raw_instrf2_save[31:0];
         end else if (delay_flushF3) begin
             dataF3_nxt[1].raw_instr='0;
@@ -304,24 +313,24 @@ module MyCore (
 
     always_comb begin
         dataF3_nxt[0].raw_instr=  iresp.data[63:32];
-        if (rawinstr_saved) begin
+        if (rawinstr_saved||rawinstr_saved_delay) begin
             dataF3_nxt[0].raw_instr=raw_instrf2_save[63:32];
         end else if (delay_flushF3) begin
             dataF3_nxt[0].raw_instr='0;
         end
     end
 
-    assign dataF3_nxt[1].pc=dataF1.pc;
+    assign dataF3_nxt[1].pc=dataF2.pc;
     // assign dataF3_nxt[1].pre_b=dataF1.pre_b;
     // assign dataF3_nxt[0].pre_b='0;
     // assign dataF3_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
-    assign dataF3_nxt[1].valid= dataF1.valid;
-    assign dataF3_nxt[1].cp0_ctl=dataF1.cp0_ctl;
+    assign dataF3_nxt[1].valid= dataF2.valid;
+    assign dataF3_nxt[1].cp0_ctl=dataF2.cp0_ctl;
     assign dataF3_nxt[0].cp0_ctl='0;
 
-    assign dataF3_nxt[0].pc= dataF1.pc+4;
+    assign dataF3_nxt[0].pc= dataF2.pc+4;
     // assign dataF3_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF3_nxt[0].valid=/*~pc_except&&*/dataF1.valid;
+    assign dataF3_nxt[0].valid=/*~pc_except&&*/dataF2.valid;
 
 
 

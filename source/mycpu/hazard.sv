@@ -43,7 +43,7 @@ end
             end
             if (i_wait) begin
                 excp_iwait_nxt=1'b1;
-                stallF ='1;
+                // stallF ='1;
                 stallF2='1;
             end
         end else if (d_wait) begin
