@@ -21,7 +21,7 @@
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
-`include "bpu.sv"
+// `include "bpu.sv"
 `endif 
 
 
