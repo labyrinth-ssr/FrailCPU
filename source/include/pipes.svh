@@ -128,7 +128,7 @@ typedef struct packed {
 	cp0_control_t cp0_ctl;
 	u1 valid;
 	u32 pc;
-	u1 pre_b;
+	// u1 pre_b;
 	// int_type_t int_type;
     } fetch1_data_t;//
 
@@ -138,7 +138,7 @@ typedef struct packed {
 	u32 raw_instr;
 	u32 pc;
 	cp0_control_t cp0_ctl;
-	u1 pre_b;
+	// u1 pre_b;
 	// int_type_t int_type;
     } fetch_data_t;//
 
@@ -151,7 +151,7 @@ typedef struct packed {
 	creg_addr_t rdst,ra1,ra2;//2^5=32 assign the reg to be written
 	word_t pc;
 	u16 imm;
-	u1 pre_b;
+	// u1 pre_b;
 	// u1 is_slot;
 	// u1 is_jr_ra;
 	cp0_control_t cp0_ctl;
@@ -170,8 +170,8 @@ typedef struct packed {
 	u1 is_slot;
 	u32 raw_instr;
 	creg_addr_t rdst;
-	u1 pre_b;
-	u1 is_jr_ra;
+	// u1 pre_b;
+	// u1 is_jr_ra;
 
 	cp0_control_t cp0_ctl;
 } issue_data_t;
@@ -193,9 +193,9 @@ typedef struct packed {
 	word_t target;
 	u1 branch_taken;
 	u1 is_slot;
-	u1 is_jr_ra;
-	u1 penalty_taken;
-	word_t dest_pc;
+	// u1 is_jr_ra;
+	// u1 penalty_taken;
+	// word_t dest_pc;
 	// word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;
 	cp0_control_t cp0_ctl;
