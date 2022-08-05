@@ -17,7 +17,7 @@
 `include "issue/issue.sv"
 `include "execute/execute.sv"
 `include "memory/memory.sv"
-`include "memory/memory2.sv"
+`include "memory/memory3.sv"
 `include "bypass.sv"
 `include "hazard.sv"
 `include "pvtrans.sv"
@@ -30,14 +30,15 @@ module MyCore (
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp,
     output dbus_req_t [1:0]  dreq,
-    input  dbus_resp_t [1:0] dresp,
+    input  dbus_resp_t dresp,
     input logic[5:0] ext_int
 );
     /**
      * TODO (Lab1) your code here :)
      */
     
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,pred_flush_que;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,pred_flush_que,flushM3;
+
     u1 is_eret;
     u1 i_wait,d_wait,e_wait;
     u1 is_INTEXC,is_EXC;
@@ -49,7 +50,6 @@ module MyCore (
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
-    assign d_wait=(dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     u1 pred_taken;
     word_t pre_pc;
     u1 jr_ra_fail;
@@ -59,8 +59,29 @@ module MyCore (
     // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI(jrD),.pred_flush_que
-	);
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchI(branch_takenI),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI(jrD),.pred_flush_que,.flushM3);
+    // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
+    u1 pred_taken;
+    word_t pre_pc;
+    u1 jr_ra_fail;
+
+
+    // u1 is_jr_ra_decode;
+    // assign is_jr_ra_decode=(dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
+    // u1 jrD;
+    // // assign jrD=is_jr_ra_decode&&~jr_ra_fail;
+    // assign jrD='0;
+    logic dreq_valid;
+    assign d_wait= ~dresp.addr_ok;
+    // always_ff @(posedge clk) begin
+    //     if (resetn) begin
+    //         dreq_valid <= dreq[0].valid | dreq[1].valid;
+    //     end
+    //     else begin
+    //         dreq_valid <= '0;
+    //     end
+    // end
+
 
     assign ireq.addr=dataP_pc;
 	assign ireq.valid=~pc_except /*|| is_eret||is_EXC || excpM*/;
@@ -71,7 +92,8 @@ module MyCore (
     issue_data_t [1:0] dataI_nxt,dataI;
     execute_data_t [1:0] dataE_nxt,dataE;
     execute_data_t [1:0] dataM1_nxt,dataM1;
-    memory_data_t [1:0] dataM2_nxt,dataM2;
+    execute_data_t [1:0] dataM2_nxt,dataM2;
+    memory_data_t [1:0] dataM3_nxt,dataM3;
 
     // always_comb begin
     assign pc_succ=dataP_pc+8;
@@ -80,10 +102,12 @@ module MyCore (
     //     end
     // end
 
-    word_t jpc_save,ipc_save,pc_nxt,dpc_save;
-    u1 jpc_saved,ipc_saved,dpc_saved;
+    word_t jpc_save,ipc_save,pc_nxt;
+    u1 jpc_saved,ipc_saved;
     always_ff @(posedge clk) begin
-		if ((stallF)&&(is_EXC||is_eret)) begin
+        if (reset) begin
+            {jpc_save,ipc_save,jpc_saved,ipc_saved}<='0;
+        end else if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
         end else if (stallF && branch_takenI) begin
@@ -97,8 +121,6 @@ module MyCore (
 			ipc_saved<='0;
             jpc_save<='0;
 			jpc_saved<='0;
-            dpc_save<='0;
-			dpc_saved<='0;
 		end
 	end
 
@@ -223,13 +245,12 @@ module MyCore (
     //         end
     //     end
     // end
-
     // pc_branch pc_branch_decode(
     //     .branch(dataD_nxt[1].ctl.branch_type),
     //     .branch_condition,
-
     // );
     // assign flushF2=flushF2_hazard||zero_prej;
+
     pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
         .reset,
@@ -360,8 +381,8 @@ module MyCore (
     //     end
     // end
 
-    bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in;
-    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2;
+    bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in,dataM3_in;
+    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ;
     u1 jr_pred_finish;
 
     always_ff @(posedge clk) begin
@@ -506,6 +527,7 @@ module MyCore (
         .dataM2_in,
         .dataI_in,
         .dataEnxt_in,
+        .dataM3_in,
         // .rdstE,
         // .ra1I,.ra2I,
         // .cp0ra,.lo,.hi
@@ -530,13 +552,21 @@ module MyCore (
         assign dataM1_in[i].cp0toreg=dataM1[i].ctl.cp0toreg;
         assign dataM1_in[i].regwrite=dataM1[i].ctl.regwrite;
 
-        assign dataM2_in[i].data=dataW[i].wd;
+        assign dataM2_in[i].data=dataM2[i].alu_out;
         assign dataM2_in[i].rdst=dataM2[i].rdst;
         assign dataM2_in[i].memtoreg=dataM2[i].ctl.memtoreg;
         assign dataM2_in[i].lotoreg=dataM2[i].ctl.lotoreg;
         assign dataM2_in[i].hitoreg=dataM2[i].ctl.hitoreg;
         assign dataM2_in[i].cp0toreg=dataM2[i].ctl.cp0toreg;
         assign dataM2_in[i].regwrite=dataM2[i].ctl.regwrite;
+
+        assign dataM3_in[i].data=dataW[i].wd;
+        assign dataM3_in[i].rdst=dataM3[i].rdst;
+        assign dataM3_in[i].memtoreg=dataM3[i].ctl.memtoreg;
+        assign dataM3_in[i].lotoreg=dataM3[i].ctl.lotoreg;
+        assign dataM3_in[i].hitoreg=dataM3[i].ctl.hitoreg;
+        assign dataM3_in[i].cp0toreg=dataM3[i].ctl.cp0toreg;
+        assign dataM3_in[i].regwrite=dataM3[i].ctl.regwrite;
 
         assign dataEnxt_in[i].rdst=dataI[i].rdst;
         // assign dataEnxt_in[i].lowrite=dataI[i].ctl.lowrite;
@@ -571,40 +601,40 @@ module MyCore (
         .flush(flushM)
     );
 
-u1 req1_finish,req2_finish;
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
-                req1_finish <= '1;
-            end
-            else if (dresp[0].addr_ok) begin
-                req1_finish <= '0;
-            end
-        end else begin
-            req1_finish <= '0;
-        end   
-    end
+// u1 req1_finish,req2_finish;
+//     always_ff @(posedge clk) begin
+//         if (resetn) begin
+//             if (((dreq[0].valid&&~dresp[0].addr_ok) && dresp[1].addr_ok)) begin
+//                 req1_finish <= '1;
+//             end
+//             else if (dresp[0].addr_ok) begin
+//                 req1_finish <= '0;
+//             end
+//         end else begin
+//             req1_finish <= '0;
+//         end   
+//     end
 
-    //如果没有。
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
-                req2_finish <= '1;
-            end
-            else if (dresp[1].addr_ok) begin
-                req2_finish <= '0;
-            end
-        end 
-        else begin
-            req2_finish <= '0;
-        end   
-    end
+//     //如果没有。
+//     always_ff @(posedge clk) begin
+//         if (resetn) begin
+//             if ((dreq[1].valid&&~dresp[1].addr_ok) && dresp[0].addr_ok) begin
+//                 req2_finish <= '1;
+//             end
+//             else if (dresp[1].addr_ok) begin
+//                 req2_finish <= '0;
+//             end
+//         end 
+//         else begin
+//             req2_finish <= '0;
+//         end   
+//     end
 
     memory memory(
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
 		.dreq,
-        .req_finish({req1_finish,req2_finish}),
+        // .req_finish('0),
         .excpM
 		// .exception(is_eret||is_INTEXC)
 	);
@@ -618,21 +648,31 @@ u1 req1_finish,req2_finish;
 		.en(~stallM2),
 		.flush(flushM2)
 	);
-	
-	memory2 memory2(
-        .clk,
-		.dataE(dataM1),
-		.dataM(dataM2_nxt),
-		.dresp,
-        .dreq,
-        .d_wait,
-        .resetn
-	);
 
-	pipereg2 #(.T(memory_data_t)) M2Wreg(
+    assign dataM2_nxt[1]=dataM1[1];
+    assign dataM2_nxt[0]=dataM1[0];
+
+    pipereg2 #(.T(execute_data_t)) M2M3reg(
 		.clk,.reset,
 		.in(dataM2_nxt),
 		.out(dataM2),
+		.en('1),
+		.flush(flushM3)
+	);
+	
+	memory3 memory3(
+        .clk,
+		.dataE(dataM2),
+		.dataM(dataM3_nxt),
+		.dresp,
+        .dreq,
+        .resetn
+	);
+
+	pipereg2 #(.T(memory_data_t)) M3Wreg(
+		.clk,.reset,
+		.in(dataM3_nxt),
+		.out(dataM3),
 		.en(1'b1),
 		.flush(flushW)
 	);
@@ -641,7 +681,7 @@ u1 req1_finish,req2_finish;
 
     writeback writeback(
         // .clk,.reset,
-        .dataM(dataM2),
+        .dataM(dataM3),
         .dataW,
         .lo_rd,.hi_rd,.cp0_rd
         // .valid_i,.valid_j,.valid_k
@@ -656,12 +696,12 @@ u1 req1_finish,req2_finish;
         {hi_data,lo_data}='0;
         {valid_j,valid_k}='0;
         for (int i=1; i>=0; --i) begin
-            if (dataM2[i].ctl.hiwrite) begin
-                hi_data=dataM2[i].ctl.op==MTHI? dataM2[i].srca:dataM2[i].hilo[63:32];
+            if (dataM3[i].ctl.hiwrite) begin
+                hi_data=dataM3[i].ctl.op==MTHI? dataM3[i].srca:dataM3[i].hilo[63:32];
                 valid_j=i[0];
             end 
-            if (dataM2[i].ctl.lowrite) begin
-                lo_data=dataM2[i].ctl.op==MTLO? dataM2[i].srca:dataM2[i].hilo[31:0];
+            if (dataM3[i].ctl.lowrite) begin
+                lo_data=dataM3[i].ctl.op==MTLO? dataM3[i].srca:dataM3[i].hilo[31:0];
                 valid_k=i[0];
             end
         end
@@ -670,49 +710,47 @@ u1 req1_finish,req2_finish;
     hilo hilo(
     .clk,.reset,
     .hi(hi_rd), .lo(lo_rd),
-    .hi_write(dataM2[1].ctl.hiwrite||dataM2[0].ctl.hiwrite), .lo_write(dataM2[1].ctl.lowrite||dataM2[0].ctl.lowrite),
+    .hi_write(dataM3[1].ctl.hiwrite||dataM3[0].ctl.hiwrite), .lo_write(dataM3[1].ctl.lowrite||dataM3[0].ctl.lowrite),
     .hi_data , .lo_data
     );
     
     u1 valid_i,valid_m,valid_n;
-    assign valid_i= dataM2[1].ctl.cp0toreg;
-    assign valid_m= dataM2[1].ctl.cp0write;
-    assign valid_n=dataM2[1].cp0_ctl.ctype==EXCEPTION||dataM2[1].cp0_ctl.ctype==ERET;
-    assign is_eret=dataM2[1].cp0_ctl.ctype==ERET || dataM2[0].cp0_ctl.ctype==ERET;
+    assign valid_i= dataM3[1].ctl.cp0toreg;
+    assign valid_m= dataM3[1].ctl.cp0write;
+    assign valid_n=dataM3[1].cp0_ctl.ctype==EXCEPTION||dataM3[1].cp0_ctl.ctype==ERET;
+    assign is_eret=dataM3[1].cp0_ctl.ctype==ERET || dataM3[0].cp0_ctl.ctype==ERET;
     word_t cp0_rd;
 
-//   assign dataM2_save1.pc=dataM2[1].pc;
-//   assign dataM2_save1.valid=dataM2[1].valid;
-//   assign dataM2_save1.is_slot=dataM2[1].is_slot;
-//   assign dataM2_save1.jump=dataM2[1].ctl.branch||dataM2[1].ctl.jump;
-//   assign dataM2_save2.pc=dataM2[0].pc;
-//   assign dataM2_save2.valid=dataM2[0].valid;
-//   assign dataM2_save2.is_slot=dataM2[0].is_slot;
-//   assign dataM2_save2.jump=dataM2[0].ctl.branch||dataM2[0].ctl.jump;
+//   assign dataM3_save1.pc=dataM3[1].pc;
+//   assign dataM3_save1.valid=dataM3[1].valid;
+//   assign dataM3_save1.is_slot=dataM3[1].is_slot;
+//   assign dataM3_save1.jump=dataM3[1].ctl.branch||dataM3[1].ctl.jump;
+//   assign dataM3_save2.pc=dataM3[0].pc;
+//   assign dataM3_save2.valid=dataM3[0].valid;
+//   assign dataM3_save2.is_slot=dataM3[0].is_slot;
+//   assign dataM3_save2.jump=dataM3[0].ctl.branch||dataM3[0].ctl.jump;
    u1 inter_valid;
 
-	assign inter_valid=~i_wait&&dataM2[1].valid;
+	assign inter_valid=~i_wait&&dataM3[1].valid;
     cp0 cp0(
         .clk,.reset,
-        .ra(dataM2[valid_i].cp0ra),//直接读写的指令一次发射一条
-        .wa(dataM2[valid_m].cp0ra),
-        .wd(dataM2[valid_m].srcb),
+        .ra(dataM3[valid_i].cp0ra),//直接读写的指令一次发射一条
+        .wa(dataM3[valid_m].cp0ra),
+        .wd(dataM3[valid_m].srcb),
         .rd(cp0_rd),
         .epc,
-        .valid(dataM2[valid_m].ctl.cp0write),
+        .valid(dataM3[valid_m].ctl.cp0write),
         .is_eret,
-        .vaddr(dataM2[valid_n].cp0_ctl.vaddr),
-        .ctype(dataM2[valid_n].cp0_ctl.ctype),
-        .pc(dataM2[valid_n].pc),
-        .etype(dataM2[valid_n].cp0_ctl.etype),
+        .vaddr(dataM3[valid_n].cp0_ctl.vaddr),
+        .ctype(dataM3[valid_n].cp0_ctl.ctype),
+        .pc(dataM3[valid_n].pc),
+        .etype(dataM3[valid_n].cp0_ctl.etype),
         .ext_int,
-        .is_slot(dataM2[valid_n].is_slot),
+        .is_slot(dataM3[valid_n].is_slot),
         .is_INTEXC,
         .inter_valid,
         .is_EXC,
-        .int_pc(dataM2[1].pc)
-        // .pc_valid(dataM2[valid_n].valid)
-        // .dataM2_save({dataM2_save1,dataM2_save2})
+        .int_pc(dataM3[1].pc)
     );
 
 endmodule

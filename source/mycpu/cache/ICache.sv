@@ -4,7 +4,6 @@
 `include "common.svh"
 `ifdef VERILATOR
 
-`include "../plru.sv"
 `endif 
 module ICache (
     input logic clk, resetn,
@@ -138,13 +137,11 @@ module ICache (
     
     //hit && miss
     logic ireq_hit_1, ireq_hit_2;
-    logic ireq_avail;
     logic ireq_hit;
     
-    assign ireq_avail = state == IDLE;
-    assign ireq_hit_1 = ireq_1.valid & ireq_avail & hit_1;
-    assign ireq_hit_2 = ireq_2.valid & ireq_avail & hit_2;
-    assign ireq_hit = (ireq_hit_1 & ireq_hit_2) | (ireq_hit_1 & ~ireq_2.valid);
+    assign ireq_hit_1 = ireq_1.valid & state == IDLE & hit_1;
+    assign ireq_hit_2 = ireq_2.valid & state == IDLE & hit_2;
+    assign ireq_hit = ireq_hit_1 & ireq_hit_2;
 
     data_addr_t miss_addr;
     addr_t cbus_addr;
@@ -154,8 +151,7 @@ module ICache (
     associativity_t replace_line_1, replace_line_2;
 
     assign replace_line_1 = plru[ireq_1_addr.index];
-    assign replace_line_2 = (ireq_1_addr.index == ireq_2_addr.index) ? ~hit_line_1
-                                                               : plru[ireq_2_addr.index];
+    assign replace_line_2 = (ireq_1_addr.index == ireq_2_addr.index) ? ~hit_line_1 : plru[ireq_2_addr.index];
 
 
     always_comb begin
@@ -178,6 +174,7 @@ module ICache (
             plru <= '0;
         end
     end
+
 
     //Port 1 : ireq_1 
     logic port_1_en;
@@ -202,17 +199,7 @@ module ICache (
                                                         : '0;
     assign port_2_addr = (state==IDLE) ? {hit_line_2, ireq_2_addr.index, ireq_2_addr.offset} : miss_addr;
     assign port_2_data_w = (state==FETCH_1|state==FETCH_2) ? icresp.data : '0;
-            
 
-    logic data_ok_reg;
-    always_ff @(posedge clk) begin
-        if (resetn) begin
-            data_ok_reg <= ireq_hit;
-        end
-        else begin
-            data_ok_reg <= '0;
-        end
-    end
 
     always_ff @(posedge clk) begin
         if (resetn) begin
@@ -332,6 +319,17 @@ module ICache (
         .wdata_2(port_2_data_w),
         .rdata_2(port_2_data_r)
     );
+    
+
+    logic data_ok_reg;
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            data_ok_reg <= ireq_hit;
+        end
+        else begin
+            data_ok_reg <= '0;
+        end
+    end
 
 
     //ibus

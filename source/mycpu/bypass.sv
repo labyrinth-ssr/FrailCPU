@@ -10,6 +10,7 @@ module bypass(
     input bypass_input_t [1:0] dataE_in,
     input bypass_input_t [1:0] dataM1_in,
     input bypass_input_t [1:0] dataM2_in,
+    input bypass_input_t [1:0] dataM3_in,
     // input creg_addr_t [1:0] dataEnxt_in[1:.dst0],
     input bypass_issue_t [1:0] dataI_in,
     input bypass_execute_t [1:0] dataEnxt_in,
@@ -50,13 +51,21 @@ endfunction
                     outra1[i].bypass=~delay_toreg(dataM1_in[1]);
                     outra1[i].data=dataM1_in[1].data;
                 end else if (dataM2_in[0].regwrite&&(dataM2_in[0].rdst==dataI_in[i].ra1)) begin
-                    outra1[i].valid='1;
-                    outra1[i].bypass='1;
+                    outra1[i].valid=~delay_toreg(dataM2_in[0]);
+                    outra1[i].bypass=~delay_toreg(dataM2_in[0]);
                     outra1[i].data=dataM2_in[0].data;
                 end else if (dataM2_in[1].regwrite&&(dataM2_in[1].rdst==dataI_in[i].ra1)) begin
+                    outra1[i].valid=~delay_toreg(dataM2_in[1]);
+                    outra1[i].bypass=~delay_toreg(dataM2_in[1]);
+                    outra1[i].data=dataM2_in[1].data;
+                end else if (dataM3_in[0].regwrite&&(dataM3_in[0].rdst==dataI_in[i].ra1)) begin
                     outra1[i].valid='1;
                     outra1[i].bypass='1;
-                    outra1[i].data=dataM2_in[1].data;
+                    outra1[i].data=dataM3_in[0].data;
+                end else if (dataM3_in[1].regwrite&&(dataM3_in[1].rdst==dataI_in[i].ra1)) begin
+                    outra1[i].valid='1;
+                    outra1[i].bypass='1;
+                    outra1[i].data=dataM3_in[1].data;
                 end 
                 else begin
                 end
@@ -89,13 +98,21 @@ endfunction
                     outra2[i].bypass=~delay_toreg(dataM1_in[1]);
                     outra2[i].data=dataM1_in[1].data;
                 end else if (dataM2_in[0].regwrite&&(dataM2_in[0].rdst==dataI_in[i].ra2)) begin
-                    outra2[i].valid='1;
-                    outra2[i].bypass='1;
+                    outra2[i].valid=~delay_toreg(dataM2_in[0]);
+                    outra2[i].bypass=~delay_toreg(dataM2_in[0]);
                     outra2[i].data=dataM2_in[0].data;
                 end else if (dataM2_in[1].regwrite&&(dataM2_in[1].rdst==dataI_in[i].ra2)) begin
+                    outra2[i].valid=~delay_toreg(dataM2_in[1]);
+                    outra2[i].bypass=~delay_toreg(dataM2_in[1]);
+                    outra2[i].data=dataM2_in[1].data;
+                end else if (dataM3_in[0].regwrite&&(dataM3_in[0].rdst==dataI_in[i].ra2)) begin
                     outra2[i].valid='1;
                     outra2[i].bypass='1;
-                    outra2[i].data=dataM2_in[1].data;
+                    outra2[i].data=dataM3_in[0].data;
+                end else if (dataM3_in[1].regwrite&&(dataM3_in[1].rdst==dataI_in[i].ra2)) begin
+                    outra2[i].valid='1;
+                    outra2[i].bypass='1;
+                    outra2[i].data=dataM3_in[1].data;
                 end 
                 else begin
                 end
@@ -123,12 +140,12 @@ endmodule
                 // end else if (dataM1_in[1].lowrite) begin
                 //     out[i].valid='1;
                 //     out[i].data=dataM1_in[1].data;
-                // end else if (dataM2_in[0].lowrite) begin
+                // end else if (dataM3_in[0].lowrite) begin
                 //     out[i].valid='1;
-                //     out[i].data=dataM2_in[0].data;
-                // end else if (dataM2_in[1].lowrite) begin
+                //     out[i].data=dataM3_in[0].data;
+                // end else if (dataM3_in[1].lowrite) begin
                 //     out[i].valid='1;
-                //     out[i].data=dataM2_in[1].data;
+                //     out[i].data=dataM3_in[1].data;
                 // end
                 // end
 
@@ -149,12 +166,12 @@ endmodule
                 // end else if (dataM1_in[1].hiwrite) begin
                 //     out[i].valid='1;
                 //     out[i].data=dataM1_in[1].data;
-                // end else if (dataM2_in[0].hiwrite) begin
+                // end else if (dataM3_in[0].hiwrite) begin
                 //     out[i].valid='1;
-                //     out[i].data=dataM2_in[0].data;
-                // end else if (dataM2_in[1].hiwrite) begin
+                //     out[i].data=dataM3_in[0].data;
+                // end else if (dataM3_in[1].hiwrite) begin
                 //     out[i].valid='1;
-                //     out[i].data=dataM2_in[1].data;
+                //     out[i].data=dataM3_in[1].data;
                 // end
                 // end
 
@@ -175,11 +192,11 @@ endmodule
                 //     end else if (dataM1_in[1].cp0write&&dataM1_in[1].cp0ra==dataI_in[i].cp0ra) begin
                 //         out[i].valid='1;
                 //         out[i].data=dataM1_in[1].data;
-                //     end else if (dataM2_in[0].cp0write&&dataM2_in[0].cp0ra==dataI_in[i].cp0ra) begin
+                //     end else if (dataM3_in[0].cp0write&&dataM3_in[0].cp0ra==dataI_in[i].cp0ra) begin
                 //         out[i].valid='1;
-                //         out[i].data=dataM2_in[0].data;
-                //     end else if (dataM2_in[1].cp0write&&dataM2_in[1].cp0ra==dataI_in[i].cp0ra) begin
+                //         out[i].data=dataM3_in[0].data;
+                //     end else if (dataM3_in[1].cp0write&&dataM3_in[1].cp0ra==dataI_in[i].cp0ra) begin
                 //         out[i].valid='1;
-                //         out[i].data=dataM2_in[1].data;
+                //         out[i].data=dataM3_in[1].data;
                 //     end
                 // end

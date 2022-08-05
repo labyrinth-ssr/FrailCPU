@@ -2,5 +2,6 @@
 echo "$1 without delay"
 
 make vsim -j VSIM_ARGS="-m vivado/test5/soft/perf_func/obj/$1/axi_ram.coe -t $1.txt" || exit
+
 # echo "$1 with delay"
 # make vsim -j VSIM_ARGS="-m vivado/test5/soft/perf_func/obj/$1/axi_ram.coe -p 0.99 -f coremark.fst"  || exit

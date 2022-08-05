@@ -171,7 +171,7 @@ typedef struct packed {
 typedef struct packed {
     logic  addr_ok;  // is the address accepted by cache?
     logic  data_ok;  // is the field "data" valid?
-    word_t data;     // the data read from cache
+    double_word_t data;     // the data read from cache
 } dbus_resp_t;
 
 /**
@@ -217,9 +217,7 @@ typedef struct packed {
     word_t data;   // the data from AXI bus
 } cbus_resp_t;
 
-/**
- * AXI-related typedefs
- */
+
 typedef enum i2 {
     AXI_BURST_FIXED,
     AXI_BURST_INCR,
