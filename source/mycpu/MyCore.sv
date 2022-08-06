@@ -20,7 +20,7 @@
 `include "memory/memory3.sv"
 `include "bypass.sv"
 `include "hazard.sv"
-`include "pvtrans.sv"
+// `include "pvtrans.sv"
 `include "bpu.sv"
 `endif 
 

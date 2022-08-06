@@ -24,7 +24,6 @@ module RAM_SimpleDualPort #(
 	}
 ) (
 	input logic clk, en,
-
 	input  raddr_t   raddr, waddr,
     input  rstrobe_t strobe,
     input  rview_t   wdata,

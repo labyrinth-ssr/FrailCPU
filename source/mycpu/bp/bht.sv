@@ -8,7 +8,7 @@
 
 module bht#(
     parameter int ASSOCIATIVITY = 2,    
-    parameter int SET_NUM = 8,
+    parameter int SET_NUM = 16,
     parameter int BH_BITS = 4,
     parameter int COUNTER_BITS = 2,
 
@@ -53,7 +53,7 @@ module bht#(
     endfunction
 
     function index_t get_index(addr_t addr);
-        return addr[2+INDEX_BITS-1:2];
+        return addr[2+INDEX_BITS-1+2:2+2];
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
@@ -235,6 +235,18 @@ module bht#(
     always_ff @( posedge clk ) begin : reset
         reset_addr <= reset_addr + 1;
     end
+
+/* LUTRAM Tri_port ram*/
+
+    // meta_set_t meta_ram [(2 ** INDEX_BITS)-1:0];
+
+    // assign r_meta_in_bht = meta_ram[resetn ? replace_addr.index : reset_addr.index];
+	// assign r_meta_hit_pc = meta_ram[get_index(branch_pc)];
+    // assign r_meta_hit_pcp4 = meta_ram[get_index(branch_pc+4)];
+
+    // always_ff @(posedge clk) begin
+	// 	meta_ram[resetn ? replace_addr.index : reset_addr.index] <= resetn ? w_meta : '0;
+	// end
 
 
 

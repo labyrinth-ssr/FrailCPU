@@ -25,10 +25,39 @@ localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
 localparam type index_t = logic [ISSUE_QUEUE_WIDTH-1:0];
 // decode_data_t candidate[1:0];
 u1 have_slot;
-decode_data_t issue_queue_even [ISSUE_QUEUE_SIZE-1:0];
-decode_data_t issue_queue_odd [ISSUE_QUEUE_SIZE-1:0];
+// decode_data_t issue_queue_even [ISSUE_QUEUE_SIZE-1:0];
+// decode_data_t issue_queue_odd [ISSUE_QUEUE_SIZE-1:0];
 index_t head_even,head_odd;
 index_t tail_even,tail_odd;
+
+decode_data_t rdata_even,rdata_odd,wdata_even,wdata_odd;
+u1 even_en,odd_en;
+
+RAM_SimpleDualPort  #(
+    .ADDR_WIDTH(ISSUE_QUEUE_WIDTH),
+    .DATA_WIDTH($bits(decode_data_t)),
+    .BYTE_WIDTH($bits(decode_data_t)),
+)issue_queue_even(
+    .clk,.en(even_en),
+    .raddr(head_even),
+    .waddr(tail_even),
+    .wdata(wdata_even),
+    .rdata(rdata_even),
+    .strobe('1)
+);
+
+RAM_SimpleDualPort #(
+    .ADDR_WIDTH(ISSUE_QUEUE_WIDTH),
+    .DATA_WIDTH($bits(decode_data_t)),
+    .BYTE_WIDTH($bits(decode_data_t))
+)issue_queue_odd(
+    .clk,.en(odd_en),
+    .raddr(head_odd),
+    .waddr(tail_odd),
+    .wdata(wdata_odd),
+    .rdata(rdata_odd),
+    .strobe('1)
+);
 
 function index_t push(index_t tail_in);
     return tail_in==0? 4'd15:tail_in-1;
@@ -52,24 +81,24 @@ always_comb begin
     candidate1='0;
     candidate2='0;
     if (odd_larger(head_odd,head_even)&&head_odd!=tail_odd) begin
-        candidate1=issue_queue_odd[head_odd];
+        candidate1=rdata_odd;
     end else if (~odd_larger(head_odd,head_even)&&head_even!=tail_even) begin
-        candidate1=issue_queue_even[head_even];
+        candidate1=rdata_even;
     end
 
     if (odd_larger(head_odd,head_even)&&head_even!=tail_even) begin
-        candidate2=issue_queue_even[head_even];
+        candidate2=rdata_even;
     end else if (~odd_larger(head_odd,head_even)&&head_odd!=tail_odd) begin
-        candidate2=issue_queue_odd[head_odd];
+        candidate2=rdata_odd;
     end
 end
 
-assign issue_en1= candidate1.valid && bypass_inra1[1].valid && bypass_inra2[1].valid && 
+assign issue_en1=candidate1.valid&& bypass_inra1[1].valid && bypass_inra2[1].valid && 
 (~((candidate1.ctl.jump||candidate1.ctl.branch)&&~(candidate2.valid && bypass_inra1[0].valid && bypass_inra2[0].valid)));
 
-assign have_slot= issue_en1 && (candidate1.ctl.branch||candidate1.ctl.jump);
+assign have_slot= (candidate1.ctl.branch||candidate1.ctl.jump);
 
-assign issue_en2=candidate2.valid && bypass_inra1[0].valid && bypass_inra2[0].valid 
+assign issue_en2=candidate2.valid&& bypass_inra1[0].valid && bypass_inra2[0].valid 
 && ~((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2)&&~have_slot)
         ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en1||candidate2.ctl.branch||candidate2.ctl.jump
@@ -79,23 +108,44 @@ assign issue_en2=candidate2.valid && bypass_inra1[0].valid && bypass_inra2[0].va
 
 assign overflow= push(tail_odd)==head_odd || push(tail_even)==head_even;
 
+always_comb begin
+    {wdata_odd,wdata_even,odd_en,even_en}='0;
+    if (~stallI)begin
+        if (odd_larger(tail_odd,tail_even)&&dataD[1].valid) begin
+            wdata_odd=dataD[1];
+            odd_en='1;
+        end else if (~odd_larger(tail_odd,tail_even)&&dataD[0].valid) begin
+            wdata_odd=dataD[0];
+            odd_en='1;
+        end
+
+        if (~odd_larger(tail_odd,tail_even)&&dataD[1].valid) begin
+            wdata_even=dataD[1];
+            even_en='1;
+        end else if (odd_larger(tail_odd,tail_even)&&dataD[0].valid) begin
+            wdata_even=dataD[0];
+            even_en='1;
+        end
+    end
+end
+
 always_ff @(posedge clk) begin
     if (reset||flush_que) begin
         {tail_even,tail_odd}<='0;
     end else if (~stallI)begin
         if (odd_larger(tail_odd,tail_even)&&dataD[1].valid) begin
-            issue_queue_odd[tail_odd]<=dataD[1];
+            // issue_queue_odd[tail_odd]<=dataD[1];
             tail_odd<=push(tail_odd);
         end else if (~odd_larger(tail_odd,tail_even)&&dataD[0].valid) begin
-            issue_queue_odd[tail_odd]<=dataD[0];
+            // issue_queue_odd[tail_odd]<=dataD[0];
             tail_odd<=push(tail_odd);
         end
 
         if (~odd_larger(tail_odd,tail_even)&&dataD[1].valid) begin
-            issue_queue_even[tail_even]<=dataD[1];
+            // issue_queue_even[tail_even]<=dataD[1];
             tail_even<=push(tail_even);
         end else if (odd_larger(tail_odd,tail_even)&&dataD[0].valid) begin
-            issue_queue_even[tail_even]<=dataD[0];
+            // issue_queue_even[tail_even]<=dataD[0];
             tail_even<=push(tail_even);
         end
     end
@@ -148,12 +198,11 @@ end
                     dataI[0].rdst=candidate2.rdst;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
                     dataI[0].pre_b=candidate2.pre_b;
+                    if (have_slot) begin
+                        dataI[0].is_slot='1;
+                    end
                 end
-            if (have_slot) begin
-                dataI[0].is_slot='1;
-            end
         end
-        
     end
 
     // always_comb begin

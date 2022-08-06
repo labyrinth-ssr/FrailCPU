@@ -654,10 +654,64 @@ module DCache (
             UNCACHE_1: begin
                 cbus_addr = process_dreq_1_addr;
             end
+<<<<<<< HEAD
 
             UNCACHE_2: begin
                 cbus_addr = process_dreq_2_addr;
             end
+=======
+        endcase
+    end
+
+    always_comb begin
+        meta_w = '0;
+        if (resetn) begin
+            unique case (state)
+                FETCH_1: begin
+                    meta_w = meta_r_1;
+                    for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                        if (replace_line_1 == associativity_t'(i)) begin
+                            meta_w[i].tag = dreq_1_addr.tag;
+                            meta_w[i].valid = 1'b1;
+                        end
+                        else begin
+                        end
+                    end
+                    
+                end
+
+                FETCH_2: begin
+                    meta_w = meta_r_2;
+                    for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                        if (replace_line_2 == associativity_t'(i)) begin
+                            meta_w[i].tag = dreq_2_addr.tag;
+                            meta_w[i].valid = 1'b1;
+                        end
+                        else begin
+                        end
+                    end
+                end
+                
+                default: begin   
+                end
+            endcase    
+        end
+        else begin
+        end
+        
+    end
+
+    always_ff @(posedge clk) begin
+        if (resetn) begin
+            data_ok_reg <= dreq_hit;
+
+            w_to_r_reg <= w_to_r;
+            w_to_r_data <= dreq_1.data;
+            w_to_r_strobe <= dreq_1.strobe;
+        end
+        else begin
+            data_ok_reg <= '0;
+>>>>>>> origin/bp
 
             default: begin   
             end
