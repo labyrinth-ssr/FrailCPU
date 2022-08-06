@@ -9,8 +9,8 @@
 
 module decode(
     input fetch_data_t [1:0] dataF2,
-    output decode_data_t [1:0] dataD,
-    input u1 jr_ra_fail
+    output decode_data_t [1:0] dataD
+    // input u1 jr_ra_fail
     // input word_t rd1[1:0],
     // input word_t rd2[1:0],
     // output creg_addr_t ra1[1:0],ra2[1:0]
@@ -68,7 +68,9 @@ module decode(
     assign dataD[0].valid=dataF2[0].valid;
     // assign dataD[1].is_jr_ra
     assign dataD[1].pre_b=dataF2[1].pre_b;
+    assign dataD[1].pre_pc=dataF2[1].pre_pc;
     assign dataD[0].pre_b='0;
+    assign dataD[0].pre_pc='0;
 
 // ||(is_jr_ra1&&~jr_ra_fail)
     

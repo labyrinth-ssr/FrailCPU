@@ -8,10 +8,11 @@ module pcselect(
     input u1 is_INTEXC,
     input u1 is_eret,
     input word_t pre_pc,
-    input u1 pred_taken,decode_taken,
+    input u1 pred_taken,
+    input u1 issue_taken,
     output word_t pc_selected,
-    input u1 select_refetchD,
-    input word_t refetchD_pc,
+    // input u1 select_refetchD,
+    // input word_t refetchD_pc,
     input u1 zero_prej
 );
     always_comb begin
@@ -22,9 +23,7 @@ module pcselect(
             pc_selected=entrance;
         end else if (branch_taken) begin
             pc_selected=pc_branch;
-        end else if (select_refetchD) begin
-            pc_selected=refetchD_pc;
-        end else if (decode_taken) begin
+        end else if (issue_taken) begin
             pc_selected=pre_pc;
         end else if (zero_prej) begin
             pc_selected=pc_succ-4;

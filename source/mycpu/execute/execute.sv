@@ -15,17 +15,24 @@
         input clk,resetn,
         input issue_data_t [1:0] dataI,
         output execute_data_t [1:0] dataE,
-        output e_wait
+        output e_wait,
+        input bypass_output_t [1:0] bypass_inra1,bypass_inra2
     );
 
     word_t a[1:0],b[1:0],extend_b[1:0];
+    word_t [1:0] rd1,rd2;
+
+    for (genvar i = 0;i<2 ; ++i) begin
+        assign rd1[i]=bypass_inra1[i]? bypass_inra1[i].data:dataI[i].rd1;
+        assign rd2[i]=bypass_inra2[i]? bypass_inra2[i].data:dataI[i].rd2;
+    end
     word_t target_offset;
     u1 branch_condition;
     word_t aluout;
     assign extend_b[1] = dataI[1].ctl.zeroext ? {16'b0, dataI[1].imm} : {{16{dataI[1].imm[15]}}, dataI[1].imm};
     assign extend_b[0] = dataI[0].ctl.zeroext ? {16'b0, dataI[0].imm } : {{16{dataI[0].imm [15]}}, dataI[0].imm };
-    assign a[1]= dataI[1].ctl.shamt_valid? {27'b0,dataI[1].raw_instr [10:6]} : dataI[1].rd1;
-    assign a[0]=dataI[0].ctl.shamt_valid? {27'b0, dataI[0].raw_instr [10:6]} :dataI[0].rd1;
+    assign a[1]= dataI[1].ctl.shamt_valid? {27'b0,dataI[1].raw_instr [10:6]} : rd1[1];
+    assign a[0]=dataI[0].ctl.shamt_valid? {27'b0, dataI[0].raw_instr [10:6]} :rd1[0];
 
     u1 exception_of[1:0];
     word_t aluout2;
@@ -33,7 +40,7 @@
     always_comb begin
         for (int i=0; i<2; ++i) begin
             unique case (dataI[i].ctl.alusrc)
-                REGB:b[i]=dataI[i].rd2;
+                REGB:b[i]=rd2[i];
                 IMM:b[i]=extend_b[i];
             default: b[i]='0;
         endcase
@@ -62,18 +69,20 @@
     assign slot_pc=dataI[1].pc+4;
     word_t raw_instr;
     assign raw_instr=dataI[1].raw_instr;
+    word_t target;
     always_comb begin
-        dataE[1].target='0;
+        target='0;
         if (dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b) begin
-            dataE[1].target=slot_pc+target_offset;
+            target=slot_pc+target_offset;
         end else if (dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b) begin
-            dataE[1].target=dataI[1].pc+8;  
-        end else if (dataI[1].ctl.jr &&~dataI[1].pre_b) begin
-            dataE[1].target=dataI[1].rd1;
-        end else if (dataI[1].ctl.jump&&~dataI[1].pre_b) begin
-            dataE[1].target={slot_pc[31:28],raw_instr[25:0],2'b00};
+            target=dataI[1].pc+8;  
+        end else if (dataI[1].ctl.jr /*&&~dataI[1].pre_b*/) begin
+            target=dataI[1].rd1;
+        end else if (dataI[1].ctl.jump/*&&~dataI[1].pre_b*/) begin
+            target={slot_pc[31:28],raw_instr[25:0],2'b00};
         end
     end
+    assign dataE[1].target=target;
     assign dataE[0].dest_pc='0;
 
     always_comb begin
@@ -138,7 +147,7 @@
         .valid(dataI[1].ctl.branch)
     );
 
-    assign dataE[1].branch_taken=(dataI[1].ctl.jump&&~dataI[1].pre_b)
+    assign dataE[1].branch_taken=(dataI[1].ctl.jump&&~(dataI[1].pre_b&&dataI[1].pre_pc==dataI[1].target))
     ||(dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
     ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b);
 
@@ -330,7 +339,7 @@
             print_cnt_j<='0;
         end else begin
             print_cnt_j <= print_cnt_j + 1;
-            if (dataI[1].ctl.jump&&~dataI[1].pre_b)begin
+            if (dataI[1].ctl.jump&&~(dataI[1].pre_b&&dataI[1].pre_pc==target))begin
                 fail_j <= fail_j + 1;
             end
             if(dataI[1].ctl.jump) begin

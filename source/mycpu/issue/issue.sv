@@ -17,7 +17,13 @@ module issue(
     input bypass_output_t [1:0] bypass_inra2,
     input u1 flush_que,
     input u1 stallI,stallI_de,
-    output u1 overflow
+    output u1 overflow,
+    output decode_data_t candidate1,
+    output u1 issue_en_1,
+    output u1 candidate2_invalid,
+    input u1 pred_flush_que,
+    input u1 jr_predicted,
+    input word_t jr_predicted_pc
 );
 localparam ISSUE_QUEUE_SIZE = 16;
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
@@ -58,7 +64,8 @@ RAM_SimpleDualPort #(
     .rdata(rdata_odd),
     .strobe('1)
 );
-
+assign candidate2_invalid=~candidate2.valid;
+assign issue_en_1=issue_en1;
 function index_t push(index_t tail_in);
     return tail_in==0? 4'd15:tail_in-1;
 endfunction
@@ -75,7 +82,7 @@ u1 que_empty;
 assign que_empty= head_even==tail_even && head_odd==tail_odd;
 
 u1 issue_en1,issue_en2;
-decode_data_t candidate1,candidate2;
+decode_data_t candidate2;
 
 always_comb begin
     candidate1='0;
@@ -132,6 +139,9 @@ end
 always_ff @(posedge clk) begin
     if (reset||flush_que) begin
         {tail_even,tail_odd}<='0;
+    end else if (pred_flush_que) begin
+        tail_even<=pop(head_even);
+        tail_odd<=pop(head_odd);
     end else if (~stallI)begin
         if (odd_larger(tail_odd,tail_even)&&dataD[1].valid) begin
             // issue_queue_odd[tail_odd]<=dataD[1];
@@ -178,26 +188,31 @@ end
                 dataI[1].pc=candidate1.pc;
                 dataI[1].valid=candidate1.valid;
                 dataI[1].imm=candidate1.imm;
+                dataI[1].ra1=candidate1.ra1;
+                dataI[1].ra2=candidate1.ra2;
                 dataI[1].rd1=bypass_inra1[1].bypass? bypass_inra1[1].data :rd1[1];
                 dataI[1].rd2=bypass_inra2[1].bypass? bypass_inra2[1].data :rd2[1];
                 dataI[1].raw_instr=candidate1.raw_instr;
                 dataI[1].cp0ra=candidate1.cp0ra;
                 dataI[1].rdst=candidate1.rdst;
                 dataI[1].cp0_ctl=candidate1.cp0_ctl;
-                dataI[1].pre_b=candidate1.pre_b;
+                dataI[1].pre_b=candidate1.pre_b||jr_predicted;
+                dataI[1].pre_pc=jr_predicted_pc;
             end
             if (issue_en2) begin
                     dataI[0].ctl=candidate2.ctl;
                     dataI[0].pc=candidate2.pc;
                     dataI[0].valid=candidate2.valid;
                     dataI[0].imm=candidate2.imm;
+                    dataI[0].ra1=candidate2.ra1;
+                    dataI[0].ra2=candidate2.ra2;
                     dataI[0].rd1=bypass_inra1[0].bypass? bypass_inra1[0].data :rd1[0];
                     dataI[0].rd2=bypass_inra2[0].bypass? bypass_inra2[0].data :rd2[0];
                     dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].cp0ra=candidate2.cp0ra;
                     dataI[0].rdst=candidate2.rdst;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
-                    dataI[0].pre_b=candidate2.pre_b;
+                    dataI[0].pre_b='0;
                     if (have_slot) begin
                         dataI[0].is_slot='1;
                     end

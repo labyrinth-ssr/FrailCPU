@@ -18,7 +18,8 @@
 `include "execute/execute.sv"
 `include "memory/memory.sv"
 `include "memory/memory3.sv"
-`include "bypass.sv"
+`include "bypassI.sv"
+`include "bypassE.sv"
 `include "hazard.sv"
 // `include "pvtrans.sv"
 `include "bpu.sv"
@@ -37,7 +38,7 @@ module MyCore (
      * TODO (Lab1) your code here :)
      */
     
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3,pred_flush_que;;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait;
     u1 is_INTEXC,is_EXC;
@@ -53,17 +54,16 @@ module MyCore (
     u1 pred_taken;
     word_t pre_pc;
     u1 jr_ra_fail;
+    u1 is_jr_ra_issue;
+    // assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~jr_pred_finish&&~candidate2_invalid;
+    // (dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
+    u1 jrI;
+    assign jrI=is_jr_ra_issue&&~jr_ra_fail;
+    // assign jrI='0;
 
-
-    u1 is_jr_ra_decode;
-    assign is_jr_ra_decode=(dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
-    u1 jrD;
-    // assign jrD=is_jr_ra_decode&&~jr_ra_fail;
-    assign jrD='0;
-
-    u1 save_slotD;
-    assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
-    logic dreq_valid;
+    // u1 save_slotD;
+    // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
+    // logic dreq_valid;
     assign d_wait= ~dresp.addr_ok;
     // always_ff @(posedge clk) begin
     //     if (resetn) begin
@@ -75,7 +75,7 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.branchD(jrD),.flushM3
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
 	);
 
     assign ireq.addr=dataP_pc;
@@ -97,27 +97,27 @@ module MyCore (
     //     end
     // end
 
-    word_t jpc_save,ipc_save,pc_nxt,dpc_save;
-    u1 jpc_saved,ipc_saved,dpc_saved;
+    word_t jpc_save,ipc_save,pc_nxt,jrpc_save;
+    u1 jpc_saved,ipc_saved,jrpc_saved;
     always_ff @(posedge clk) begin
         if (reset) begin
-            {jpc_save,ipc_save,dpc_save,jpc_saved,ipc_saved,dpc_saved}<='0;
+            {jpc_save,ipc_save,jrpc_save,jpc_saved,ipc_saved,jrpc_saved}<='0;
         end else if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
         end else if (stallF && dataE[1].branch_taken) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
-        end else if (stallF && jrD) begin
-            dpc_save<=pc_selected;
-            dpc_saved<='1;
+        end else if (stallF && jrI) begin
+            jrpc_save<=pc_selected;
+            jrpc_saved<='1;
         end else if (~stallF) begin
 			ipc_save<='0;
 			ipc_saved<='0;
             jpc_save<='0;
 			jpc_saved<='0;
-            dpc_save<='0;
-			dpc_saved<='0;
+            jrpc_save<='0;
+			jrpc_saved<='0;
 		end
 	end
 
@@ -126,8 +126,8 @@ module MyCore (
             pc_nxt=ipc_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
-        end else if (dpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
-            pc_nxt=dpc_save;
+        end else if (jrpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
+            pc_nxt=jrpc_save;
         end else begin
             pc_nxt=pc_selected;
         end
@@ -140,8 +140,8 @@ module MyCore (
     u1 zero_prej;
     u1 hit_bit;
     assign zero_prej=pred_taken&&~hit_bit;
-    u1 jrD_misalign;
-    assign jrD_misalign=jrD&&save_slotD;
+    // u1 jrI_misalign;
+    // assign jrI_misalign=jrI&&save_slotD;
 
     // always_ff @(posedge clk) begin
     //     if (jrD_misalign) begin
@@ -166,10 +166,10 @@ module MyCore (
 		.is_eret,
 		.is_INTEXC,
         .pred_taken(pred_taken&&~zero_prej),
-        .pre_pc(pre_pc),
-        .decode_taken(jrD&&~save_slotD),
-        .refetchD_pc(dataD_nxt[0].pc),
-        .select_refetchD(jrD_misalign),
+        .pre_pc,
+        .issue_taken(jrI),
+        // .refetchD_pc(dataD_nxt[0].pc),
+        // .select_refetchD(jrD_misalign),
         .zero_prej
     );
     //pipereg between pcselect and fetch1
@@ -178,6 +178,7 @@ module MyCore (
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
+    assign dataF1_nxt.pre_pc= pre_pc;
     always_comb begin
         dataF1_nxt.cp0_ctl.etype='0;
         dataF1_nxt.cp0_ctl.vaddr='0;
@@ -201,7 +202,7 @@ module MyCore (
         .f1_taken(pred_taken),
         .pre_pc,
         // .need_pre()
-        .is_jr_ra_decode,
+        .is_jr_ra_decode(is_jr_ra_issue),
         .jr_ra_fail,
         // .decode_ret_pc,
         // .decode_taken,//预测跳转
@@ -214,12 +215,13 @@ module MyCore (
         .is_branch(dataE[1].ctl.branch),
         .is_j(dataE[1].ctl.op==J),
         .is_jr_ra_exe(dataE[1].is_jr_ra),
-        .pos(hit_bit)
+        .pos(hit_bit),
+        .flush_res(dataE[1].branch_taken)
     );
 
 
-    u1 branch_valid_i;
-    assign branch_valid_i=dataD_nxt[1].ctl.branch;
+    // u1 branch_valid_i;
+    // assign branch_valid_i=dataD_nxt[1].ctl.branch;
 
     // always_comb begin
     //     decode_pre_pc='0;
@@ -298,7 +300,9 @@ module MyCore (
 
     assign dataF2_nxt[1].pc=dataF1.pc;
     assign dataF2_nxt[1].pre_b=dataF1.pre_b;
+    assign dataF2_nxt[1].pre_pc=dataF1.pre_pc;
     assign dataF2_nxt[0].pre_b='0;
+    assign dataF2_nxt[0].pre_pc='0;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
@@ -320,8 +324,8 @@ module MyCore (
 
     decode decode_inst(
         .dataF2(dataF2),
-        .dataD(dataD_nxt),
-        .jr_ra_fail
+        .dataD(dataD_nxt)
+        // .jr_ra_fail
         // .rd1,.rd2,
         // .ra1,.ra2
     );
@@ -357,7 +361,41 @@ module MyCore (
     // end
 
     bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in,dataM3_in;
-    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ;
+    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ,bypass_outra1E,bypass_outra2E;
+
+    u1 jr_pred_finish;
+    decode_data_t candidate1;
+    u1 issue_en_1;
+
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            jr_pred_finish<='0;
+        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~candidate2_invalid) begin
+            jr_pred_finish<='1;
+        end else if (issue_en_1) begin
+            jr_pred_finish<='0;
+        end
+    end
+
+    assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~jr_pred_finish&&~candidate2_invalid;
+
+    u1 jr_predicted;
+    word_t jr_predicted_pc;
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            jr_predicted<='0;
+            jr_predicted_pc<='0;
+        end else if (jrI) begin
+            jr_predicted<='1;
+            jr_predicted_pc<=pre_pc;
+        end else if (issue_en_1) begin
+            jr_predicted<='0;
+            jr_predicted_pc<='0;
+        end
+    end
+
+    u1 candidate2_invalid;
+
 
     issue issue_inst(
         .clk,.reset,
@@ -370,25 +408,38 @@ module MyCore (
         .flush_que,
         .stallI,
         .overflow(overflowI),
-        .stallI_de
+        .stallI_de,
+        .candidate1,
+        .issue_en_1,
+        .pred_flush_que,
+        .candidate2_invalid,
+        .jr_predicted,
+        .jr_predicted_pc
     );
 
-    bypass_issue_t [1:0] dataI_in,issue_bypass_out;
+    bypass_issue_t [1:0] dataI_in,issue_bypass_out,dataE_nxt_in;
     assign dataI_in=issue_bypass_out;
     bypass_execute_t [1:0] dataEnxt_in;
 
-    bypass bypass_inst(
+    bypassI bypassI(
         .dataE_in,
         .dataM1_in,
         .dataM2_in,
         .dataI_in,
         .dataEnxt_in,
         .dataM3_in,
-        // .rdstE,
-        // .ra1I,.ra2I,
-        // .cp0ra,.lo,.hi
         .outra1(bypass_outra1),
         .outra2(bypass_outra2)
+    );
+
+    bypassE bypassE(
+        .dataE_in,
+        // .dataM1_in,
+        // .dataM2_in,
+        .dataE_nxt_in,
+        .dataM3_in,
+        .outra1(bypass_outra1E),
+        .outra2(bypass_outra2E)
     );
 
     for (genvar i=0; i<2 ;++i) begin
@@ -430,6 +481,9 @@ module MyCore (
         // assign dataEnxt_in[i].cp0write=dataI[i].ctl.cp0write;
         // assign dataEnxt_in[i].cp0ra=dataI[i].cp0ra;
         assign dataEnxt_in[i].regwrite=dataI[i].ctl.regwrite;
+
+        assign dataE_nxt_in[i].ra1=dataI[i].ra1;
+        assign dataE_nxt_in[i].ra2=dataI[i].ra2;
     end
 
     pipereg2 #(.T(issue_data_t))IXreg(
@@ -445,7 +499,10 @@ module MyCore (
         .clk,.resetn,
         .dataI,
         .dataE(dataE_nxt),
-        .e_wait
+        .e_wait,
+        .bypass_inra1(bypass_outra1E),
+        .bypass_inra2(bypass_outra2E)
+
     );
 
     pipereg2 #(.T(execute_data_t))XM1reg(

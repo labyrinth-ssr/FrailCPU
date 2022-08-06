@@ -1,12 +1,12 @@
-`ifndef BYPASS_SV
-`define BYPASS_SV
+`ifndef BYPASSI_SV
+`define BYPASSI_SV
 
 `ifdef VERILATOR
 `include "common.svh"
 `include "pipes.svh"
 `endif 
 
-module bypass(
+module bypassI(
     input bypass_input_t [1:0] dataE_in,
     input bypass_input_t [1:0] dataM1_in,
     input bypass_input_t [1:0] dataM2_in,
@@ -31,9 +31,9 @@ endfunction
                     outra1[i].data='0;
                     outra1[i].bypass='0;
                 if ((dataEnxt_in[0].rdst==dataI_in[i].ra1)&&dataEnxt_in[0].regwrite) begin
-                    outra1[i].valid='0;//e阶段有来不及转发的写入
+                    outra1[i].valid=~delay_toreg(dataE_in[0]);
                 end else if ((dataEnxt_in[1].rdst==dataI_in[i].ra1)&&dataEnxt_in[1].regwrite) begin
-                    outra1[i].valid='0;
+                    outra1[i].valid=~delay_toreg(dataE_in[1]);
                 end else if ((dataE_in[0].rdst==dataI_in[i].ra1)&&dataE_in[0].regwrite) begin
                     outra1[i].valid=~delay_toreg(dataE_in[0]);
                     outra1[i].bypass=~delay_toreg(dataE_in[0]);
@@ -51,11 +51,11 @@ endfunction
                     outra1[i].bypass=~delay_toreg(dataM1_in[1]);
                     outra1[i].data=dataM1_in[1].data;
                 end else if (dataM2_in[0].regwrite&&(dataM2_in[0].rdst==dataI_in[i].ra1)) begin
-                    outra1[i].valid=~delay_toreg(dataM2_in[0]);
+                    outra1[i].valid='1;
                     outra1[i].bypass=~delay_toreg(dataM2_in[0]);
                     outra1[i].data=dataM2_in[0].data;
                 end else if (dataM2_in[1].regwrite&&(dataM2_in[1].rdst==dataI_in[i].ra1)) begin
-                    outra1[i].valid=~delay_toreg(dataM2_in[1]);
+                    outra1[i].valid='1;
                     outra1[i].bypass=~delay_toreg(dataM2_in[1]);
                     outra1[i].data=dataM2_in[1].data;
                 end else if (dataM3_in[0].regwrite&&(dataM3_in[0].rdst==dataI_in[i].ra1)) begin
@@ -78,9 +78,9 @@ endfunction
                     outra2[i].data='0;
                     outra2[i].bypass='0;
                 if ((dataEnxt_in[0].rdst==dataI_in[i].ra2)&&dataEnxt_in[0].regwrite) begin
-                    outra2[i].valid='0;//e阶段有来不及转发的写入
+                    outra2[i].valid=~delay_toreg(dataE_in[0]);//e阶段有来不及转发的写入
                 end else if ((dataEnxt_in[1].rdst==dataI_in[i].ra2)&&dataEnxt_in[1].regwrite) begin
-                    outra2[i].valid='0;
+                    outra2[i].valid=~delay_toreg(dataE_in[1]);
                 end else if ((dataE_in[0].rdst==dataI_in[i].ra2)&&dataE_in[0].regwrite) begin
                     outra2[i].valid=~delay_toreg(dataE_in[0]);
                     outra2[i].bypass=~delay_toreg(dataE_in[0]);;
@@ -98,11 +98,11 @@ endfunction
                     outra2[i].bypass=~delay_toreg(dataM1_in[1]);
                     outra2[i].data=dataM1_in[1].data;
                 end else if (dataM2_in[0].regwrite&&(dataM2_in[0].rdst==dataI_in[i].ra2)) begin
-                    outra2[i].valid=~delay_toreg(dataM2_in[0]);
+                    outra2[i].valid='1;
                     outra2[i].bypass=~delay_toreg(dataM2_in[0]);
                     outra2[i].data=dataM2_in[0].data;
                 end else if (dataM2_in[1].regwrite&&(dataM2_in[1].rdst==dataI_in[i].ra2)) begin
-                    outra2[i].valid=~delay_toreg(dataM2_in[1]);
+                    outra2[i].valid='1;
                     outra2[i].bypass=~delay_toreg(dataM2_in[1]);
                     outra2[i].data=dataM2_in[1].data;
                 end else if (dataM3_in[0].regwrite&&(dataM3_in[0].rdst==dataI_in[i].ra2)) begin
