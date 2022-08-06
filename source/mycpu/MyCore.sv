@@ -24,7 +24,6 @@
 // `include "bpu.sv"
 `endif 
 
-
 module MyCore (
     input logic clk, resetn,
     output ibus_req_t  ireq,
@@ -36,8 +35,7 @@ module MyCore (
     /**
      * TODO (Lab1) your code here :)
      */
-    
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF3,flushI,flush_que,stallF3,flushM2,stallI,stallI_de,flushM3,stallF2,flushF2,flushF3_delay;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF3,flushI,flush_que,stallF3,flushM2,stallI,stallI_de,flushM3,stallF2,flushF2/*,flushF3_delay*/;
     u1 is_eret;
     u1 i_wait,d_wait,e_wait;
     u1 is_INTEXC,is_EXC;
@@ -49,6 +47,7 @@ module MyCore (
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=~iresp.addr_ok;
+    u1 delay_flushF3;
     // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     // u1 pred_taken;
     // word_t pre_pc;
@@ -75,10 +74,10 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF3,.flushF3,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.flushM3,.stallF2,.flushF2,.flushF3_delay
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF3,.flushF3,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.flushM3,.stallF2,.flushF2/*,.flushF3_delay*/
 	);
 
-    assign ireq.addr=dataP_pc;
+    // assign ireq.addr=dataP_pc;
 	assign ireq.valid=~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
@@ -102,16 +101,16 @@ module MyCore (
     always_ff @(posedge clk) begin
         if (reset) begin
             {jpc_save,ipc_save,jpc_saved,ipc_saved}<='0;
-        end else if ((stallF)&&(is_EXC||is_eret)) begin
-			ipc_save<=pc_selected;
+        end else if (stallF2&&(is_EXC||is_eret)) begin
+			ipc_save<=dataP_pc;
 			ipc_saved<='1;
-        end else if (stallF && dataE[1].branch_taken) begin
-            jpc_save<=pc_selected;
+        end else if (stallF2 && dataE[1].branch_taken) begin
+            jpc_save<=dataP_pc;
             jpc_saved<='1;
-        end /*else if (stallF && jrD) begin
+        end /*else if (stallF2 && jrD) begin
             dpc_save<=pc_selected;
             dpc_saved<='1;
-        end */else if (~stallF) begin
+        end */else if (~stallF2) begin
 			ipc_save<='0;
 			ipc_saved<='0;
             jpc_save<='0;
@@ -120,16 +119,17 @@ module MyCore (
 			// dpc_saved<='0;
 		end
 	end
+    assign pc_nxt=pc_selected;
 
     always_comb begin
         if (ipc_saved) begin
-            pc_nxt=ipc_save;
+            ireq.addr=ipc_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
-            pc_nxt=jpc_save;
+            ireq.addr=jpc_save;
         end /*else if (dpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
-            pc_nxt=dpc_save;
+            ireq.addr=dpc_save;
         end */else begin
-            pc_nxt=pc_selected;
+            ireq.addr=dataP_pc;
         end
     end
 
@@ -264,16 +264,16 @@ module MyCore (
     
     u1 rawinstr_saved;
     u64 raw_instrf2_save;
-    u1 delay_flushF3;
-    u1 flushF3_d,flushF3_dd;
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            {flushF3_d,flushF3_dd}<='0;
-        end else begin
-            flushF3_d<=flushF3_delay;
-            flushF3_dd<=flushF3_d;
-        end
-    end
+    // u1 delay_flushF3;
+    // u1 flushF3_d,flushF3_dd;
+    // always_ff @(posedge clk) begin
+    //     if (reset) begin
+    //         {flushF3_d,flushF3_dd}<='0;
+    //     end else begin
+    //         flushF3_d<=flushF3_delay;
+    //         flushF3_dd<=flushF3_d;
+    //     end
+    // end
     // u1 delay_zeroprej;
 
     // always_ff @(posedge clk) begin
@@ -299,32 +299,32 @@ module MyCore (
     //     delay_save_slotD<=save_slotD;
     // end
 
-    u1 rawinstr_saved_delay;
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            rawinstr_saved_delay<='0;
-        end else begin
-            rawinstr_saved_delay<=rawinstr_saved;
-        end
-    end
+    // u1 rawinstr_saved_delay;
+    // always_ff @(posedge clk) begin
+    //     if (reset) begin
+    //         rawinstr_saved_delay<='0;
+    //     end else begin
+    //         rawinstr_saved_delay<=rawinstr_saved;
+    //     end
+    // end
 
     always_comb begin
         dataF3_nxt[1].raw_instr=  iresp.data[31:0];
         if (dataF2.cp0_ctl.ctype==EXCEPTION) begin
             dataF3_nxt[1].raw_instr='0;
         end else
-        if (rawinstr_saved||rawinstr_saved_delay) begin
+        if (rawinstr_saved/*||rawinstr_saved_delay*/) begin
             dataF3_nxt[1].raw_instr= raw_instrf2_save[31:0];
-        end else if (delay_flushF3||flushF3_d||flushF3_dd) begin
+        end else if (delay_flushF3/*||flushF3_d||flushF3_dd*/) begin
             dataF3_nxt[1].raw_instr='0;
         end 
     end
 
     always_comb begin
         dataF3_nxt[0].raw_instr=  iresp.data[63:32];
-        if (rawinstr_saved||rawinstr_saved_delay) begin
+        if (rawinstr_saved/*||rawinstr_saved_delay*/) begin
             dataF3_nxt[0].raw_instr=raw_instrf2_save[63:32];
-        end else if (delay_flushF3||flushF3_d||flushF3_dd) begin
+        end else if (delay_flushF3/*||flushF3_d||flushF3_dd*/) begin
             dataF3_nxt[0].raw_instr='0;
         end
     end
@@ -340,10 +340,6 @@ module MyCore (
     assign dataF3_nxt[0].pc= dataF2.pc+4;
     // assign dataF3_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
     assign dataF3_nxt[0].valid=/*~pc_except&&*/dataF2.valid;
-
-
-
-
 
     pipereg2 #(.T(fetch_data_t))F3Dreg(
         .clk,
