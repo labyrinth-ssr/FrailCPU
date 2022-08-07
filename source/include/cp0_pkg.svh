@@ -44,6 +44,8 @@ typedef struct packed {
     logic [`TLB_INDEX_BIT-1:0] random; 
 } cp0_random_t;
 
+typedef u32 cp0_taglo_t;
+
 typedef enum u3 { 
 	NO_EXC,EXCEPTION,INTERUPT,ERET,INSTR
  } cp0_type_t;
@@ -92,7 +94,8 @@ typedef struct packed {
 	u32 
 	 desave,    error_epc,  tag_hi;     
 	cp0_taglo_t tag_lo;
-	u32 
+
+	u32   
 	 cache_err, err_ctl,    perf_cnt,   depc,      
 	 debug,     impl_lfsr32,  reserved21, reserved20,
 	 watch_hi,  watch_lo,   ll_addr,    config0,   
