@@ -328,6 +328,20 @@
                 dataE[0].ctl.memwrite='0;
             end
 
+            
+            if(dataI[1].ctl.op == MOVZ && (|rd2[1]))begin // rd2[1] != '0
+                dataE[1].ctl.regwrite='0;
+            end
+            if(dataI[0].ctl.op == MOVZ && (rd2[0]))begin //rd2[0] != '0
+                dataE[0].ctl.regwrite='0;
+            end
+            if(dataI[1].ctl.op == MOVN && ~(|rd2[1]))begin // rd2[1] == '0
+                dataE[1].ctl.regwrite='0;
+            end
+            if(dataI[0].ctl.op == MOVN && ~(rd2[0]))begin //rd2[0] == '0
+                dataE[0].ctl.regwrite='0;
+            end
+
     end
 
     always_comb begin//都是双端口

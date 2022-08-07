@@ -38,10 +38,19 @@ typedef enum logic[3:0] {
 `define OP_SB           6'b101000
 `define OP_SH           6'b101001
 `define OP_SW           6'b101011
-`define OP_ERET         6'b010000
+`define OP_ERET         6'b010000 //COP0
 // `define OP_MFC0         6'b010000
 // `define OP_MTC0         6'b010000
 `define OP_MUL          6'b011100
+`define OP_LL           6'b110000
+`define OP_SC           6'b111000
+`define OP_CACHE        6'b101111
+
+`define COP_
+
+
+
+
 
 
 // funct
@@ -73,6 +82,9 @@ typedef enum logic[3:0] {
 `define F_MTLO          6'b010011
 `define F_BREAK         6'b001101
 `define F_SYSCALL       6'b001100
+`define F_MOVN          6'b001011
+`define F_MOVZ          6'b001010
+`define F_SYNC          6'b001111
 
 `define B_BGEZ          5'b00001
 `define B_BLTZ          5'b00000
@@ -82,6 +94,7 @@ typedef enum logic[3:0] {
 `define C_ERET          5'b10000
 `define C_MFC0          5'b00000
 `define C_MTC0          5'b00100
+`define C_TLBWI         6'b000010
 
 typedef enum logic[1:0] { REGB, IMM} alusrcb_t;
 typedef enum logic[2:0] { T_BEQ, T_BNE, T_BGEZ, T_BLTZ, T_BGTZ, T_BLEZ } branch_t;
@@ -93,7 +106,8 @@ typedef enum logic [5:0] {
     LB, LBU, LH, LHU, LW, SB, SH, SW, MFC0, MTC0,
     ADD, SUB, SUBU, SLT, SLTU, DIV, DIVU, MULT, MULTU, 
     AND, NOR, OR, XOR, SLLV, SLL, SRAV, SRA, SRLV, SRL, 
-    JR, JALR, MFHI, MFLO, MTHI, MTLO, BREAK, SYSCALL, LUI
+    JR, JALR, MFHI, MFLO, MTHI, MTLO, BREAK, SYSCALL, LUI,
+    MOVZ, MOVN, SYNC, LL, SC, CACHE, TLBWI
 } decoded_op_t;
 
 `endif

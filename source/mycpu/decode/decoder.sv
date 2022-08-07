@@ -12,8 +12,8 @@ module decoder (
         input cp0_control_t cp0_ctl_old,
         output control_t ctl,
         output creg_addr_t srcrega, srcregb, destreg,
-        output cp0_control_t cp0_ctl,
-        output u1 is_jr_ra
+        output cp0_control_t cp0_ctl
+        // output u1 is_jr_ra
     );
     u6 op_;
     creg_addr_t rs,rd,rt;
@@ -266,7 +266,7 @@ module decoder (
                 destreg = rt;
                 ctl.msize=MSIZE2;
             end   
-            `OP_LW: begin
+            `OP_LW,`OP_LL: begin
                 ctl.op = LW;
                 ctl.regwrite = 1'b1;
                 ctl.memtoreg = 1'b1;
@@ -295,7 +295,7 @@ module decoder (
                 ctl.msize=MSIZE2;
 
             end    
-            `OP_SW: begin
+            `OP_SW,`OP_SC: begin
                 ctl.op = SW;
                 ctl.memwrite = 1'b1;
                 ctl.alusrc = IMM;
@@ -304,7 +304,10 @@ module decoder (
                 destreg = '0;
                 ctl.msize=MSIZE4;
 
-            end    
+            end
+            `OP_CACHE: begin
+				
+			end    
             `OP_ERET: begin
                 case (instr[25:21])
                     `C_ERET:begin
@@ -345,14 +348,37 @@ module decoder (
                         srcrega = '0;
                         srcregb = rt;
                         destreg = '0;
-                    end 
+                    end
                     default: begin
-                        exception_ri = 1'b1;
-                        ctl.op = RESERVED;
-                        srcrega = '0;
-                        srcregb = '0;
-                        destreg = '0;
-                cp0_ctl.ctype=EXCEPTION;
+                        case (instr[5: 0])
+							// C_ERET: begin
+							// 	op = ERET;
+							// 	ctl.is_eret = 1'b1;
+							// end
+							// C_TLBP: begin
+							// 	op = TLBP;
+							// 	ctl.is_tlbp = 1'b1;
+							// end
+							// C_TLBR: begin
+							// 	op = TLBR;
+							// 	ctl.is_tlbr = 1'b1;
+							// end
+							`C_TLBWI: begin
+								
+							end
+							// C_WAIT: begin
+							// 	op = WAIT_EX;
+							// 	ctl.is_wait = 1'b1;
+							// end
+							default: begin
+								exception_ri = 1'b1;
+								ctl.op = RESERVED;
+                                srcrega = '0;
+                                srcregb = '0;
+                                destreg = '0;
+                                cp0_ctl.ctype=EXCEPTION;
+							end
+						endcase
                     end
                 endcase
             end
@@ -619,6 +645,27 @@ module decoder (
                         srcregb = 'b0;
                         destreg = 'b0;
                     end	
+                    `F_MOVZ:begin
+                        ctl.op = MOVZ;
+                        ctl.alufunc = ALU_PASSA;
+                        ctl.regwrite = 1'b1;
+                        ctl.alusrc = REGB;
+                        srcrega = rs;
+                        srcregb = rt;
+                        destreg = rd;
+                    end
+                    `F_MOVN:begin
+                        ctl.op = MOVN;
+                        ctl.alufunc = ALU_PASSA;
+                        ctl.regwrite = 1'b1;
+                        ctl.alusrc = REGB;
+                        srcrega = rs;
+                        srcregb = rt;
+                        destreg = rd;
+                    end
+                    `F_SYNC:begin
+                        
+                    end
                     default: begin
                         exception_ri = 1'b1;
                         ctl.op = RESERVED;
@@ -648,5 +695,5 @@ module decoder (
         
 	end
 
-    assign is_jr_ra=ctl.op==JR&&srcrega==31;
+    // assign is_jr_ra=ctl.op==JR&&srcrega==31;
 endmodule
