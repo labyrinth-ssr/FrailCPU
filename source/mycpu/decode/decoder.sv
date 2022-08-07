@@ -12,7 +12,8 @@ module decoder (
         input cp0_control_t cp0_ctl_old,
         output control_t ctl,
         output creg_addr_t srcrega, srcregb, destreg,
-        output cp0_control_t cp0_ctl
+        output cp0_control_t cp0_ctl,
+        output cache_control_t cache_ctl
         // output u1 is_jr_ra
     );
     u6 op_;
@@ -29,6 +30,7 @@ module decoder (
         exception_ri = 1'b0;
         ctl = '0;
         cp0_ctl=cp0_ctl_old;
+        cache_ctl='0;
         {srcrega,srcregb,destreg}='0;
         if (valid) begin
             case (op_)
@@ -306,7 +308,46 @@ module decoder (
 
             end
             `OP_CACHE: begin
-				
+                ctl.alusrc=IMM;
+                ctl.alufunc=ALU_ADDU;
+                srcrega=rs;
+				case(instr[20:16])
+                    `I_INDEX_INVALID:begin
+                        cache_ctl.icache_inst=I_INDEX_INVALID;
+                        ctl.cache_i='1;
+                    end
+                    `I_INDEX_STORE_TAG:begin
+                        cache_ctl.icache_inst=I_INDEX_STORE_TAG;
+                        ctl.cache_i='1;
+
+                    end
+                    `I_HIT_INVALID:begin
+                        cache_ctl.icache_inst=I_HIT_INVALID;
+                        ctl.cache_i='1;
+
+                    end
+                    `D_INDEX_WRITEBACK_INVALID:begin
+                        cache_ctl.dcache_inst=D_INDEX_WRITEBACK_INVALID;
+                        ctl.cache_d='1;
+
+                    end
+                    `D_INDEX_STORE_TAG:begin
+                        cache_ctl.dcache_inst=D_INDEX_STORE_TAG;
+                        ctl.cache_d='1;
+
+                    end
+                    `D_HIT_INVALID:begin
+                        cache_ctl.dcache_inst=D_HIT_INVALID;
+                        ctl.cache_d='1;
+
+                    end
+                    `D_HIT_WRITEBACK_INVALID:begin
+                        cache_ctl.dcache_inst=D_HIT_WRITEBACK_INVALID;
+                        ctl.cache_d='1;
+
+                    end
+                    default: ;
+                endcase
 			end    
             `OP_ERET: begin
                 case (instr[25:21])

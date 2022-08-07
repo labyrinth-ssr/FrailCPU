@@ -16,6 +16,8 @@ parameter EXCCODE_OV = 5'hc;
 `define TLB_NUM 16
 `define TLB_INDEX_BIT $clog2(`TLB_NUM)
 
+typedef u32 cp0_taglo_t;
+
 typedef struct packed {
     logic [5:0] zero;     
     logic [19:0] pfn;        
@@ -88,7 +90,9 @@ typedef struct packed {
 	 * BEFORE this comment */
 	/* primary 32 registers (sel = 0) */
 	u32 
-	 desave,    error_epc,  tag_hi,     tag_lo,    
+	 desave,    error_epc,  tag_hi;     
+	cp0_taglo_t tag_lo;
+	u32 
 	 cache_err, err_ctl,    perf_cnt,   depc,      
 	 debug,     impl_lfsr32,  reserved21, reserved20,
 	 watch_hi,  watch_lo,   ll_addr,    config0,   

@@ -47,6 +47,7 @@ module MyCore (
     u1 reset;
     writeback_data_t [1:0]dataW;
     u1 pc_except;
+    // u1 cache_instE;
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
@@ -65,6 +66,8 @@ module MyCore (
     // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
     // logic dreq_valid;
     assign d_wait= ~dresp.addr_ok;
+    u1 valid_c;
+    assign valid_c=dataE[1].ctl.cache_i;
     // always_ff @(posedge clk) begin
     //     if (resetn) begin
     //         dreq_valid <= dreq[0].valid | dreq[1].valid;
@@ -75,11 +78,14 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[valid_c].ctl.cache_i),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
 	);
 
-    assign ireq.addr=dataP_pc;
-	assign ireq.valid=~pc_except /*|| is_eret||is_EXC || excpM*/;
+    word_t iaddrE;
+    
+
+    assign ireq.addr= dataE[valid_c].ctl.cache_i? dataE[valid_c].cache_addr : dataP_pc;
+	assign ireq.valid=  dataE[valid_c].ctl.cache_i||~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
     fetch_data_t [1:0] dataF2_nxt ,dataF2 ;
@@ -105,7 +111,7 @@ module MyCore (
         end else if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
-        end else if (stallF && dataE[1].branch_taken) begin
+        end else if (stallF && (dataE[1].branch_taken||dataE[valid_c].ctl.cache_i)) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (stallF && jrI) begin
@@ -126,7 +132,7 @@ module MyCore (
             pc_nxt=ipc_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
-        end else if (jrpc_saved&&~dataE[1].branch_taken&&~is_INTEXC) begin
+        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[valid_c].ctl.cache_i)&&~is_INTEXC) begin
             pc_nxt=jrpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -160,7 +166,7 @@ module MyCore (
         .pc_selected,
         .pc_succ,
         .pc_branch(dataE[1].target),
-        .branch_taken(dataE[1].branch_taken),
+        .branch_taken(dataE[1].branch_taken||dataE[valid_c].ctl.cache_i),
         .epc,
         .entrance(32'hBFC0_0380),
 		.is_eret,
@@ -171,6 +177,7 @@ module MyCore (
         // .refetchD_pc(dataD_nxt[0].pc),
         // .select_refetchD(jrD_misalign),
         .zero_prej
+        // .cache_instE
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;

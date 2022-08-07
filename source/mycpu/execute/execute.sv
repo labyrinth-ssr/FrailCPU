@@ -18,6 +18,8 @@
         input u1 d_wait,
         output e_wait,
         input bypass_output_t [1:0] bypass_inra1,bypass_inra2
+        // output u1 cache_instE,
+        // output word_t iaddrE
     );
 
     word_t a[1:0],b[1:0],extend_b[1:0];
@@ -73,6 +75,16 @@
     assign a[1]= dataI[1].ctl.shamt_valid? {27'b0,dataI[1].raw_instr [10:6]} : rd1[1];
     assign a[0]=dataI[0].ctl.shamt_valid? {27'b0, dataI[0].raw_instr [10:6]} :rd1[0];
 
+    u1 valid_c;
+    assign valid_c=dataI[1].ctl.cache;
+    assign dataE[1].cache_inst_i=dataI[1].ctl.cache_i;
+    assign dataE[0].cache_inst_i=dataI[0].ctl.cache_i;
+
+    assign dataE[1].cache_addr=  aluout;
+    assign dataE[0].cache_addr=  aluout2;
+    // assign cache_instE=dataI[1].ctl.cache||dataI[0].ctl.cache;
+    // assign iaddrE= valid_c ? aluout : aluout2;
+
     u1 exception_of[1:0];
     word_t aluout2;
 
@@ -119,6 +131,8 @@
             target=rd1[1];
         end else if (dataI[1].ctl.jump/*&&~dataI[1].pre_b*/) begin
             target={slot_pc[31:28],raw_instr[25:0],2'b00};
+        end else if (dataI[valid_c].ctl.cache_i) begin
+            target=dataI[valid_c].pc+4;
         end
     end
     assign dataE[1].target=target;
@@ -332,13 +346,13 @@
             if(dataI[1].ctl.op == MOVZ && (|rd2[1]))begin // rd2[1] != '0
                 dataE[1].ctl.regwrite='0;
             end
-            if(dataI[0].ctl.op == MOVZ && (rd2[0]))begin //rd2[0] != '0
+            if(dataI[0].ctl.op == MOVZ && (|rd2[0]))begin //rd2[0] != '0
                 dataE[0].ctl.regwrite='0;
             end
             if(dataI[1].ctl.op == MOVN && ~(|rd2[1]))begin // rd2[1] == '0
                 dataE[1].ctl.regwrite='0;
             end
-            if(dataI[0].ctl.op == MOVN && ~(rd2[0]))begin //rd2[0] == '0
+            if(dataI[0].ctl.op == MOVN && ~(|rd2[0]))begin //rd2[0] == '0
                 dataE[0].ctl.regwrite='0;
             end
 

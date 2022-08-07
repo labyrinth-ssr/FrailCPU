@@ -6,6 +6,7 @@
 `include "common.svh"
 `include "decode.svh"
 `include "cp0_pkg.svh"
+`include "cache_pkg.svh"
 
 
 /* Define instrucion decoding rules here */
@@ -110,9 +111,17 @@ typedef struct packed {
     logic hitoreg, lotoreg, cp0toreg;
     logic is_link;
     logic mul_div_r;
+	logic cache;
 	msize_t msize;
+	u1 cache_i;
+	u1 cache_d;
 
 } control_t;
+
+typedef struct packed {
+	icache_inst_t icache_inst;
+	dcache_inst_t dcache_inst;
+} cache_control_t;
 
 // typedef struct packed {
 // 	cp0_type_t ctype;
@@ -160,6 +169,7 @@ typedef struct packed {
 	// u1 is_slot;
 	// u1 is_jr_ra;
 	cp0_control_t cp0_ctl;
+	cache_control_t cache_ctl;
 	// word_t rd1,rd2;
 } decode_data_t;
 
@@ -179,7 +189,7 @@ typedef struct packed {
 	u1 pre_b;
 	u1 is_jr_ra;
 	word_t pre_pc;
-
+	cache_control_t cache_ctl;
 	cp0_control_t cp0_ctl;
 } issue_data_t;
 
@@ -203,6 +213,9 @@ typedef struct packed {
 	u1 is_jr_ra;
 	u1 penalty_taken;
 	word_t dest_pc;
+	word_t cache_addr;
+	u1 cache_inst_i;
+
 	// word_t pre_pc_jr;
 	// word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;

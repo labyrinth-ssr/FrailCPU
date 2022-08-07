@@ -46,7 +46,16 @@ typedef enum logic[3:0] {
 `define OP_SC           6'b111000
 `define OP_CACHE        6'b101111
 
-`define COP_
+`define I_INDEX_INVALID   5'b00000
+`define I_INDEX_STORE_TAG 5'b01000
+`define I_HIT_INVALID     5'b10000
+
+`define	D_INDEX_WRITEBACK_INVALID   5'b00001
+`define	D_INDEX_STORE_TAG           5'b01001
+`define	D_HIT_INVALID               5'b10001
+`define	D_HIT_WRITEBACK_INVALID     5'b10101
+
+
 
 
 

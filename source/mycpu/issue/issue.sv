@@ -111,7 +111,8 @@ assign issue_en2=candidate2.valid&& bypass_inra1[0].valid && bypass_inra2[0].val
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en1||candidate2.ctl.branch||candidate2.ctl.jump
         ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
         ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)||(candidate1.ctl.cp0toreg&&candidate2.ctl.cp0toreg)
-        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET));
+        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)
+        ||(candidate1.ctl.cache));
 
 assign overflow= push(tail_odd)==head_odd || push(tail_even)==head_even;
 
@@ -195,6 +196,7 @@ end
                 dataI[1].raw_instr=candidate1.raw_instr;
                 dataI[1].cp0ra=candidate1.cp0ra;
                 dataI[1].rdst=candidate1.rdst;
+                dataI[1].cache_ctl=candidate1.cache_ctl;
                 dataI[1].cp0_ctl=candidate1.cp0_ctl;
                 dataI[1].pre_b=candidate1.pre_b||jr_predicted;
                 dataI[1].pre_pc=jr_predicted_pc;
@@ -210,6 +212,7 @@ end
                     dataI[0].rd2=bypass_inra2[0].bypass? bypass_inra2[0].data :rd2[0];
                     dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].cp0ra=candidate2.cp0ra;
+                    dataI[0].cache_ctl=candidate2.cache_ctl;
                     dataI[0].rdst=candidate2.rdst;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
                     dataI[0].pre_b='0;

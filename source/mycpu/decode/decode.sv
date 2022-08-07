@@ -1,5 +1,6 @@
 `ifndef __DECODE_SV
 `define __DECODE_SV
+`include "cache_pkg.svh"
 `include "common.svh"
 `ifdef VERILATOR
 `include "decoder.sv"
@@ -10,6 +11,7 @@
 module decode(
     input fetch_data_t [1:0] dataF2,
     output decode_data_t [1:0] dataD
+
     // input u1 jr_ra_fail
     // input word_t rd1[1:0],
     // input word_t rd2[1:0],
@@ -26,7 +28,8 @@ module decode(
         .ctl(dataD[1].ctl),
         .srcrega(dataD[1].ra1), 
         .srcregb(dataD[1].ra2), 
-        .destreg(dataD[1].rdst)
+        .destreg(dataD[1].rdst),
+        .cache_ctl(dataD[1].cache_ctl)
         // .is_jr_ra(is_jr_ra1)
     );
     //如果0是跳转，需要把这条的valid置0，其余随意。
@@ -38,7 +41,8 @@ module decode(
         .cp0_ctl(dataD[0].cp0_ctl),
         .srcrega(dataD[0].ra1), 
         .srcregb(dataD[0].ra2), 
-        .destreg(dataD[0].rdst)
+        .destreg(dataD[0].rdst),
+        .cache_ctl(dataD[0].cache_ctl)
         // .is_jr_ra(is_jr_ra2)
     );
 
