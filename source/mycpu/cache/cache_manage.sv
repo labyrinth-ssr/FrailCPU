@@ -91,7 +91,10 @@ module cache_manage (
         .ireq_2(mmu_ireq_2),
         .iresp(mmu_iresp),
         .icreq(i_cbus_req),
-        .icresp(i_cbus_resp)
+        .icresp(i_cbus_resp),
+
+        .cache_inst('0),
+        .tag_lo('0)
     );
 
     DCache dcache (
@@ -103,7 +106,10 @@ module cache_manage (
         .dreq_2_is_uncached(dreq_2_uncache),
         .dresp(mmu_dresp),
         .dcreq(d_cbus_req),
-        .dcresp(d_cbus_resp)
+        .dcresp(d_cbus_resp),
+
+        .cache_inst('0),
+        .tag_lo('0)
     );
 
    
