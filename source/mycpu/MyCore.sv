@@ -435,8 +435,8 @@ module MyCore (
 
     bypassE bypassE(
         .dataE_in,
-        // .dataM1_in,
-        // .dataM2_in,
+        .dataM1_in,
+        .dataM2_in,
         .dataE_nxt_in,
         .dataM3_in,
         .outra1(bypass_outra1E),
