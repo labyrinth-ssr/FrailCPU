@@ -25,15 +25,18 @@ module bypassI(
 function u1 delay_toreg(bypass_input_t a);
     return a.memtoreg||a.lotoreg||a.hitoreg||a.cp0toreg;
 endfunction
+function u1 delay_toreg2(bypass_execute_t b);
+    return b.memtoreg||b.lotoreg||b.hitoreg||b.cp0toreg;
+endfunction
     for (genvar i=0; i<2; ++i) begin//针对issue head的对应端口
         always_comb begin
                     outra1[i].valid='1;
                     outra1[i].data='0;
                     outra1[i].bypass='0;
                 if ((dataEnxt_in[0].rdst==dataI_in[i].ra1)&&dataEnxt_in[0].regwrite) begin
-                    outra1[i].valid=~delay_toreg(dataE_in[0]);
+                    outra1[i].valid=~delay_toreg2(dataEnxt_in[0]);
                 end else if ((dataEnxt_in[1].rdst==dataI_in[i].ra1)&&dataEnxt_in[1].regwrite) begin
-                    outra1[i].valid=~delay_toreg(dataE_in[1]);
+                    outra1[i].valid=~delay_toreg2(dataEnxt_in[1]);
                 end else if ((dataE_in[0].rdst==dataI_in[i].ra1)&&dataE_in[0].regwrite) begin
                     outra1[i].valid=~delay_toreg(dataE_in[0]);
                     outra1[i].bypass=~delay_toreg(dataE_in[0]);
@@ -78,9 +81,9 @@ endfunction
                     outra2[i].data='0;
                     outra2[i].bypass='0;
                 if ((dataEnxt_in[0].rdst==dataI_in[i].ra2)&&dataEnxt_in[0].regwrite) begin
-                    outra2[i].valid=~delay_toreg(dataE_in[0]);//e阶段有来不及转发的写入
+                    outra2[i].valid=~delay_toreg2(dataEnxt_in[0]);//e阶段有来不及转发的写入
                 end else if ((dataEnxt_in[1].rdst==dataI_in[i].ra2)&&dataEnxt_in[1].regwrite) begin
-                    outra2[i].valid=~delay_toreg(dataE_in[1]);
+                    outra2[i].valid=~delay_toreg2(dataEnxt_in[1]);
                 end else if ((dataE_in[0].rdst==dataI_in[i].ra2)&&dataE_in[0].regwrite) begin
                     outra2[i].valid=~delay_toreg(dataE_in[0]);
                     outra2[i].bypass=~delay_toreg(dataE_in[0]);;

@@ -179,6 +179,7 @@ module MyCore (
     assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     assign dataF1_nxt.pre_pc= pre_pc;
+    assign dataF1_nxt.nxt_valid=~zero_prej;
     always_comb begin
         dataF1_nxt.cp0_ctl.etype='0;
         dataF1_nxt.cp0_ctl.vaddr='0;
@@ -216,7 +217,7 @@ module MyCore (
         .is_j(dataE[1].ctl.op==J),
         .is_jr_ra_exe(dataE[1].is_jr_ra),
         .pos(hit_bit),
-        .flush_res(dataE[1].branch_taken)
+        .flush_ras(dataE[1].branch_taken)
     );
 
 
@@ -308,9 +309,9 @@ module MyCore (
     assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
     assign dataF2_nxt[0].cp0_ctl='0;
 
-    assign dataF2_nxt[0].pc= dataF1.pc+4;
+    assign dataF2_nxt[0].pc=dataF1.nxt_valid? dataF1.pc+4:'0;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/dataF1.valid;
+    assign dataF2_nxt[0].valid=/*~pc_except&&*/dataF1.nxt_valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
@@ -370,14 +371,14 @@ module MyCore (
     always_ff @(posedge clk) begin
         if (reset) begin
             jr_pred_finish<='0;
-        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~candidate2_invalid) begin
+        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~candidate2_invalid&&~issue_en_1) begin
             jr_pred_finish<='1;
         end else if (issue_en_1) begin
             jr_pred_finish<='0;
         end
     end
 
-    assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~jr_pred_finish&&~candidate2_invalid;
+    assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~jr_pred_finish&&~candidate2_invalid&&~issue_en_1;
 
     u1 jr_predicted;
     word_t jr_predicted_pc;
@@ -481,6 +482,10 @@ module MyCore (
         // assign dataEnxt_in[i].cp0write=dataI[i].ctl.cp0write;
         // assign dataEnxt_in[i].cp0ra=dataI[i].cp0ra;
         assign dataEnxt_in[i].regwrite=dataI[i].ctl.regwrite;
+        assign dataEnxt_in[i].memtoreg=dataI[i].ctl.memtoreg;
+        assign dataEnxt_in[i].hitoreg=dataI[i].ctl.hitoreg;
+        assign dataEnxt_in[i].lotoreg=dataI[i].ctl.lotoreg;
+        assign dataEnxt_in[i].cp0toreg=dataI[i].ctl.cp0toreg;
 
         assign dataE_nxt_in[i].ra1=dataI[i].ra1;
         assign dataE_nxt_in[i].ra2=dataI[i].ra2;
@@ -501,7 +506,8 @@ module MyCore (
         .dataE(dataE_nxt),
         .e_wait,
         .bypass_inra1(bypass_outra1E),
-        .bypass_inra2(bypass_outra2E)
+        .bypass_inra2(bypass_outra2E),
+        .d_wait
 
     );
 

@@ -15,16 +15,55 @@
         input clk,resetn,
         input issue_data_t [1:0] dataI,
         output execute_data_t [1:0] dataE,
+        input u1 d_wait,
         output e_wait,
         input bypass_output_t [1:0] bypass_inra1,bypass_inra2
     );
 
     word_t a[1:0],b[1:0],extend_b[1:0];
     word_t [1:0] rd1,rd2;
+    word_t [1:0] bypass_save_rd1,bypass_save_rd2;
+    u1 [1:0]bypass_rd1_saved,bypass_rd2_saved;
+
+    u1 stallE;
+    assign stallE=e_wait||d_wait;
+
 
     for (genvar i = 0;i<2 ; ++i) begin
-        assign rd1[i]=bypass_inra1[i]? bypass_inra1[i].data:dataI[i].rd1;
-        assign rd2[i]=bypass_inra2[i]? bypass_inra2[i].data:dataI[i].rd2;
+        always_comb begin
+            rd1[i]=dataI[i].rd1;
+            rd2[i]=dataI[i].rd2;
+            if (bypass_inra1[i].bypass) begin
+                rd1[i]=bypass_inra1[i].data;
+            end else if (bypass_rd1_saved[i]) begin
+                rd1[i]=bypass_save_rd1[i];
+            end
+
+            if (bypass_inra2[i].bypass) begin
+                rd2[i]=bypass_inra2[i].data;
+            end else if (bypass_rd2_saved[i]) begin
+                rd2[i]=bypass_save_rd2[i];
+            end
+        end
+
+        always_ff @(posedge clk) begin
+            if (stallE&&bypass_inra1[i].bypass) begin
+                bypass_save_rd1[i] <= bypass_inra1[i].data;
+                bypass_rd1_saved[i] <='1;
+            end else if (~stallE) begin
+                bypass_rd1_saved[i]<='0;
+                bypass_save_rd1[i]<= '0;
+            end
+            if (stallE&&bypass_inra2[i].bypass) begin
+                bypass_save_rd2[i]<= bypass_inra2[i].data;
+                bypass_rd2_saved[i]<='1;
+            end else if (~stallE) begin
+                bypass_rd2_saved[i]<='0;
+                bypass_save_rd2[i]<= '0;
+            end
+        end
+        // assign rd1[i]=bypass_inra1[i].bypass? bypass_inra1[i].data:dataI[i].rd1;
+        // assign rd2[i]=bypass_inra2[i].bypass? bypass_inra2[i].data:dataI[i].rd2;
     end
     word_t target_offset;
     u1 branch_condition;
@@ -77,7 +116,7 @@
         end else if (dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b) begin
             target=dataI[1].pc+8;  
         end else if (dataI[1].ctl.jr /*&&~dataI[1].pre_b*/) begin
-            target=dataI[1].rd1;
+            target=rd1[1];
         end else if (dataI[1].ctl.jump/*&&~dataI[1].pre_b*/) begin
             target={slot_pc[31:28],raw_instr[25:0],2'b00};
         end
@@ -90,7 +129,7 @@
         if (dataI[1].ctl.branch) begin
             dataE[1].dest_pc=slot_pc+target_offset;
         end else if (dataI[1].ctl.jr ) begin
-            dataE[1].dest_pc=dataI[1].rd1;
+            dataE[1].dest_pc=rd1[1];
         end else if (dataI[1].ctl.jump) begin
             dataE[1].dest_pc={slot_pc[31:28],raw_instr[25:0],2'b00};
         end
@@ -143,19 +182,19 @@
     pcbranch pcbranch_inst(
         .branch(dataI[1].ctl.branch_type),
         .branch_condition,
-        .srca(dataI[1].rd1),.srcb(dataI[1].rd2),
+        .srca(rd1[1]),.srcb(rd2[1]),
         .valid(dataI[1].ctl.branch)
     );
 
-    assign dataE[1].branch_taken=(dataI[1].ctl.jump&&~(dataI[1].pre_b&&dataI[1].pre_pc==dataI[1].target))
+    assign dataE[1].branch_taken=(dataI[1].ctl.jump&&~(dataI[1].pre_b&&dataI[1].pre_pc==target))
     ||(dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
     ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b);
 
     for (genvar i=0; i<2; ++i) begin
-    assign dataE[i].srcb=dataI[i].rd2;
-    assign dataE[i].srca=dataI[i].rd1;
-    assign dataE[i].rdst=dataI[i].rdst;
-    assign dataE[i].pc=dataI[i].pc;
+        assign dataE[i].srcb=rd2[i];
+        assign dataE[i].srca=rd1[i];
+        assign dataE[i].rdst=dataI[i].rdst;
+        assign dataE[i].pc=dataI[i].pc;
     // assign dataE[i].ctl=dataI[i].ctl;
     end
     assign dataE[1].valid=dataI[1].valid;
@@ -175,12 +214,12 @@
     u64 multc,divc,multi_res;    
     u1 valid_i;
 
-    assign multia=dataI[valid_i].rd1;
-    assign multib=dataI[valid_i].rd2;
-    // assign diva=dataI[1].rd1;
-    // assign divb=dataI[1].rd2;
-    assign nega=(dataI[valid_i].ctl.op==MULT||dataI[valid_i].ctl.op==DIV)&& dataI[valid_i].rd1[31];
-    assign negb=(dataI[valid_i].ctl.op==MULT||dataI[valid_i].ctl.op==DIV)&& dataI[valid_i].rd2[31];
+    assign multia= rd1[valid_i];
+    assign multib= rd2[valid_i];
+    // assign diva=rd1[1];bypass_b_saved? bypass_save_b : 
+    // assign divb=dataI[1].rd2;bypass_a_saved? bypass_save_a : 
+    assign nega=(dataI[valid_i].ctl.op==MULT||dataI[valid_i].ctl.op==DIV)&& multia[31];
+    assign negb=(dataI[valid_i].ctl.op==MULT||dataI[valid_i].ctl.op==DIV)&& multib[31];
     
     // always_comb begin
     //     {multia,multib,diva,divb}='0;
@@ -243,6 +282,24 @@
     end
 
     assign e_wait=((div_valid)&&~div_done)||((mult_valid)&&~mult_done);
+
+
+    // always_ff @(posedge clk) begin
+    //     if (e_wait&&bypass_inra1[valid_i].bypass) begin
+    //         bypass_save_a <= bypass_inra1[valid_i].data;
+    //         bypass_a_saved<='1;
+    //     end else if (~e_wait) begin
+    //         bypass_a_saved<='0;
+    //         bypass_save_a <= '0;
+    //     end
+    //     if (e_wait&&bypass_inra2[valid_i].bypass) begin
+    //         bypass_save_b <= bypass_inra2[valid_i].data;
+    //         bypass_b_saved<='1;
+    //     end else if (~e_wait) begin
+    //         bypass_b_saved<='0;
+    //         bypass_save_b <= '0;
+    //     end
+    // end
 
     u1 [1:0] load_misalign,store_misalign;
 
@@ -310,43 +367,43 @@
     end
 
 
-    real fail_b;
-    real total_b;
-    logic[28:0] print_cnt;
-    always_ff @(posedge clk)begin
-        if(print_cnt[15] == 1)begin
-            $display("b-type success rate:%.2f %%", (total_b-fail_b)/total_b*100);
-            print_cnt<='0;
-            // $display("b-type pred-fail_b rate:%.2f %%", (total_b-fail_b)/total_b*100);
-        end else begin
-            print_cnt <= print_cnt + 1;
-            if ((dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
-                ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b))begin
-                fail_b <= fail_b + 1;
-            end
-            if(dataI[1].ctl.branch) begin
-                total_b <= total_b + 1;
-            end
-        end
-    end
+    // real fail_b;
+    // real total_b;
+    // logic[28:0] print_cnt;
+    // always_ff @(posedge clk)begin
+    //     if(print_cnt[15] == 1)begin
+    //         $display("b-type success rate:%.2f %%", (total_b-fail_b)/total_b*100);
+    //         print_cnt<='0;
+    //         // $display("b-type pred-fail_b rate:%.2f %%", (total_b-fail_b)/total_b*100);
+    //     end else begin
+    //         print_cnt <= print_cnt + 1;
+    //         if ((dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
+    //             ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b))begin
+    //             fail_b <= fail_b + 1;
+    //         end
+    //         if(dataI[1].ctl.branch) begin
+    //             total_b <= total_b + 1;
+    //         end
+    //     end
+    // end
 
-    real fail_j;
-    real total_j;
-    logic[28:0] print_cnt_j;
-    always_ff @(posedge clk)begin
-        if(print_cnt_j[15] == 1)begin
-            $display("j-type success rate:%.2f %%", (total_j-fail_j)/total_j*100);
-            print_cnt_j<='0;
-        end else begin
-            print_cnt_j <= print_cnt_j + 1;
-            if (dataI[1].ctl.jump&&~(dataI[1].pre_b&&dataI[1].pre_pc==target))begin
-                fail_j <= fail_j + 1;
-            end
-            if(dataI[1].ctl.jump) begin
-                total_j <= total_j + 1;
-            end
-        end
-    end
+    // real fail_j;
+    // real total_j;
+    // logic[28:0] print_cnt_j;
+    // always_ff @(posedge clk)begin
+    //     if(print_cnt_j[15] == 1)begin
+    //         $display("j-type success rate:%.2f %%", (total_j-fail_j)/total_j*100);
+    //         print_cnt_j<='0;
+    //     end else begin
+    //         print_cnt_j <= print_cnt_j + 1;
+    //         if (dataI[1].ctl.jump&&~(dataI[1].pre_b&&dataI[1].pre_pc==target))begin
+    //             fail_j <= fail_j + 1;
+    //         end
+    //         if(dataI[1].ctl.jump) begin
+    //             total_j <= total_j + 1;
+    //         end
+    //     end
+    // end
 
     endmodule
 

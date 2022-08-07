@@ -43,7 +43,7 @@ module jht#(
     endfunction
 
     function index_t get_index(addr_t addr);
-        return addr[2+INDEX_BITS-1:2];
+        return addr[2+INDEX_BITS-1+2:2+2];
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
@@ -90,7 +90,6 @@ module jht#(
     always_comb begin : predict_addr_index_b
         predict_addr.index = '0;
         if(pc_hit) predict_addr.index = get_index(j_pc);
-        else if(pcp4_hit) predict_addr.index = get_index(j_pc+4);
     end
     assign predict_addr.line = hit_line;
 

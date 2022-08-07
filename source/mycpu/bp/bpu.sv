@@ -4,10 +4,10 @@
 `include "common.svh"
 
 `ifdef VERILATOR
-`include "ras.sv"
 `include "bht.sv"
 `include "jht.sv"
 `include "rpct.sv"
+`include "ras.sv"
 `endif 
 
 module bpu #(
@@ -26,13 +26,12 @@ module bpu #(
     input addr_t exe_pc, dest_pc, ret_pc,// exe
     // ret_pc for jal, jalr
     input logic is_branch, is_j, is_jal, is_jalr, is_jr_ra_exe,
-    input logic is_taken
+    input logic is_taken, flush_ras
 );
 
-    logic bht_hit, jht_hit, rpct_hit;
+    logic bht_hit, jht_hit, rpct_hit, ras_fail;
     addr_t bht_pre_pc, ras_pre_pc, jht_pre_pc;
     logic prediction_outcome;
-    logic ras_fail;
 
     always_comb begin : pre_pc_block
         pre_pc = '0;
@@ -59,7 +58,7 @@ module bpu #(
     end
 
     logic bht_hit_pc, bht_hit_pcp4, jht_hit_pc, jht_hit_pcp4, rpct_hit_pc, rpce_hit_pcp4;
-    assign pos = (bht_hit_pc | rpct_hit_pc | jht_hit_pc) ? 1'b1 : 1'b0;
+    assign pos = bht_hit_pc | rpct_hit_pc | jht_hit_pc;
     assign jr_ra_fail = ras_fail;
 
     bht bht (
@@ -94,7 +93,8 @@ module bpu #(
         .pop(is_jr_ra_decode | rpct_hit),
         .ret_pc_push(ret_pc),
         .ret_pc_pop(ras_pre_pc),
-        .fail(ras_fail)
+        .fail(ras_fail),
+        .flush_ras
     );
 
     rpct rpct (

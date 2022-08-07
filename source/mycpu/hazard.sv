@@ -28,6 +28,7 @@ end
     always_comb begin
         stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;branchI_iwait_nxt=branchI_iwait;
         stallM='0;stallE='0;excp_iwait_nxt=excp_iwait;stallM2='0;flushW='0;branch_iwait_nxt=branch_iwait;flushM2='0;flushM3='0;
+        pred_flush_que='0;
         if (excpW||excpM) begin
             flushF2='1;
             flushD='1;

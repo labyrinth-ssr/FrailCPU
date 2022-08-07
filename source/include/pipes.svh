@@ -45,6 +45,7 @@ typedef struct packed {
 	// u8 cp0ra;
 	u1 regwrite;
 	creg_addr_t rdst;
+	u1 memtoreg,lotoreg,hitoreg,cp0toreg;
 } bypass_execute_t;
 
 typedef struct packed {
@@ -130,6 +131,7 @@ typedef struct packed {
 	u32 pc;
 	u1 pre_b;
 	word_t pre_pc;
+	u1 nxt_valid;
 	// int_type_t int_type;
     } fetch1_data_t;//
 

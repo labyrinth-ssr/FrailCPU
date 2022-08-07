@@ -213,6 +213,7 @@ end
                     dataI[0].rdst=candidate2.rdst;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
                     dataI[0].pre_b='0;
+                    dataI[0].pre_pc='0;
                     if (have_slot) begin
                         dataI[0].is_slot='1;
                     end

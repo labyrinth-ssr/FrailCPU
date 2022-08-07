@@ -39,7 +39,7 @@ module rpct #(
     endfunction
 
     function index_t get_index(addr_t addr);
-        return addr[2+INDEX_BITS-1:2];
+        return addr[2+INDEX_BITS-1+2:2+2];
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
@@ -47,7 +47,7 @@ module rpct #(
     meta_t [ASSOCIATIVITY-1:0] w_meta;
     associativity_t replace_line, hit_line, pc_hit_line, pcp4_hit_line;
     ram_addr_t replace_addr;
-    logic pc_hit, pcp4_hit;
+    logic pc_hit, pcp4_hit, in_rpct;
 
     // for predict
 
@@ -85,14 +85,14 @@ module rpct #(
 
     // for repalce
 
-    // always_comb begin
-    //     in_bht = 1'b0;
-    //     for (int i = 0; i < ASSOCIATIVITY; i++) begin
-    //         if (r_meta_in_bht[i].valid && r_meta_in_bht[i].tag == get_tag(executed_branch_pc)) begin
-    //             in_bht = 1'b1;
-    //         end
-    //     end 
-    // end
+    always_comb begin
+        in_rpct = 1'b0;
+        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+            if (r_meta_in_rpct[i].valid && r_meta_in_rpct[i].tag == get_tag(jrra_pc)) begin
+                in_rpct = 1'b1;
+            end
+        end 
+    end
 
     plru_t plru_ram [SET_NUM-1 : 0];
     plru_t plru_r, plru_new;
@@ -114,7 +114,7 @@ module rpct #(
 
     always_comb begin : w_meta_block
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (/*~in_bht &&*/ is_write && associativity_t'(i) == replace_line) begin
+            if (~in_rpct && is_write && associativity_t'(i) == replace_line) begin
                 w_meta[i].valid = 1'b1;
                 w_meta[i].tag = get_tag(jrra_pc);
             end else begin
