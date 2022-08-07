@@ -32,11 +32,16 @@ module MyCore (
     input  ibus_resp_t iresp,
     output dbus_req_t [1:0]  dreq,
     input  dbus_resp_t dresp,
-    input logic[5:0] ext_int
+    input logic[5:0] ext_int,
+    output icache_inst_t icache_inst,
+    output dcache_inst_t dcache_inst,
+    output word_t tag_lo
+    
 );
     /**
      * TODO (Lab1) your code here :)
      */
+     assign tag_lo='0;
     
     u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3,pred_flush_que;;
     u1 is_eret;
@@ -68,6 +73,8 @@ module MyCore (
     assign d_wait= ~dresp.addr_ok;
     u1 valid_c;
     assign valid_c=dataE[1].ctl.cache_i;
+    assign icache_inst = dataE[valid_c].cache_ctl.icache_inst;
+    assign dcache_inst = dataE[valid_c].cache_ctl.dcache_inst;
     // always_ff @(posedge clk) begin
     //     if (resetn) begin
     //         dreq_valid <= dreq[0].valid | dreq[1].valid;

@@ -184,7 +184,7 @@ module ICache (
                                 : reset_counter[INDEX_BITS-1:0];
 
     assign meta_addr_2 = ireq_2_addr.index;
-    assign meta_en = (~resetn|state==FETCH_1|state==FETCH_2);
+    assign meta_en = (~resetn|((state==FETCH_1|state==FETCH_2)&icresp.last));
 
     always_comb begin
         meta_w = meta_r_1;

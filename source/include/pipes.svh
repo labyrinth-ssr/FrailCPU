@@ -215,6 +215,7 @@ typedef struct packed {
 	word_t dest_pc;
 	word_t cache_addr;
 	u1 cache_inst_i;
+	cache_control_t cache_ctl;
 
 	// word_t pre_pc_jr;
 	// word_t lo_rd,hi_rd,cp0_rd;

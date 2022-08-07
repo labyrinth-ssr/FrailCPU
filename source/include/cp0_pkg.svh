@@ -16,7 +16,7 @@ parameter EXCCODE_OV = 5'hc;
 `define TLB_NUM 16
 `define TLB_INDEX_BIT $clog2(`TLB_NUM)
 
-typedef u32 cp0_taglo_t;
+// typedef u32 cp0_taglo_t;
 
 typedef struct packed {
     logic [5:0] zero;     

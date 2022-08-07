@@ -1,5 +1,6 @@
 `include "access.svh"
 `include "common.svh"
+`include "cache_pkg.svh"
 `ifdef VERILATOR
 `include "cache/cache_manage.sv"
 `endif 
@@ -19,6 +20,10 @@ module VTop (
     ibus_resp_t iresp;
     dbus_req_t  [1:0] dreq;
     dbus_resp_t dresp;
+    icache_inst_t icache_inst;
+    dcache_inst_t dcache_inst;
+    word_t tag_lo;
+
 
     MyCore core(.*);
     cache_manage cache_manage(

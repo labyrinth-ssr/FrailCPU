@@ -209,6 +209,7 @@
         assign dataE[i].srca=rd1[i];
         assign dataE[i].rdst=dataI[i].rdst;
         assign dataE[i].pc=dataI[i].pc;
+        assign dataE[i].cache_ctl=dataI[i].cache_ctl;
     // assign dataE[i].ctl=dataI[i].ctl;
     end
     assign dataE[1].valid=dataI[1].valid;

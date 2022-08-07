@@ -18,7 +18,10 @@ module cache_manage (
     output dbus_resp_t dresp,
 
     output cbus_req_t  creq,
-    input cbus_resp_t cresp
+    input cbus_resp_t cresp,
+    input icache_inst_t icache_inst,
+    input dcache_inst_t dcache_inst,
+    input word_t tag_lo
 );
 
     logic dreq_1_uncache;
@@ -93,8 +96,8 @@ module cache_manage (
         .icreq(i_cbus_req),
         .icresp(i_cbus_resp),
 
-        .cache_inst('0),
-        .tag_lo('0)
+        .cache_inst(icache_inst),
+        .tag_lo
     );
 
     DCache dcache (
@@ -108,8 +111,8 @@ module cache_manage (
         .dcreq(d_cbus_req),
         .dcresp(d_cbus_resp),
 
-        .cache_inst('0),
-        .tag_lo('0)
+        .cache_inst(dcache_inst),
+        .tag_lo
     );
 
    
