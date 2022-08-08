@@ -39,10 +39,13 @@ index_t tail_even,tail_odd;
 decode_data_t rdata_even,rdata_odd,wdata_even,wdata_odd;
 u1 even_en,odd_en;
 
+u1 issue_en1,issue_en2;
+decode_data_t candidate2;
+
 RAM_SimpleDualPort  #(
     .ADDR_WIDTH(ISSUE_QUEUE_WIDTH),
     .DATA_WIDTH($bits(decode_data_t)),
-    .BYTE_WIDTH($bits(decode_data_t)),
+    .BYTE_WIDTH($bits(decode_data_t))
 )issue_queue_even(
     .clk,.en(even_en),
     .raddr(head_even),
@@ -80,9 +83,6 @@ function u1 odd_larger(index_t odd,index_t even);
 endfunction
 u1 que_empty;
 assign que_empty= head_even==tail_even && head_odd==tail_odd;
-
-u1 issue_en1,issue_en2;
-decode_data_t candidate2;
 
 always_comb begin
     candidate1='0;

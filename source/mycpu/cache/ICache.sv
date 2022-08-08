@@ -193,7 +193,7 @@ module ICache (
                 INVALID: begin
                     for (int i = 0; i < ASSOCIATIVITY; i++) begin
                         if (invalid_line == associativity_t'(i)) begin
-                            meta_w[i].valid = 1'0;
+                            meta_w[i].valid = 1'b0;
                         end
                         else begin
                         end
