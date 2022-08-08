@@ -12,6 +12,7 @@ module decoder (
         input cp0_control_t cp0_ctl_old,
         output control_t ctl,
         output creg_addr_t srcrega, srcregb, destreg,
+        output u8 cp0ra,
         output cp0_control_t cp0_ctl,
         output cache_control_t cache_ctl
         // output u1 is_jr_ra
@@ -27,6 +28,7 @@ module decoder (
     u1 exception_ri;
 
     always_comb begin
+        cp0ra={instr[15:11],instr[2:0]};
         exception_ri = 1'b0;
         ctl = '0;
         cp0_ctl=cp0_ctl_old;
@@ -319,6 +321,7 @@ module decoder (
                     `I_INDEX_STORE_TAG:begin
                         cache_ctl.icache_inst=I_INDEX_STORE_TAG;
                         ctl.cache_i='1;
+                        cp0ra={5'd28,3'b000};
 
                     end
                     `I_HIT_INVALID:begin
@@ -334,6 +337,8 @@ module decoder (
                     `D_INDEX_STORE_TAG:begin
                         cache_ctl.dcache_inst=D_INDEX_STORE_TAG;
                         ctl.cache_d='1;
+                        cp0ra={5'd28,3'b000};
+
 
                     end
                     `D_HIT_INVALID:begin

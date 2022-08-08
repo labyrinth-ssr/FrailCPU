@@ -36,6 +36,12 @@ typedef struct packed {
 } bypass_input_t;
 
 typedef struct packed {
+	word_t data;
+	u8 cp0wa;
+	u1 cp0write;
+} cp0_bypass_input_t;
+
+typedef struct packed {
 	// u1 lo_read,hi_read,cp0_read;
 	// u8 cp0ra;
 	creg_addr_t ra1,ra2;
@@ -214,7 +220,7 @@ typedef struct packed {
 	u1 penalty_taken;
 	word_t dest_pc;
 	word_t cache_addr;
-	u1 cache_inst_i;
+	// u1 cache_inst_i;
 	cache_control_t cache_ctl;
 
 	// word_t pre_pc_jr;

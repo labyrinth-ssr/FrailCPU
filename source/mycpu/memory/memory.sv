@@ -55,7 +55,7 @@ for (genvar i=0; i<2; ++i) begin
             end else begin
                 dreq[i].valid = '1  ;
             end
-            dreq[i].addr = dataE[i].alu_out;
+            dreq[i].addr = dataE[i].ctl.cache_d? dataE[i].cache_addr :dataE[i].alu_out;
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];
             dreq[i].size=dataE[i].ctl.msize;

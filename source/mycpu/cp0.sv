@@ -11,8 +11,10 @@ module cp0
 	(
 	input logic clk, reset,
 	input u8 ra,wa,
+	input u8 raM,
 	input word_t wd,
 	output word_t rd,
+	output word_t rdM,
 	output word_t epc,
 	input u1 valid,is_eret,
 	input word_t vaddr,
@@ -106,8 +108,34 @@ module cp0
 			default: rd = '0;
 		endcase
 		end 
-		
 	end
+
+		always_comb begin
+		rdM = '0;
+		if (raM[2:0]==3'b0) begin
+			unique case(raM[7:3])
+			5'd0:  rdM = regs.index;
+			5'd1:  rdM = regs.random;
+			5'd2:  rdM = regs.entry_lo0;
+			5'd3:  rdM = regs.entry_lo1;
+			5'd4:  rdM = regs.context_;
+			5'd5:  rdM = regs.page_mask;
+			5'd6:  rdM = regs.wired;
+			// 5'd7:  rdM = regs.reserved7;
+			5'd8:  rdM = regs.bad_vaddr;
+			5'd9:  rdM = regs.count;
+			5'd10: rdM = regs.entry_hi;
+			5'd11: rdM = regs.compare;
+			5'd12: rdM = regs.status;
+			5'd13: rdM = regs.cause;
+			5'd14: rdM = regs.epc;
+			5'd15: rdM = regs.prid;
+			5'd16: rdM = regs.config0;
+			default: rdM = '0;
+		endcase
+		end 
+	end
+		
 	// write
 	u5 code;
 	always_comb begin
@@ -215,6 +243,7 @@ module cp0
 						5'd14: regs_nxt.epc = wd;
 						// 5'd15: regs_nxt.prid=wd;
 						5'd16: regs_nxt.config0[2:0] = wd[2:0];
+						5'd28: regs_nxt.tag_lo=wd;
 						default:;
 					endcase
 		end

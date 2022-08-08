@@ -77,11 +77,11 @@
 
     u1 valid_c;
     assign valid_c=dataI[1].ctl.cache;
-    assign dataE[1].cache_inst_i=dataI[1].ctl.cache_i;
-    assign dataE[0].cache_inst_i=dataI[0].ctl.cache_i;
+    // assign dataE[1].cache_inst_i=dataI[1].ctl.cache_i;
+    // assign dataE[0].cache_inst_i=dataI[0].ctl.cache_i;
 
     assign dataE[1].cache_addr=  aluout;
-    assign dataE[0].cache_addr=  aluout2;
+    assign dataE[0].cache_addr=  '0;
     // assign cache_instE=dataI[1].ctl.cache||dataI[0].ctl.cache;
     // assign iaddrE= valid_c ? aluout : aluout2;
 

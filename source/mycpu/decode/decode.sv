@@ -29,7 +29,8 @@ module decode(
         .srcrega(dataD[1].ra1), 
         .srcregb(dataD[1].ra2), 
         .destreg(dataD[1].rdst),
-        .cache_ctl(dataD[1].cache_ctl)
+        .cache_ctl(dataD[1].cache_ctl),
+        .cp0ra(dataD[1].cp0ra)
         // .is_jr_ra(is_jr_ra1)
     );
     //如果0是跳转，需要把这条的valid置0，其余随意。
@@ -42,7 +43,8 @@ module decode(
         .srcrega(dataD[0].ra1), 
         .srcregb(dataD[0].ra2), 
         .destreg(dataD[0].rdst),
-        .cache_ctl(dataD[0].cache_ctl)
+        .cache_ctl(dataD[0].cache_ctl),
+        .cp0ra(dataD[0].cp0ra)
         // .is_jr_ra(is_jr_ra2)
     );
 
@@ -64,7 +66,7 @@ module decode(
         assign dataD[i].raw_instr=dataF2[i].raw_instr;
         assign dataD[i].pc=dataF2[i].pc;
         // assign dataD[i].pre_b=dataF2[i].pre_b;
-        assign dataD[i].cp0ra={dataF2[i].raw_instr[15:11],dataF2[i].raw_instr[2:0]};
+        // assign dataD[i].cp0ra= {dataF2[i].raw_instr[15:11],dataF2[i].raw_instr[2:0]};
         // assign dataD[i].ra1=ra1[i];
         // assign dataD[i].ra2=ra2[i];
     end

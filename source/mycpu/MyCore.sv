@@ -41,7 +41,7 @@ module MyCore (
     /**
      * TODO (Lab1) your code here :)
      */
-     assign tag_lo='0;
+    assign tag_lo='0;
     
     u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3,pred_flush_que;;
     u1 is_eret;
@@ -89,9 +89,31 @@ module MyCore (
 	);
 
     word_t iaddrE;
-    
+    // word_t icache_addr_save;
+    // u1 icache_addr_saved;
 
-    assign ireq.addr= dataE[valid_c].ctl.cache_i? dataE[valid_c].cache_addr : dataP_pc;
+    // always_ff @(posedge clk) begin
+    //     if (reset) begin
+    //         {icache_addr_save,icache_addr_saved}<='0;
+    //     end else if (dataE[valid_c].ctl.cache_i&&i_wait) begin
+    //         icache_addr_save<=dataE[valid_c].cache_addr;
+    //         icache_addr_saved<='1;
+    //     end else if (~i_wait) begin
+    //         {icache_addr_save,icache_addr_saved}<='0;
+    //     end
+    // end
+    // // u1 i_wait_copy;
+    // // assign 
+    // always_comb begin
+    //     ireq.addr=dataP_pc;
+    //     if (icache_addr_saved) begin
+    //         ireq.addr=icache_addr_save;
+    //     end else if(~iresp.addr_ok&&dataE[valid_c].ctl.cache_i) begin
+    //         ireq.addr=dataE[valid_c].cache_addr;
+    //     end
+    // end
+
+    assign ireq.addr= dataP_pc;
 	assign ireq.valid=  dataE[valid_c].ctl.cache_i||~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
@@ -110,15 +132,20 @@ module MyCore (
     //     end
     // end
 
-    word_t jpc_save,ipc_save,pc_nxt,jrpc_save;
-    u1 jpc_saved,ipc_saved,jrpc_saved;
+    word_t jpc_save,ipc_save,pc_nxt,jrpc_save,icache_addr_save;
+    u1 jpc_saved,ipc_saved,jrpc_saved,icache_addr_saved;
     always_ff @(posedge clk) begin
         if (reset) begin
             {jpc_save,ipc_save,jrpc_save,jpc_saved,ipc_saved,jrpc_saved}<='0;
         end else if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
-        end else if (stallF && (dataE[1].branch_taken||dataE[valid_c].ctl.cache_i)) begin
+        end else if (stallF && dataE[1].branch_taken ) begin
+            jpc_save<=pc_selected;
+            jpc_saved<='1;
+        end else if (stallF && dataE[valid_c].ctl.cache_i ) begin
+            icache_addr_save<=dataE[valid_c].cache_addr;
+            icache_addr_saved<='1;
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (stallF && jrI) begin
@@ -127,8 +154,13 @@ module MyCore (
         end else if (~stallF) begin
 			ipc_save<='0;
 			ipc_saved<='0;
-            jpc_save<='0;
-			jpc_saved<='0;
+            if (~icache_addr_saved) begin
+                jpc_save<='0;
+                jpc_saved<='0;
+            end
+            {icache_addr_save,icache_addr_saved}<='0;
+            // jpc_save<='0;
+			// jpc_saved<='0;
             jrpc_save<='0;
 			jrpc_saved<='0;
 		end
@@ -137,6 +169,8 @@ module MyCore (
     always_comb begin
         if (ipc_saved) begin
             pc_nxt=ipc_save;
+        end else if (icache_addr_saved&&~is_EXC&&~is_eret) begin
+            pc_nxt=icache_addr_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
         end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[valid_c].ctl.cache_i)&&~is_INTEXC) begin
@@ -375,8 +409,7 @@ module MyCore (
     //     end
     // end
 
-    bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in,dataM3_in;
-    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ,bypass_outra1E,bypass_outra2E;
+
 
     u1 jr_pred_finish;
     decode_data_t candidate1;
@@ -410,6 +443,10 @@ module MyCore (
     end
 
     u1 candidate2_invalid;
+
+    bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in,dataM3_in;
+    bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ,bypass_outra1E,bypass_outra2E;
+    cp0_bypass_input_t [1:0]dataM1_inM,dataM2_inM,dataM3_inM;
 
 
     issue issue_inst(
@@ -474,6 +511,11 @@ module MyCore (
         assign dataM1_in[i].cp0toreg=dataM1[i].ctl.cp0toreg;
         assign dataM1_in[i].regwrite=dataM1[i].ctl.regwrite;
 
+        assign dataM1_inM[i].cp0write=dataM1[i].ctl.cp0write;
+        assign dataM1_inM[i].data=dataM1[i].srcb;
+        assign dataM1_inM[i].cp0wa=dataM1[i].cp0ra;
+
+
         assign dataM2_in[i].data=dataM2[i].alu_out;
         assign dataM2_in[i].rdst=dataM2[i].rdst;
         assign dataM2_in[i].memtoreg=dataM2[i].ctl.memtoreg;
@@ -481,6 +523,11 @@ module MyCore (
         assign dataM2_in[i].hitoreg=dataM2[i].ctl.hitoreg;
         assign dataM2_in[i].cp0toreg=dataM2[i].ctl.cp0toreg;
         assign dataM2_in[i].regwrite=dataM2[i].ctl.regwrite;
+
+        assign dataM2_inM[i].cp0write=dataM2[i].ctl.cp0write;
+        assign dataM2_inM[i].cp0wa=dataM2[i].cp0ra;
+        assign dataM2_inM[i].data=dataM2[i].srcb;
+
 
         assign dataM3_in[i].data=dataW[i].wd;
         assign dataM3_in[i].rdst=dataM3[i].rdst;
@@ -490,11 +537,12 @@ module MyCore (
         assign dataM3_in[i].cp0toreg=dataM3[i].ctl.cp0toreg;
         assign dataM3_in[i].regwrite=dataM3[i].ctl.regwrite;
 
+        assign dataM3_inM[i].cp0write=dataM3[i].ctl.cp0write;
+        assign dataM3_inM[i].cp0wa=dataM3[i].cp0ra;
+        assign dataM3_inM[i].data=dataM3[i].srcb;
+
+
         assign dataEnxt_in[i].rdst=dataI[i].rdst;
-        // assign dataEnxt_in[i].lowrite=dataI[i].ctl.lowrite;
-        // assign dataEnxt_in[i].hiwrite=dataI[i].ctl.hiwrite;
-        // assign dataEnxt_in[i].cp0write=dataI[i].ctl.cp0write;
-        // assign dataEnxt_in[i].cp0ra=dataI[i].cp0ra;
         assign dataEnxt_in[i].regwrite=dataI[i].ctl.regwrite;
         assign dataEnxt_in[i].memtoreg=dataI[i].ctl.memtoreg;
         assign dataEnxt_in[i].hitoreg=dataI[i].ctl.hitoreg;
@@ -522,7 +570,6 @@ module MyCore (
         .bypass_inra1(bypass_outra1E),
         .bypass_inra2(bypass_outra2E),
         .d_wait
-
     );
 
     pipereg2 #(.T(execute_data_t))XM1reg(
@@ -562,11 +609,30 @@ module MyCore (
 //             req2_finish <= '0;
 //         end   
 //     end
+    bypass_output_t outcp0r;
+   word_t cp0rdM;
+//    word_t cp0rd;
+   assign tag_lo=outcp0r.bypass? outcp0r.data:cp0rdM;
+
+    // cp0_bypass_input_t [1:0] 
+    
+    // 28
+
+    bypassM bypassM(
+        .dataM1_in(dataM1_inM),
+        .dataM2_in(dataM2_inM),
+        .dataM3_in(dataM3_inM),
+        .cp0ra(dataE[valid_c].cp0ra),
+        .outcp0r
+    );
+
+
 
     memory memory(
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
 		.dreq,
+        // .bypass_input(cp0rd)
         // .req_finish('0),
         .excpM
 		// .exception(is_eret||is_INTEXC)
@@ -667,6 +733,8 @@ module MyCore (
 	assign inter_valid=~i_wait&&dataM3[1].valid;
     cp0 cp0(
         .clk,.reset,
+        .raM(dataE[valid_c].cp0ra),
+        .rdM(cp0rdM),
         .ra(dataM3[valid_i].cp0ra),//直接读写的指令一次发射一条
         .wa(dataM3[valid_m].cp0ra),
         .wd(dataM3[valid_m].srcb),
