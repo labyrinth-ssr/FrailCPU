@@ -20,7 +20,7 @@ always_ff @(posedge clk) begin
     end else begin
         excp_iwait<=excp_iwait_nxt;
         branch_iwait<=branch_iwait_nxt;
-        branchI_iwait<=branch_iwait_nxt;
+        branchI_iwait<=branchI_iwait_nxt;
         // misalign_iwait<=misalign_iwait_nxt;        
     end
 end
