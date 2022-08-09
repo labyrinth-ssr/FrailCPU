@@ -19,60 +19,58 @@ module cache_manage (
 
     output cbus_req_t  creq,
     input cbus_resp_t cresp,
+
     input icache_inst_t icache_inst,
     input dcache_inst_t dcache_inst,
-    input word_t tag_lo
+    input word_t tag_lo,
+
+    input mmu_req_t mmu_in,
+    output mmu_resp_t mmu_out,
+    output mmu_exc_out_t mmu_exc
 );
+    // addr_t mmu_ireq_addr;
+    // addr_t mmu_dreq_1_addr;
+    // addr_t mmu_dreq_2_addr;
 
-    logic dreq_1_uncache;
-    logic dreq_2_uncache;
+    // pvtrans i_pvtrans(
+    //     .vaddr(ireq.addr),
+    //     .paddr(mmu_ireq_addr)
+    // );
+    // pvtrans d_1_pvtrans(
+    //     .vaddr(dreq_1.addr),
+    //     .paddr(mmu_dreq_1_addr)
+    // );
+    // pvtrans d_2_pvtrans(
+    //     .vaddr(dreq_2.addr),
+    //     .paddr(mmu_dreq_2_addr)
+    // );
 
-    addr_t mmu_ireq_addr;
-    addr_t mmu_dreq_1_addr;
-    addr_t mmu_dreq_2_addr;
+    //ireq
+    ibus_req_t [1:0] v_ireq;
+    assign v_ireq[0] = ireq;
+    always_comb begin
+        v_ireq[1] = ireq;
+        v_ireq[1].addr = ireq.addr + 4;
+    end
 
-    pvtrans i_pvtrans(
-        .vaddr(ireq.addr),
-        .paddr(mmu_ireq_addr)
-    );
-    pvtrans d_1_pvtrans(
-        .vaddr(dreq_1.addr),
-        .paddr(mmu_dreq_1_addr)
-    );
-    pvtrans d_2_pvtrans(
-        .vaddr(dreq_2.addr),
-        .paddr(mmu_dreq_2_addr)
-    );
+    //dreq
+    dbus_req_t [1:0] v_dreq;
+    assign v_dreq[0] = dreq_1;
+    assign v_dreq[1] = dreq_2;
 
     //地址转换
-    ibus_req_t mmu_ireq_1,mmu_ireq_2;
+    ibus_req_t mmu_ireq_1;
+    ibus_req_t mmu_ireq_2;
     ibus_resp_t mmu_iresp;
 
     dbus_req_t mmu_dreq_1;
     dbus_req_t mmu_dreq_2;
     dbus_resp_t mmu_dresp;
 
-    always_comb begin
-        mmu_ireq_1 = ireq;
-        mmu_ireq_1.addr = mmu_ireq_addr; //V->P
-    end
+    logic [1:0] i_uncache;
+    logic [1:0] d_uncache;
 
-    always_comb begin
-        mmu_ireq_2= ireq;
-        mmu_ireq_2.addr = mmu_ireq_addr+4; //V->P
-    end
     assign iresp = mmu_iresp;
-
-    always_comb begin
-        mmu_dreq_1 = dreq_1;
-        mmu_dreq_1.addr = mmu_dreq_1_addr;
-    end
-    assign dreq_1_uncache = dreq_1.addr[31:29]==3'b101;
-    always_comb begin
-        mmu_dreq_2 = dreq_2;
-        mmu_dreq_2.addr = mmu_dreq_2_addr;
-    end
-    assign dreq_2_uncache = dreq_2.addr[31:29]==3'b101;
     assign dresp = mmu_dresp;
 
 
@@ -86,6 +84,29 @@ module cache_manage (
     cbus_req_t oreq;
     cbus_resp_t oresp;
 
+    mmu mmu (
+        .clk,
+        .resetn,
+
+        .config_k0(3'd3),
+
+        //地址翻译 
+        .v_ireq,
+        .ireq({mmu_ireq_2, mmu_ireq_1}),
+        .v_dreq,
+        .dreq({mmu_dreq_2, mmu_dreq_1}),
+
+        //uncache信号
+        .i_uncache,
+        .d_uncache,
+
+        //TLB指令相关
+        .mmu_in,
+        .mmu_out,
+
+        //TLB例外
+        .mmu_exc  
+    );
 
     ICache icache (
         .clk, 
@@ -104,9 +125,9 @@ module cache_manage (
         .clk, 
         .resetn,
         .dreq_1(mmu_dreq_1),
-        .dreq_1_is_uncached(dreq_1_uncache),
+        .dreq_1_is_uncached(d_uncache[0]),
         .dreq_2(mmu_dreq_2),
-        .dreq_2_is_uncached(dreq_2_uncache),
+        .dreq_2_is_uncached(d_uncache[1]),
         .dresp(mmu_dresp),
         .dcreq(d_cbus_req),
         .dcresp(d_cbus_resp),

@@ -13,8 +13,8 @@ module tlb (
     //i_search
     // input logic [18:0] i_vpn2,
     // input logic i_odd_page,
-    input vaddr_t i_vaddr,
-    output tlb_search_t i_search_result,
+    input vaddr_t [1:0] i_vaddr,
+    output tlb_search_t [1:0] i_search_result,
 
     //d_search
     // input logic [18:0] d_vpn2,
@@ -38,14 +38,16 @@ module tlb (
 
     tlb_t tlb_ram;
 
-    tlb_search i_search (
-        .tlb_ram,
-        // .vpn2(i_vpn2),
-        // .odd_page(i_odd_page),
-        .vaddr(i_vaddr),
-        .asid(asid),
-        .search_result(i_search_result)
-    );
+    for (genvar i = 0; i < 2; i++) begin
+        tlb_search i_search (
+            .tlb_ram,
+            // .vpn2(i_vpn2),
+            // .odd_page(i_odd_page),
+            .vaddr(i_vaddr[i]),
+            .asid(asid),
+            .search_result(i_search_result[i])
+        );
+    end
 
     for (genvar i = 0; i < 2; i++) begin
         tlb_search d_search (

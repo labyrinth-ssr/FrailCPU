@@ -28,9 +28,6 @@ module VTop (
     mmu_resp_t mmu_resp;
     mmu_exc_out_t mmu_exc_out;
 
-    assign mmu_resp='0;
-    assign mmu_exc_out='0;
-
     MyCore core(.*);
     cache_manage cache_manage(
         .dreq_1(dreq[1]),
@@ -38,6 +35,11 @@ module VTop (
         .dresp(dresp),
         .creq(oreq),
         .cresp(oresp),
+
+        .mmu_in(mmu_req),
+        .mmu_out(mmu_resp),
+        .mmu_exc(mmu_exc_out),
+
         .*
     );
 
