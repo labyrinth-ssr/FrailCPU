@@ -12,16 +12,17 @@ module pcselect(
     input u1 issue_taken,
     output word_t pc_selected,
     input u1 zero_prej,
-    input u1 is_tlb_refill
+    input word_t entrance
+    // input u1 is_tlb_refill
 );
     always_comb begin
         pc_selected='0;
         if (is_eret) begin
             pc_selected=epc;
-        end else if (is_tlb_refill) begin
+        end /*else if (is_tlb_refill) begin
             pc_selected=32'hbfc00200;
-        end else if (is_INTEXC) begin
-            pc_selected=32'hBFC0_0380;
+        end */else if (is_INTEXC) begin
+            pc_selected=entrance;
         end else if (branch_taken) begin
             pc_selected=pc_branch;
         end else if (issue_taken) begin

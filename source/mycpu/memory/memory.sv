@@ -41,21 +41,16 @@ for (genvar i=0; i<2; ++i) begin
     always_comb begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
-            if (i==1) begin
-                dreq[i].valid = '1  ;
-            end else begin
-                dreq[i].valid = '1  ;
-            end
+            
+            // dreq[i].valid = '1  ;
             dreq[i].strobe = '0;
         end else if (dataE[i].ctl.memwrite) begin
-            if (i==1) begin
-                dreq[i].valid = '1  ;
-            end else begin
-                dreq[i].valid = '1  ;
-            end
+            
+            // dreq[i].valid = '1  ;
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];
         end
+        dreq[i].valid=dataE[i].ctl.memtoreg||dataE[i].ctl.memwrite||dataE[i].ctl.cache_d;
         dreq[i].addr = dataE[i].ctl.cache_d? dataE[i].cache_addr :dataE[i].alu_out;
         dreq[i].size=dataE[i].ctl.msize;
     end

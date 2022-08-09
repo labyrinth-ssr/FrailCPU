@@ -27,6 +27,7 @@ module VTop (
     mmu_req_t mmu_req;
     mmu_resp_t mmu_resp;
     mmu_exc_out_t mmu_exc_out;
+    u3 config_k0;
 
     MyCore core(.*);
     cache_manage cache_manage(

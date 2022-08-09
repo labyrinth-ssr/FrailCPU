@@ -26,7 +26,9 @@ module cache_manage (
 
     input mmu_req_t mmu_in,
     output mmu_resp_t mmu_out,
-    output mmu_exc_out_t mmu_exc
+    output mmu_exc_out_t mmu_exc,
+
+    input u3 config_k0
 );
     // addr_t mmu_ireq_addr;
     // addr_t mmu_dreq_1_addr;

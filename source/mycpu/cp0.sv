@@ -33,12 +33,16 @@ module cp0
 	input tlb_exc_t d_tlb_exc,
 	input u1 d_write,
 	input tlb_type_t tlb_type,
-	input mmu_resp_t mmu_resp
+	input mmu_resp_t mmu_resp,
+	output word_t entrance
 	// input dataM2_save_t dataM2_save[1:0]
 );
 	u1 double;
 	cp0_regs_t regs, regs_nxt;
 	assign regs_out=regs;
+	// word_t offset;
+	assign entrance=32'hbfc00380;
+	// assign offset= code==
 
 	// dataM2_save_t data_save[1:0];
 	// assign regs_out=regs_nxt;
@@ -186,6 +190,8 @@ module cp0
 			regs_nxt.count = regs.count + 1;
 		end
 
+	
+
 
 		if (ctype==EXCEPTION||((interrupt||int_saved)&&inter_valid)) begin
 			if ((code==EXCCODE_ADEL&&etype.badVaddrF)||(code==EXCCODE_TLBL&&|i_tlb_exc)) begin
@@ -193,16 +199,6 @@ module cp0
 			end else if ((code==EXCCODE_ADEL&&etype.adelD)||code==EXCCODE_ADES||code==EXCCODE_TLBS||(code==EXCCODE_TLBL&&|d_tlb_exc)) begin
 				regs_nxt.bad_vaddr=vaddr;
 			end
-
-			// if (((etype.badVaddrF||etype.adelD)&&code==EXCCODE_ADEL )|| code==EXCCODE_TLBL) begin
-			// 	if (etype.badVaddrF||i_tlb_exc.refill||i_tlb_exc.invalid) begin
-			// 	regs_nxt.bad_vaddr=pc;
-			// 	end else begin
-			// 	regs_nxt.bad_vaddr=vaddr;
-			// 	end
-			// end else if ((etype.adesD&&code==EXCCODE_ADES)||code==EXCCODE_TLBS) begin
-			// 	regs_nxt.bad_vaddr=vaddr;
-			// end
 
 			if (i_tlb_exc.refill||i_tlb_exc.invalid) begin
 				regs_nxt.entry_hi.vpn2=pc[31:13];
@@ -254,6 +250,7 @@ module cp0
 					// 5'd15: regs_nxt.prid=wd;
 					5'd16: regs_nxt.config0[2:0] = wd[2:0];
 					5'd28: regs_nxt.tag_lo=wd;
+					// 5'd33: regs_nxt.ebase=wd;
 					default:;
 				endcase
 			end
@@ -270,8 +267,6 @@ module cp0
 				default:;
 			endcase
 		end
-
-		
 		
 		if (is_eret) begin
 			regs_nxt.status.exl='0;

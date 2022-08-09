@@ -38,7 +38,8 @@ module MyCore (
     output word_t tag_lo,
     output mmu_req_t mmu_req,
     input mmu_resp_t mmu_resp,
-    input mmu_exc_out_t mmu_exc_out
+    input mmu_exc_out_t mmu_exc_out,
+    output u3 config_k0
 );
     /**
      * TODO (Lab1) your code here :)
@@ -56,6 +57,7 @@ module MyCore (
     u1 reset;
     writeback_data_t [1:0]dataW;
     u1 pc_except;
+    word_t entrance;
     // u1 cache_instE;
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
@@ -87,7 +89,7 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.tlb),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.tlb||dataE[1].ctl.cache_d),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
 	);
 
     word_t iaddrE;
@@ -142,7 +144,7 @@ module MyCore (
         end else if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
-        end else if (stallF && dataE[1].branch_taken ) begin
+        end else if (stallF && (dataE[1].branch_taken||dataE[1].ctl.cache_d) ) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (stallF && dataE[1].ctl.cache_i ) begin
@@ -211,8 +213,8 @@ module MyCore (
         .pc_branch(dataE[1].target),
         .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i),
         .epc,
-        .is_tlb_refill(dataM3[valid_n].i_tlb_exc.refill||dataM3[valid_n].d_tlb_exc.refill),
-        // .entrance(32'hBFC0_0380),
+        // .is_tlb_refill(dataM3[valid_n].i_tlb_exc.refill||dataM3[valid_n].d_tlb_exc.refill),
+        .entrance,
 		.is_eret,
 		.is_INTEXC,
         .pred_taken(pred_taken&&~zero_prej),
@@ -779,7 +781,8 @@ module MyCore (
         .d_tlb_exc(dataM3[valid_n].d_tlb_exc),
         .d_write(dataM3[valid_n].ctl.memwrite),
         .tlb_type(dataM3[1].ctl.tlb_type),
-        .mmu_resp
+        .mmu_resp,
+        .entrance
     );
 
     assign mmu_req.index=regs_out.index;
@@ -790,6 +793,9 @@ module MyCore (
 
     assign mmu_req.is_tlbwi=dataM3[valid_n].ctl.tlb_type==TLBWI;
     assign mmu_req.is_tlbwr=dataM3[valid_n].ctl.tlb_type==TLBWR;
+
+    // assign config_k0=regs_out.config0[2:0];
+    assign config_k0=regs_out.config0[2:0];
 
 endmodule
 

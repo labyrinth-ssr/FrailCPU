@@ -131,9 +131,7 @@
             target=rd1[1];
         end else if (dataI[1].ctl.jump/*&&~dataI[1].pre_b*/) begin
             target={slot_pc[31:28],raw_instr[25:0],2'b00};
-        end else if (dataI[1].ctl.cache_i) begin
-            target=dataI[1].pc+4;
-        end else if (dataI[1].ctl.tlb) begin
+        end else if (dataI[1].ctl.cache_i||dataI[1].ctl.cache_d||dataI[1].ctl.tlb) begin
             target=dataI[1].pc+4;
         end
     end
