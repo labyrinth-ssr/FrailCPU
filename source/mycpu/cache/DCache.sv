@@ -565,7 +565,7 @@ module DCache (
                             : (cache_handle.dreq_1.valid & cache_handle.dreq_1_is_uncached) ? UNCACHE_1 : FETCH_1;
     assign finish = (cache_handle.cache_oper==REQ&state==finish_state & dcresp.last)
                     | (cache_handle.cache_oper==WRITEBACK_INVALID&(~wb_dirty|dcresp.last))
-                    | (cache_handle.cache_oper==STORE&(&miss_addr.offset));
+                    | (cache_handle.cache_oper==INDEX_STORE&(&miss_addr.offset));
     
 
     always_ff @(posedge clk) begin
