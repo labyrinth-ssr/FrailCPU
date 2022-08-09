@@ -177,7 +177,7 @@ module MyCore (
             pc_nxt=icache_addr_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
-        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i)&&~is_INTEXC) begin
+        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d)&&~is_INTEXC) begin
             pc_nxt=jrpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -211,7 +211,7 @@ module MyCore (
         .pc_selected,
         .pc_succ,
         .pc_branch(dataE[1].target),
-        .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i),
+        .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d),
         .epc,
         // .is_tlb_refill(dataM3[valid_n].i_tlb_exc.refill||dataM3[valid_n].d_tlb_exc.refill),
         .entrance,
