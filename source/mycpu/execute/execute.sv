@@ -75,15 +75,15 @@
     assign a[1]= dataI[1].ctl.shamt_valid? {27'b0,dataI[1].raw_instr [10:6]} : rd1[1];
     assign a[0]=dataI[0].ctl.shamt_valid? {27'b0, dataI[0].raw_instr [10:6]} :rd1[0];
 
-    u1 valid_c;
-    assign valid_c=dataI[1].ctl.cache;
+    // u1 1;
+    // assign 1=dataI[1].ctl.cache;
     // assign dataE[1].cache_inst_i=dataI[1].ctl.cache_i;
     // assign dataE[0].cache_inst_i=dataI[0].ctl.cache_i;
 
     assign dataE[1].cache_addr=  aluout;
     assign dataE[0].cache_addr=  '0;
     // assign cache_instE=dataI[1].ctl.cache||dataI[0].ctl.cache;
-    // assign iaddrE= valid_c ? aluout : aluout2;
+    // assign iaddrE= 1 ? aluout : aluout2;
 
     u1 exception_of[1:0];
     word_t aluout2;
@@ -131,8 +131,10 @@
             target=rd1[1];
         end else if (dataI[1].ctl.jump/*&&~dataI[1].pre_b*/) begin
             target={slot_pc[31:28],raw_instr[25:0],2'b00};
-        end else if (dataI[valid_c].ctl.cache_i) begin
-            target=dataI[valid_c].pc+4;
+        end else if (dataI[1].ctl.cache_i) begin
+            target=dataI[1].pc+4;
+        end else if (dataI[1].ctl.tlb) begin
+            target=dataI[1].pc+4;
         end
     end
     assign dataE[1].target=target;
@@ -210,6 +212,7 @@
         assign dataE[i].rdst=dataI[i].rdst;
         assign dataE[i].pc=dataI[i].pc;
         assign dataE[i].cache_ctl=dataI[i].cache_ctl;
+        assign dataE[i].i_tlb_exc=dataI[i].i_tlb_exc;
     // assign dataE[i].ctl=dataI[i].ctl;
     end
     assign dataE[1].valid=dataI[1].valid;

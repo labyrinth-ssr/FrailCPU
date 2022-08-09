@@ -332,14 +332,11 @@ module decoder (
                     `D_INDEX_WRITEBACK_INVALID:begin
                         cache_ctl.dcache_inst=D_INDEX_WRITEBACK_INVALID;
                         ctl.cache_d='1;
-
                     end
                     `D_INDEX_STORE_TAG:begin
                         cache_ctl.dcache_inst=D_INDEX_STORE_TAG;
                         ctl.cache_d='1;
                         cp0ra={5'd28,3'b000};
-
-
                     end
                     `D_HIT_INVALID:begin
                         cache_ctl.dcache_inst=D_HIT_INVALID;
@@ -357,22 +354,36 @@ module decoder (
             `OP_ERET: begin
                 case (instr[25:21])
                     `C_ERET:begin
-                        if (instr[20:0]==21'b11000) begin
-                            cp0_ctl.ctype=ERET;
-                        // cp0_ctl.valid='1;
-                        ctl.is_eret = 1'b1;
-                        srcrega = '0;
-                        srcregb = '0;
-                        destreg = '0;
-                        end else begin
-                            exception_ri = 1'b1;
-                        ctl.op = RESERVED;
-                        srcrega = '0;
-                        srcregb = '0;
-                        destreg = '0;
-                cp0_ctl.ctype=EXCEPTION;
-                        end
-                                
+                        case(instr[5:0])
+                            `CP_ERET:begin
+                                cp0_ctl.ctype=ERET;
+                                ctl.is_eret = 1'b1;
+                                srcrega = '0;
+                                srcregb = '0;
+                                destreg = '0;
+                            end
+                            `CP_TLBP:begin
+                                ctl.tlb='1;
+                                ctl.tlb_type=TLBP;
+                            end
+                            `CP_TLBR:begin
+                                ctl.tlb='1;
+                                ctl.tlb_type=TLBR;
+                            end
+                            `CP_TLBWI:begin
+                                ctl.tlb='1;
+                                ctl.tlb_type=TLBWI;
+                            end
+                            `CP_TLBWR:begin
+                                ctl.tlb='1;
+                                ctl.tlb_type=TLBWR;
+                            end
+                            default:begin
+                                exception_ri = 1'b1;
+                                ctl.op = RESERVED;
+                                cp0_ctl.ctype=EXCEPTION;
+                            end
+                        endcase
                     end 
                     `C_MFC0:begin
                         ctl.op = MFC0;
@@ -396,35 +407,9 @@ module decoder (
                         destreg = '0;
                     end
                     default: begin
-                        case (instr[5: 0])
-							// C_ERET: begin
-							// 	op = ERET;
-							// 	ctl.is_eret = 1'b1;
-							// end
-							// C_TLBP: begin
-							// 	op = TLBP;
-							// 	ctl.is_tlbp = 1'b1;
-							// end
-							// C_TLBR: begin
-							// 	op = TLBR;
-							// 	ctl.is_tlbr = 1'b1;
-							// end
-							`C_TLBWI: begin
-								
-							end
-							// C_WAIT: begin
-							// 	op = WAIT_EX;
-							// 	ctl.is_wait = 1'b1;
-							// end
-							default: begin
-								exception_ri = 1'b1;
-								ctl.op = RESERVED;
-                                srcrega = '0;
-                                srcregb = '0;
-                                destreg = '0;
-                                cp0_ctl.ctype=EXCEPTION;
-							end
-						endcase
+                        exception_ri = 1'b1;
+                        ctl.op = RESERVED;
+                        cp0_ctl.ctype=EXCEPTION;
                     end
                 endcase
             end

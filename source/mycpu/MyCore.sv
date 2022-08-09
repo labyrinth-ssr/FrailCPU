@@ -35,13 +35,17 @@ module MyCore (
     input logic[5:0] ext_int,
     output icache_inst_t icache_inst,
     output dcache_inst_t dcache_inst,
-    output word_t tag_lo
-    
+    output word_t tag_lo,
+    output mmu_req_t mmu_req,
+    input mmu_resp_t mmu_resp,
+    input mmu_exc_out_t mmu_exc_out
 );
     /**
      * TODO (Lab1) your code here :)
      */
-    assign tag_lo='0;
+    // assign tag_lo='0;
+    u1 i_tlb_exc_bit;
+    assign i_tlb_exc_bit='1;
     
     u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3,pred_flush_que;;
     u1 is_eret;
@@ -71,10 +75,8 @@ module MyCore (
     // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
     // logic dreq_valid;
     assign d_wait= ~dresp.addr_ok;
-    u1 valid_c;
-    assign valid_c=dataE[1].ctl.cache_i;
-    assign icache_inst = dataE[valid_c].cache_ctl.icache_inst;
-    assign dcache_inst = dataE[valid_c].cache_ctl.dcache_inst;
+    assign icache_inst = dataE[1].cache_ctl.icache_inst;
+    assign dcache_inst = dataE[1].cache_ctl.dcache_inst;
     // always_ff @(posedge clk) begin
     //     if (resetn) begin
     //         dreq_valid <= dreq[0].valid | dreq[1].valid;
@@ -85,7 +87,7 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[valid_c].ctl.cache_i),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.tlb),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
 	);
 
     word_t iaddrE;
@@ -95,8 +97,8 @@ module MyCore (
     // always_ff @(posedge clk) begin
     //     if (reset) begin
     //         {icache_addr_save,icache_addr_saved}<='0;
-    //     end else if (dataE[valid_c].ctl.cache_i&&i_wait) begin
-    //         icache_addr_save<=dataE[valid_c].cache_addr;
+    //     end else if (dataE[1].ctl.cache_i&&i_wait) begin
+    //         icache_addr_save<=dataE[1].cache_addr;
     //         icache_addr_saved<='1;
     //     end else if (~i_wait) begin
     //         {icache_addr_save,icache_addr_saved}<='0;
@@ -108,13 +110,13 @@ module MyCore (
     //     ireq.addr=dataP_pc;
     //     if (icache_addr_saved) begin
     //         ireq.addr=icache_addr_save;
-    //     end else if(~iresp.addr_ok&&dataE[valid_c].ctl.cache_i) begin
-    //         ireq.addr=dataE[valid_c].cache_addr;
+    //     end else if(~iresp.addr_ok&&dataE[1].ctl.cache_i) begin
+    //         ireq.addr=dataE[1].cache_addr;
     //     end
     // end
 
     assign ireq.addr= dataP_pc;
-	assign ireq.valid=  dataE[valid_c].ctl.cache_i||~pc_except /*|| is_eret||is_EXC || excpM*/;
+	assign ireq.valid=  dataE[1].ctl.cache_i||~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
     fetch_data_t [1:0] dataF2_nxt ,dataF2 ;
@@ -143,8 +145,8 @@ module MyCore (
         end else if (stallF && dataE[1].branch_taken ) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
-        end else if (stallF && dataE[valid_c].ctl.cache_i ) begin
-            icache_addr_save<=dataE[valid_c].cache_addr;
+        end else if (stallF && dataE[1].ctl.cache_i ) begin
+            icache_addr_save<=dataE[1].cache_addr;
             icache_addr_saved<='1;
             jpc_save<=pc_selected;
             jpc_saved<='1;
@@ -173,7 +175,7 @@ module MyCore (
             pc_nxt=icache_addr_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
-        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[valid_c].ctl.cache_i)&&~is_INTEXC) begin
+        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i)&&~is_INTEXC) begin
             pc_nxt=jrpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -202,14 +204,15 @@ module MyCore (
     //     end
     // end
 
-
+    u1 valid_n;
     pcselect pcselect_inst (
         .pc_selected,
         .pc_succ,
         .pc_branch(dataE[1].target),
-        .branch_taken(dataE[1].branch_taken||dataE[valid_c].ctl.cache_i),
+        .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i),
         .epc,
-        .entrance(32'hBFC0_0380),
+        .is_tlb_refill(dataM3[valid_n].i_tlb_exc.refill||dataM3[valid_n].d_tlb_exc.refill),
+        // .entrance(32'hBFC0_0380),
 		.is_eret,
 		.is_INTEXC,
         .pred_taken(pred_taken&&~zero_prej),
@@ -300,6 +303,7 @@ module MyCore (
     );
     u1 rawinstr_saved;
     u64 raw_instrf2_save;
+    tlb_exc_t i_tlb_exc_save;
     u1 delay_flushF2;
     // u1 delay_zeroprej;
 
@@ -309,14 +313,16 @@ module MyCore (
 
     always_ff @(posedge clk) begin
         if (reset) begin
-            {raw_instrf2_save,rawinstr_saved,delay_flushF2}<='0;
+            {raw_instrf2_save,rawinstr_saved,delay_flushF2,i_tlb_exc_save}<='0;
         end else begin
             delay_flushF2 <=flushF2;
             if (stallF2&&~rawinstr_saved) begin
                 raw_instrf2_save<=iresp.data;
                 rawinstr_saved<='1;
+                i_tlb_exc_save<=mmu_exc_out.i_tlb_exc;
+                
             end else if (~stallF2) begin
-                {raw_instrf2_save,rawinstr_saved}<='0;
+                {raw_instrf2_save,rawinstr_saved,i_tlb_exc_save}<='0;
             end
         end
     end
@@ -328,22 +334,33 @@ module MyCore (
 
     always_comb begin
         dataF2_nxt[1].raw_instr=  iresp.data[31:0];
+        dataF2_nxt[1].i_tlb_exc=  i_tlb_exc_bit? mmu_exc_out.i_tlb_exc:'0;
+        dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
+        dataF2_nxt[1].cp0_ctl.ctype=i_tlb_exc_bit&&(|mmu_exc_out.i_tlb_exc)? EXCEPTION:dataF1.cp0_ctl.ctype;
         if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
             dataF2_nxt[1].raw_instr='0;
-        end else
-        if (rawinstr_saved) begin
+        end else if (rawinstr_saved) begin
             dataF2_nxt[1].raw_instr= raw_instrf2_save[31:0];
+            dataF2_nxt[1].i_tlb_exc= i_tlb_exc_bit? i_tlb_exc_save:'0;
+            dataF2_nxt[1].cp0_ctl.ctype=i_tlb_exc_bit&&(|i_tlb_exc_save)? EXCEPTION:dataF1.cp0_ctl.ctype;
         end else if (delay_flushF2) begin
             dataF2_nxt[1].raw_instr='0;
+            dataF2_nxt[1].i_tlb_exc='0;
         end 
     end
 
     always_comb begin
         dataF2_nxt[0].raw_instr=  iresp.data[63:32];
+        dataF2_nxt[0].i_tlb_exc=  ~i_tlb_exc_bit? mmu_exc_out.i_tlb_exc:'0;
+        dataF2_nxt[0].cp0_ctl='0;
+        dataF2_nxt[0].cp0_ctl.ctype=~i_tlb_exc_bit&&(|mmu_exc_out.i_tlb_exc)? EXCEPTION:NO_EXC;
         if (rawinstr_saved) begin
             dataF2_nxt[0].raw_instr=raw_instrf2_save[63:32];
+            dataF2_nxt[0].i_tlb_exc= ~i_tlb_exc_bit? i_tlb_exc_save:'0;
+            dataF2_nxt[0].cp0_ctl.ctype=~i_tlb_exc_bit&&(|i_tlb_exc_save)? EXCEPTION:NO_EXC;
         end else if (delay_flushF2) begin
             dataF2_nxt[0].raw_instr='0;
+            dataF2_nxt[0].i_tlb_exc='0;
         end
     end
 
@@ -354,8 +371,11 @@ module MyCore (
     assign dataF2_nxt[0].pre_pc='0;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
-    assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
-    assign dataF2_nxt[0].cp0_ctl='0;
+    // for ( genvar i = 0; i<2; ++i) begin
+        
+    // end
+    // assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
+    // assign dataF2_nxt[0].cp0_ctl.ctype= ~i_tlb_exc_bit&&(|itlbex)
 
     assign dataF2_nxt[0].pc=dataF1.nxt_valid? dataF1.pc+4:'0;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
@@ -609,7 +629,7 @@ module MyCore (
 //             req2_finish <= '0;
 //         end   
 //     end
-    bypass_output_t outcp0r;
+   bypass_output_t outcp0r;
    word_t cp0rdM;
 //    word_t cp0rd;
    assign tag_lo=outcp0r.bypass? outcp0r.data:cp0rdM;
@@ -622,7 +642,7 @@ module MyCore (
         .dataM1_in(dataM1_inM),
         .dataM2_in(dataM2_inM),
         .dataM3_in(dataM3_inM),
-        .cp0ra(dataE[valid_c].cp0ra),
+        .cp0ra(dataE[1].cp0ra),
         .outcp0r
     );
 
@@ -665,7 +685,8 @@ module MyCore (
 		.dataM(dataM3_nxt),
 		.dresp,
         .dreq,
-        .resetn
+        .resetn,
+        .d_tlb_exc(mmu_exc_out.d_tlb_exc)
 	);
 
 	pipereg2 #(.T(memory_data_t)) M3Wreg(
@@ -676,7 +697,6 @@ module MyCore (
 		.flush(flushW)
 	);
 
-    // cp0_regs_t regs_out ;
 
     writeback writeback(
         // .clk,.reset,
@@ -713,7 +733,7 @@ module MyCore (
     .hi_data , .lo_data
     );
     
-    u1 valid_i,valid_m,valid_n;
+    u1 valid_i,valid_m;
     assign valid_i= dataM3[1].ctl.cp0toreg;
     assign valid_m= dataM3[1].ctl.cp0write;
     assign valid_n=dataM3[1].cp0_ctl.ctype==EXCEPTION||dataM3[1].cp0_ctl.ctype==ERET;
@@ -728,12 +748,14 @@ module MyCore (
 //   assign dataM3_save2.valid=dataM3[0].valid;
 //   assign dataM3_save2.is_slot=dataM3[0].is_slot;
 //   assign dataM3_save2.jump=dataM3[0].ctl.branch||dataM3[0].ctl.jump;
-   u1 inter_valid;
+    u1 inter_valid;
+
+    cp0_regs_t regs_out ;
 
 	assign inter_valid=~i_wait&&dataM3[1].valid;
     cp0 cp0(
         .clk,.reset,
-        .raM(dataE[valid_c].cp0ra),
+        .raM(dataE[1].cp0ra),
         .rdM(cp0rdM),
         .ra(dataM3[valid_i].cp0ra),//直接读写的指令一次发射一条
         .wa(dataM3[valid_m].cp0ra),
@@ -751,8 +773,23 @@ module MyCore (
         .is_INTEXC,
         .inter_valid,
         .is_EXC,
-        .int_pc(dataM3[1].pc)
+        .int_pc(dataM3[1].pc),
+        .regs_out,
+        .i_tlb_exc(dataM3[valid_n].i_tlb_exc),
+        .d_tlb_exc(dataM3[valid_n].d_tlb_exc),
+        .d_write(dataM3[valid_n].ctl.memwrite),
+        .tlb_type(dataM3[1].ctl.tlb_type),
+        .mmu_resp
     );
+
+    assign mmu_req.index=regs_out.index;
+    assign mmu_req.entry_hi=regs_out.entry_hi;
+    assign mmu_req.entry_lo0=regs_out.entry_lo0;
+    assign mmu_req.entry_lo1=regs_out.entry_lo1;
+    assign mmu_req.random=regs_out.random;
+
+    assign mmu_req.is_tlbwi=dataM3[valid_n].ctl.tlb_type==TLBWI;
+    assign mmu_req.is_tlbwr=dataM3[valid_n].ctl.tlb_type==TLBWR;
 
 endmodule
 

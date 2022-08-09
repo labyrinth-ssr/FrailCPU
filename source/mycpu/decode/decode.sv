@@ -65,6 +65,8 @@ module decode(
         assign dataD[i].imm=dataF2[i].raw_instr[15:0];
         assign dataD[i].raw_instr=dataF2[i].raw_instr;
         assign dataD[i].pc=dataF2[i].pc;
+        assign dataD[i].i_tlb_exc=dataF2[i].i_tlb_exc;
+        
         // assign dataD[i].pre_b=dataF2[i].pre_b;
         // assign dataD[i].cp0ra= {dataF2[i].raw_instr[15:11],dataF2[i].raw_instr[2:0]};
         // assign dataD[i].ra1=ra1[i];

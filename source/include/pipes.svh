@@ -7,6 +7,7 @@
 `include "decode.svh"
 `include "cp0_pkg.svh"
 `include "cache_pkg.svh"
+`include "mmu_pkg.svh"
 
 
 /* Define instrucion decoding rules here */
@@ -121,6 +122,8 @@ typedef struct packed {
 	msize_t msize;
 	u1 cache_i;
 	u1 cache_d;
+	tlb_type_t tlb_type;
+	u1 tlb;
 
 } control_t;
 
@@ -158,8 +161,12 @@ typedef struct packed {
 	cp0_control_t cp0_ctl;
 	u1 pre_b;
 	word_t pre_pc;
+	tlb_exc_t i_tlb_exc;
+
 	// int_type_t int_type;
     } fetch_data_t;//
+
+
 
 typedef struct packed {
 	// int_type_t int_type;
@@ -176,6 +183,7 @@ typedef struct packed {
 	// u1 is_jr_ra;
 	cp0_control_t cp0_ctl;
 	cache_control_t cache_ctl;
+	tlb_exc_t i_tlb_exc;
 	// word_t rd1,rd2;
 } decode_data_t;
 
@@ -197,6 +205,7 @@ typedef struct packed {
 	word_t pre_pc;
 	cache_control_t cache_ctl;
 	cp0_control_t cp0_ctl;
+	tlb_exc_t i_tlb_exc;
 } issue_data_t;
 
 typedef struct packed {
@@ -227,6 +236,7 @@ typedef struct packed {
 	// word_t lo_rd,hi_rd,cp0_rd;
 	// u64 rs1rd;
 	cp0_control_t cp0_ctl;
+	tlb_exc_t i_tlb_exc;
 } execute_data_t;
 
 typedef struct packed {
@@ -244,11 +254,11 @@ typedef struct packed {
 	cp0_control_t cp0_ctl;
 	word_t srcb;
 	word_t srca;
-
-
 	// u64 target;
 	word_t rd;
 	// u64 rs1rd;
+	tlb_exc_t i_tlb_exc;
+	tlb_exc_t d_tlb_exc;
 } memory_data_t;
 //写回阶段dataM与dataW混用
 typedef struct packed {

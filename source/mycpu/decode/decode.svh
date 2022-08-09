@@ -103,7 +103,12 @@ typedef enum logic[3:0] {
 `define C_ERET          5'b10000
 `define C_MFC0          5'b00000
 `define C_MTC0          5'b00100
-`define C_TLBWI         6'b000010
+
+`define CP_ERET         6'b011000
+`define CP_TLBP         6'b001000
+`define CP_TLBR         6'b000001
+`define CP_TLBWI        6'b000010
+`define CP_TLBWR        6'b000110
 
 typedef enum logic[1:0] { REGB, IMM} alusrcb_t;
 typedef enum logic[2:0] { T_BEQ, T_BNE, T_BGEZ, T_BLTZ, T_BGTZ, T_BLEZ } branch_t;
@@ -116,7 +121,7 @@ typedef enum logic [5:0] {
     ADD, SUB, SUBU, SLT, SLTU, DIV, DIVU, MULT, MULTU, 
     AND, NOR, OR, XOR, SLLV, SLL, SRAV, SRA, SRLV, SRL, 
     JR, JALR, MFHI, MFLO, MTHI, MTLO, BREAK, SYSCALL, LUI,
-    MOVZ, MOVN, SYNC, LL, SC, CACHE, TLBWI
+    MOVZ, MOVN, SYNC, LL, SC, CACHE
 } decoded_op_t;
 
 `endif

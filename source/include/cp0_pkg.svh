@@ -6,6 +6,8 @@
 `endif
 
 parameter EXCCODE_INT = 5'h0;
+parameter EXCCODE_TLBL = 5'h2;
+parameter EXCCODE_TLBS = 5'h3;
 parameter EXCCODE_ADEL = 5'h4;
 parameter EXCCODE_ADES = 5'h5;
 parameter EXCCODE_SYS = 5'h8;
@@ -35,13 +37,13 @@ typedef struct packed {
 
 typedef struct packed {
     logic P;                    
-    logic [30-`TLB_INDEX_BIT:0] zero;  
+    logic [30:`TLB_INDEX_BIT] zero;  
     logic [`TLB_INDEX_BIT-1:0] index; 
 } cp0_index_t;
 
-typedef struct packed {                 
-    logic [31-`TLB_INDEX_BIT:0] zero;  
-    logic [`TLB_INDEX_BIT-1:0] random; 
+typedef struct packed {
+    logic [31-`TLB_INDEX_BIT:0] zero;
+    logic [`TLB_INDEX_BIT-1:0] random;
 } cp0_random_t;
 
 typedef u32 cp0_taglo_t;
@@ -49,9 +51,9 @@ typedef u32 cp0_taglo_t;
 typedef enum u3 { 
 	NO_EXC,EXCEPTION,INTERUPT,ERET,INSTR
  } cp0_type_t;
-
+//分析重叠情况？
 typedef struct packed {
-	u1 badVaddrF,reserveInstr,overflow,trap,syscall,adelD,adesD;
+	u1 badVaddrF,reserveInstr,overflow,trap,syscall,adelD,adesD,tlbl,tlbs;
 } excp_type_t;
 
 typedef struct packed {
