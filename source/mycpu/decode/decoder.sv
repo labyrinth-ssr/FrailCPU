@@ -313,6 +313,7 @@ module decoder (
                 ctl.alusrc=IMM;
                 ctl.alufunc=ALU_ADDU;
                 srcrega=rs;
+                ctl.cache='1;
 				case(instr[20:16])
                     `I_INDEX_INVALID:begin
                         cache_ctl.icache_inst=I_INDEX_INVALID;
