@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "cache without delay"
+echo "tlb without delay"
 
 make vsim -j VSIM_ARGS="-m vivado/test_new_instr/tlb.coe -f tlb.fst" || exit
 # echo "cache with delay"
