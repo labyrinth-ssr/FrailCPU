@@ -11,7 +11,7 @@ typedef enum logic[3:0] {
 } alufunc_t;
 
 // op
-`define OP_RT           6'b000000
+`define OP_SPECIAL           6'b000000
 `define OP_ADDI         6'b001000
 `define OP_ADDIU        6'b001001
 `define OP_SLTI         6'b001010
@@ -38,13 +38,31 @@ typedef enum logic[3:0] {
 `define OP_SB           6'b101000
 `define OP_SH           6'b101001
 `define OP_SW           6'b101011
-`define OP_ERET         6'b010000 //COP0
+`define OP_COP0         6'b010000
+
+`define OP_COP1         6'b010001
+`define OP_LDC1         6'b110101
+`define OP_SDC1         6'b111101
+
+`define CP1_CF          5'b00010
+`define CP1_CT          5'b00110
+`define CP1_MT          5'b00100
 // `define OP_MFC0         6'b010000
 // `define OP_MTC0         6'b010000
-`define OP_MUL          6'b011100
+`define OP_SPECIAL2     6'b011100
 `define OP_LL           6'b110000
 `define OP_SC           6'b111000
 `define OP_CACHE        6'b101111
+
+`define SP_MADD         6'b000000
+`define SP_MADDU        6'b000001
+`define SP_MUL          6'b000010
+`define SP_MSUB         6'b000100
+
+`define OP_LWL          6'b100010
+`define OP_LWR          6'b100110
+`define OP_SWL          6'b101010
+`define OP_SWR          6'b101110
 
 `define I_INDEX_INVALID   5'b00000
 `define I_INDEX_STORE_TAG 5'b01000
@@ -54,13 +72,6 @@ typedef enum logic[3:0] {
 `define	D_INDEX_STORE_TAG           5'b01001
 `define	D_HIT_INVALID               5'b10001
 `define	D_HIT_WRITEBACK_INVALID     5'b10101
-
-
-
-
-
-
-
 
 // funct
 `define F_ADD           6'b100000
@@ -94,6 +105,7 @@ typedef enum logic[3:0] {
 `define F_MOVN          6'b001011
 `define F_MOVZ          6'b001010
 `define F_SYNC          6'b001111
+`define F_TNE           6'b110110
 
 `define B_BGEZ          5'b00001
 `define B_BLTZ          5'b00000
@@ -109,6 +121,7 @@ typedef enum logic[3:0] {
 `define CP_TLBR         6'b000001
 `define CP_TLBWI        6'b000010
 `define CP_TLBWR        6'b000110
+`define CP_WAIT         6'b100000
 
 typedef enum logic[1:0] { REGB, IMM} alusrcb_t;
 typedef enum logic[2:0] { T_BEQ, T_BNE, T_BGEZ, T_BLTZ, T_BGTZ, T_BLEZ } branch_t;
@@ -121,7 +134,7 @@ typedef enum logic [5:0] {
     ADD, SUB, SUBU, SLT, SLTU, DIV, DIVU, MULT, MULTU, 
     AND, NOR, OR, XOR, SLLV, SLL, SRAV, SRA, SRLV, SRL, 
     JR, JALR, MFHI, MFLO, MTHI, MTLO, BREAK, SYSCALL, LUI,
-    MOVZ, MOVN, SYNC, LL, SC, CACHE
+    MOVZ, MOVN, SYNC, LL, SC, CACHE,MSUB
 } decoded_op_t;
 
 `endif

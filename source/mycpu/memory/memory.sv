@@ -35,17 +35,13 @@ assign uncache=dataE[1].alu_out[29] || dataE[0].alu_out[29];
 //     .paddr(paddr[0])
 // );
 
-
-
 for (genvar i=0; i<2; ++i) begin
     always_comb begin
         dreq[i] = '0;
         if (dataE[i].ctl.memtoreg) begin
-            
             // dreq[i].valid = '1  ;
             dreq[i].strobe = '0;
         end else if (dataE[i].ctl.memwrite) begin
-            
             // dreq[i].valid = '1  ;
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];
@@ -69,15 +65,9 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].branch_taken=dataE[i].branch_taken;
     assign dataE2[i].target=dataE[i].target;
 end
-
-// assign dataE2[1].valid=dataE[1].valid;
-// assign dataE2[0].valid= load_misalign[1]||store_misalign[1]? '0: dataE[1].valid;
     
-writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]));
-writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]));     
-
-// assign load_misalign[1]=dataE[1].ctl.memtoreg&&((dataE[1].ctl.msize==MSIZE2&&dataE[1].alu_out[0]!=1'b0)||(dataE[1].ctl.msize==MSIZE4&&dataE[1].alu_out[1:0]!=2'b00));
-// assign load_misalign[0]=dataE[0].ctl.memtoreg&&(dataE[0].ctl.msize==MSIZE2&&dataE[0].alu_out[0]!=1'b0)||(dataE[0].ctl.msize==MSIZE4&&dataE[0].alu_out[1:0]!=2'b00);
+writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.memtype(dataE[1].ctl.memtype));
+writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]),.memtype(dataE[0].ctl.memtype));     
 
 always_comb begin
         dataE2[1].ctl=dataE[1].ctl;
@@ -90,35 +80,6 @@ always_comb begin
             dataE2[0].ctl.cp0write='0;
         end
     end
-
-// always_comb begin//都是双端口
-//         dataE2[1].cp0_ctl=dataE[1].cp0_ctl;
-//         dataE2[0].cp0_ctl=dataE[0].cp0_ctl;
-//         if (dataE[1].ctl.memwrite && store_misalign[1]) begin
-//             dataE2[1].cp0_ctl.ctype=EXCEPTION;
-//             dataE2[1].cp0_ctl.etype.adesD= '1;
-//             dataE2[0].cp0_ctl.valid='0;
-//             dataE2[1].cp0_ctl.valid='1;
-//             dataE2[1].cp0_ctl.vaddr=dataE[1].alu_out;
-//         end else if (dataE[0].ctl.memwrite && store_misalign[0]) begin
-//             dataE2[0].cp0_ctl.ctype=EXCEPTION;
-//             dataE2[0].cp0_ctl.valid='1;
-//             dataE2[0].cp0_ctl.etype.adesD='1;
-//             dataE2[0].cp0_ctl.vaddr=dataE[0].alu_out;
-//         end
-//         if (dataE[1].ctl.memtoreg && load_misalign[1]) begin
-//             dataE2[1].cp0_ctl.ctype=EXCEPTION;
-//             dataE2[1].cp0_ctl.valid='1;
-//             dataE2[1].cp0_ctl.etype.adelD= '1;
-//             dataE2[1].cp0_ctl.vaddr=dataE[1].alu_out;
-//             dataE2[0].cp0_ctl.valid='0;
-//         end else if (dataE[0].ctl.memtoreg && load_misalign[0]) begin
-//             dataE2[0].cp0_ctl.ctype=EXCEPTION;
-//             dataE2[0].cp0_ctl.valid='1;
-//             dataE2[0].cp0_ctl.etype.adelD='1;
-//             dataE2[0].cp0_ctl.vaddr=dataE[0].alu_out;
-//         end
-//     end
 
 assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==ERET /*|| load_misalign[1]||load_misalign[0]|| store_misalign[1]||store_misalign[0]*/;
 

@@ -80,8 +80,8 @@ end
 // end
     
 
-readdata readdata1(._rd(  dresp.data[31:0]),.rd(dataM[1].rd),.addr(dataE[1].alu_out[1:0]),.msize(dataE[1].ctl.msize),.mem_unsigned(~dataE[1].ctl.memsext));
-readdata readdata2(._rd(  dresp.data[63:32]),.rd(dataM[0].rd),.addr(dataE[0].alu_out[1:0]),.msize(dataE[0].ctl.msize),.mem_unsigned(~dataE[0].ctl.memsext));
+readdata readdata1(._rd(  dresp.data[31:0]),.rd(dataM[1].rd),.addr(dataE[1].alu_out[1:0]),.msize(dataE[1].ctl.msize),.mem_unsigned(~dataE[1].ctl.memsext),.original(dataE[1].srcb),.memtype(dataE[1].ctl.memtype));
+readdata readdata2(._rd(  dresp.data[63:32]),.rd(dataM[0].rd),.addr(dataE[0].alu_out[1:0]),.msize(dataE[0].ctl.msize),.mem_unsigned(~dataE[0].ctl.memsext),.original(dataE[0].srcb),.memtype(dataE[0].ctl.memtype));
 
     // always_comb begin
     //     dataM.cp0_ctl=dataE.cp0_ctl;

@@ -20,6 +20,7 @@
 `include "memory/memory3.sv"
 `include "bypassI.sv"
 `include "bypassE.sv"
+`include "bypassM.sv"
 `include "hazard.sv"
 // `include "pvtrans.sv"
 `include "bpu.sv"
@@ -89,7 +90,7 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.tlb||dataE[1].ctl.cache_d),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.tlb||dataE[1].ctl.cache_d),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
 	);
 
     word_t iaddrE;
@@ -238,7 +239,7 @@ module MyCore (
         dataF1_nxt.cp0_ctl.vaddr='0;
         dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except;
     end
-    assign dataF1_nxt.cp0_ctl.valid='0;
+    // assign dataF1_nxt.cp0_ctl.valid='0;
     // u1 dataF1_pc;
     always_ff @( posedge clk ) begin
 		if (reset) begin
@@ -675,7 +676,7 @@ module MyCore (
 
     pipereg2 #(.T(execute_data_t)) M2M3reg(
 		.clk,.reset,
-		.in(dataM2_nxt),
+		.in(dataM2_nxt),   
 		.out(dataM2),
 		.en('1),
 		.flush(flushM3)
@@ -712,59 +713,85 @@ module MyCore (
 
     u1 valid_j,valid_k;
     word_t hi_data,lo_data;
-    //同时对hilo进行读是允许的
+    u1 hi_write,lo_write;
+    u64 hilo_res;
+    //如果有两条连续的写，均以后一条的写入数据为准，若未两条连续的读，则内容恒定
     always_comb begin
         {hi_data,lo_data}='0;
         {valid_j,valid_k}='0;
+        {hi_write,lo_write}='0;
         for (int i=1; i>=0; --i) begin
             if (dataM3[i].ctl.hiwrite) begin
+                hi_write='1;
                 hi_data=dataM3[i].ctl.op==MTHI? dataM3[i].srca:dataM3[i].hilo[63:32];
+                unique case(dataM3[i].ctl.hilo_op)
+                    HILO_ADD:begin
+                        hilo_res={hi_rd,lo_rd}+dataM3[i].hilo;
+                        hi_data=hilo_res[63:32];
+                    end
+                    HILO_SUB:begin
+                        hilo_res={hi_rd,lo_rd}-dataM3[i].hilo;
+                        hi_data=hilo_res[63:32];
+                    end
+                    default:;
+                endcase
                 valid_j=i[0];
             end 
             if (dataM3[i].ctl.lowrite) begin
+                lo_write='1;
                 lo_data=dataM3[i].ctl.op==MTLO? dataM3[i].srca:dataM3[i].hilo[31:0];
+                unique case(dataM3[i].ctl.hilo_op)
+                    HILO_ADD:begin
+                        hilo_res={hi_rd,lo_rd}+dataM3[i].hilo;
+                        lo_data=hilo_res[31:0];
+                    end
+                    HILO_SUB:begin
+                        hilo_res={hi_rd,lo_rd}-dataM3[i].hilo;
+                        lo_data=hilo_res[31:0];
+                    end
+                    default:;
+                endcase
                 valid_k=i[0];
             end
         end
     end
     word_t hi_rd,lo_rd;
+    // u1 hi_write
+
+    // always_comb begin
+        
+    // end
+
+    // assign hi_write=dataM3[]
+
     hilo hilo(
     .clk,.reset,
     .hi(hi_rd), .lo(lo_rd),
-    .hi_write(dataM3[1].ctl.hiwrite||dataM3[0].ctl.hiwrite), .lo_write(dataM3[1].ctl.lowrite||dataM3[0].ctl.lowrite),
+    .hi_write, .lo_write,
     .hi_data , .lo_data
     );
     
-    u1 valid_i,valid_m;
+    u1 valid_i;
     assign valid_i= dataM3[1].ctl.cp0toreg;
-    assign valid_m= dataM3[1].ctl.cp0write;
+    // assign valid_m= dataM3[1].ctl.cp0write;
     assign valid_n=dataM3[1].cp0_ctl.ctype==EXCEPTION||dataM3[1].cp0_ctl.ctype==ERET;
     assign is_eret=dataM3[1].cp0_ctl.ctype==ERET || dataM3[0].cp0_ctl.ctype==ERET;
     word_t cp0_rd;
 
-//   assign dataM3_save1.pc=dataM3[1].pc;
-//   assign dataM3_save1.valid=dataM3[1].valid;
-//   assign dataM3_save1.is_slot=dataM3[1].is_slot;
-//   assign dataM3_save1.jump=dataM3[1].ctl.branch||dataM3[1].ctl.jump;
-//   assign dataM3_save2.pc=dataM3[0].pc;
-//   assign dataM3_save2.valid=dataM3[0].valid;
-//   assign dataM3_save2.is_slot=dataM3[0].is_slot;
-//   assign dataM3_save2.jump=dataM3[0].ctl.branch||dataM3[0].ctl.jump;
     u1 inter_valid;
-
     cp0_regs_t regs_out ;
 
-	assign inter_valid=~i_wait&&dataM3[1].valid;
+	assign inter_valid=(~i_wait||dataE[1].ctl.wait_signal)&&dataM3[1].valid;
     cp0 cp0(
         .clk,.reset,
         .raM(dataE[1].cp0ra),
         .rdM(cp0rdM),
         .ra(dataM3[valid_i].cp0ra),//直接读写的指令一次发射一条
-        .wa(dataM3[valid_m].cp0ra),
-        .wd(dataM3[valid_m].srcb),
+        .wa(dataM3[1].cp0ra),
+        .wd(dataM3[1].srcb),
         .rd(cp0_rd),
         .epc,
-        .valid(dataM3[valid_m].ctl.cp0write),
+        .valid(dataM3[1].ctl.cp0write),
         .is_eret,
         .vaddr(dataM3[valid_n].cp0_ctl.vaddr),
         .ctype(dataM3[valid_n].cp0_ctl.ctype),
@@ -791,8 +818,8 @@ module MyCore (
     assign mmu_req.entry_lo1=regs_out.entry_lo1;
     assign mmu_req.random=regs_out.random;
 
-    assign mmu_req.is_tlbwi=dataM3[valid_n].ctl.tlb_type==TLBWI;
-    assign mmu_req.is_tlbwr=dataM3[valid_n].ctl.tlb_type==TLBWR;
+    assign mmu_req.is_tlbwi=dataM3[1].ctl.tlb_type==TLBWI;
+    assign mmu_req.is_tlbwr=dataM3[1].ctl.tlb_type==TLBWR;
 
     // assign config_k0=regs_out.config0[2:0];
     assign config_k0=regs_out.config0[2:0];

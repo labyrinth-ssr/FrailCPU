@@ -86,7 +86,12 @@ typedef struct packed {
 //      MSIZE4 = 3'b010
 //  } msize_t;
 
-
+typedef enum u2 { 
+	NO_MISALIGN,MEML,MEMR
+} misalign_mem_t;
+typedef enum  u2{ 
+	NO_HILO_OP,HILO_ADD,HILO_SUB
+} hilo_op_t;
 
 // typedef enum logic[1:0] { REGB, IMM} alusrcb_t;
 
@@ -113,17 +118,26 @@ typedef struct packed {
     logic is_eret;
     logic hiwrite;
     logic lowrite;
-    logic is_bp;
-    logic is_sys;
+    // logic is_bp;
+    // logic is_sys;
     logic hitoreg, lotoreg, cp0toreg;
     logic is_link;
-    logic mul_div_r;
+    // logic mul_div_r;
 	logic cache;
 	msize_t msize;
 	u1 cache_i;
 	u1 cache_d;
 	tlb_type_t tlb_type;
 	u1 tlb;
+	misalign_mem_t memtype;
+	hilo_op_t hilo_op;
+	u1 signed_mul_div;
+	u1 mul;
+	u1 single_issue;
+	u1 tne;
+	u1 wait_signal;
+	u1 div;
+
 
 } control_t;
 

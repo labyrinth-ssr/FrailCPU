@@ -75,8 +75,8 @@ endfunction
 function index_t pop(index_t head_in);
     return head_in==0? 4'd15:head_in-1;
 endfunction
-function u1 multi_op(decoded_op_t op);
-    return op==DIV||op==DIVU||op==MULT||op==MULTU;
+function u1 multi_op(control_t ctl);
+    return ctl.div||ctl.mul;
 endfunction
 function u1 odd_larger(index_t odd,index_t even);
     return odd==even;
@@ -107,15 +107,15 @@ assign have_slot= (candidate1.ctl.branch||candidate1.ctl.jump);
 
 assign issue_en2=candidate2.valid&& bypass_inra1[0].valid && bypass_inra2[0].valid 
 && ~((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2)&&~have_slot)
-        ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
-        ||candidate1.ctl.cp0write||~issue_en1||candidate2.ctl.branch||candidate2.ctl.jump
+        ||(multi_op(candidate1.ctl)&&multi_op(candidate2.ctl))
+        ||candidate1.ctl.cp0write
+        ||candidate2.ctl.cp0write
+        ||~issue_en1||candidate2.ctl.branch||candidate2.ctl.jump
         ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
         ||(candidate1.ctl.cp0toreg&&candidate2.ctl.cp0toreg)
         ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)
-        ||candidate1.ctl.cache
-        ||candidate2.ctl.cache
-        ||candidate2.ctl.tlb
-        ||candidate1.ctl.tlb);
+        ||candidate1.ctl.single_issue
+        ||candidate2.ctl.single_issue);
 
 assign overflow= push(tail_odd)==head_odd || push(tail_even)==head_even;
 

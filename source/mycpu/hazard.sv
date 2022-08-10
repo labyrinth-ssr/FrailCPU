@@ -6,7 +6,7 @@
 module hazard
 (
     output u1 stallF,stallF2,flushF2,stallD,flushD,stallI,stallI_de,flushI,flush_que,stallE,flushE,stallM,flushM,stallM2,flushM2,flushW,flushM3,pred_flush_que,
-    input u1 branchM,i_wait,d_wait,e_wait,overflowI,jrI,
+    input u1 branchM,i_wait,d_wait,e_wait,overflowI,jrI,waitM,
     input u1 excpW,excpM,
     input u1 clk,reset
 );
@@ -45,7 +45,7 @@ end
                 excp_iwait_nxt=1'b1;
                 stallF ='1;
             end
-        end else if (d_wait) begin
+        end else if (d_wait||waitM) begin
             stallF='1;stallF2='1;stallD='1;stallI='1;stallI_de='1;stallE='1;stallM='1; stallM2='1;flushM3='1;
         end else if (branchM) begin
             flushF2='1;

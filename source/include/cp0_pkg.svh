@@ -75,13 +75,12 @@ typedef enum u3 {
  } cp0_type_t;
 
 typedef struct packed {
-	u1 badVaddrF,reserveInstr,overflow,trap,syscall,adelD,adesD;
+	u1 badVaddrF,reserveInstr,overflow,trap,syscall,adelD,adesD,cpU,bp;
 } excp_type_t;
 
 typedef struct packed {
 	cp0_type_t ctype;
 	excp_type_t etype;
-	u1 valid;
 	word_t vaddr;
 } cp0_control_t;
 

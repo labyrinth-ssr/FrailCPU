@@ -41,8 +41,18 @@ module cp0
 	cp0_regs_t regs, regs_nxt;
 	assign regs_out=regs;
 	// word_t offset;
-	assign entrance=32'hbfc00380;
-	// assign offset= code==
+	// assign entrance=regs.ebase+offset;
+
+	word_t offset;
+	assign entrance=32'hbfc00200+offset;
+	always_comb begin
+		offset=32'h180;
+		/*if (has_int&&regs.cause.iv) begin
+			offset=32'h200;
+		end */if ((i_tlb_exc.refill||d_tlb_exc.refill)&&regs.status.exl) begin
+			offset=32'h0;
+		end
+	end
 
 	// dataM2_save_t data_save[1:0];
 	// assign regs_out=regs_nxt;
@@ -162,7 +172,7 @@ module cp0
 			code=EXCCODE_TLBL;
 		end else if (etype.overflow) begin
 			code=EXCCODE_OV;
-		end else if (etype.trap) begin
+		end else if (etype.bp) begin
 			code=EXCCODE_BP;
 		end else if (etype.syscall) begin
 			code=EXCCODE_SYS;
@@ -172,6 +182,10 @@ module cp0
 			code=EXCCODE_ADEL;
 		end else if (etype.adesD) begin
 			code=EXCCODE_ADES;
+		end else if (etype.cpU) begin
+			code=EXCCODE_CPU;
+		end else if (etype.trap) begin
+			code=EXCCODE_TR;
 		end
 	end
 	u1 soft_int;
@@ -190,8 +204,6 @@ module cp0
 			regs_nxt.count = regs.count + 1;
 		end
 
-	
-
 
 		if (ctype==EXCEPTION||((interrupt||int_saved)&&inter_valid)) begin
 			if ((code==EXCCODE_ADEL&&etype.badVaddrF)||(code==EXCCODE_TLBL&&|i_tlb_exc)) begin
@@ -199,6 +211,7 @@ module cp0
 			end else if ((code==EXCCODE_ADEL&&etype.adelD)||code==EXCCODE_ADES||code==EXCCODE_TLBS||(code==EXCCODE_TLBL&&|d_tlb_exc)) begin
 				regs_nxt.bad_vaddr=vaddr;
 			end
+
 
 			if (i_tlb_exc.refill||i_tlb_exc.invalid) begin
 				regs_nxt.entry_hi.vpn2=pc[31:13];
