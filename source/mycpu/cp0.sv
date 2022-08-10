@@ -155,9 +155,9 @@ module cp0
 			5'd16: rdM = regs.config0;
 			default: rdM = '0;
 		endcase
-		end else if (ra[2:0]==3'b001) begin
-			unique case(ra[7:3])
-			5'd16: rd = regs.config1;
+		end else if (raM[2:0]==3'b001) begin
+			unique case(raM[7:3])
+			5'd16: rdM = regs.config1;
 			default:;
 
 			endcase
