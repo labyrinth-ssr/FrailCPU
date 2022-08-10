@@ -144,7 +144,7 @@ module MyCore (
         end else if ((stallF)&&(is_EXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
-        end else if (stallF && (dataE[1].branch_taken||dataE[1].ctl.cache_d) ) begin
+        end else if (stallF && (dataE[1].branch_taken||dataE[1].ctl.cache_d||dataE[1].ctl.tlb) ) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
         end else if (stallF && dataE[1].ctl.cache_i ) begin
@@ -177,7 +177,7 @@ module MyCore (
             pc_nxt=icache_addr_save;
         end else if (jpc_saved&&~is_EXC&&~is_eret) begin
             pc_nxt=jpc_save;
-        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d)&&~is_INTEXC) begin
+        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d||dataE[1].ctl.tlb)&&~is_INTEXC) begin
             pc_nxt=jrpc_save;
         end else begin
             pc_nxt=pc_selected;
@@ -211,7 +211,7 @@ module MyCore (
         .pc_selected,
         .pc_succ,
         .pc_branch(dataE[1].target),
-        .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d),
+        .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d||dataE[1].ctl.tlb),
         .epc,
         // .is_tlb_refill(dataM3[valid_n].i_tlb_exc.refill||dataM3[valid_n].d_tlb_exc.refill),
         .entrance,
@@ -436,6 +436,7 @@ module MyCore (
     u1 jr_pred_finish;
     decode_data_t candidate1;
     u1 issue_en_1;
+    u1 candidate2_invalid;
 
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -464,7 +465,7 @@ module MyCore (
         end
     end
 
-    u1 candidate2_invalid;
+   
 
     bypass_input_t [1:0]dataE_in,dataM1_in,dataM2_in,dataM3_in;
     bypass_output_t [1:0]bypass_outra1 ,bypass_outra2 ,bypass_outra1E,bypass_outra2E;
@@ -791,8 +792,8 @@ module MyCore (
     assign mmu_req.entry_lo1=regs_out.entry_lo1;
     assign mmu_req.random=regs_out.random;
 
-    assign mmu_req.is_tlbwi=dataM3[valid_n].ctl.tlb_type==TLBWI;
-    assign mmu_req.is_tlbwr=dataM3[valid_n].ctl.tlb_type==TLBWR;
+    assign mmu_req.is_tlbwi=dataM3[1].ctl.tlb_type==TLBWI;
+    assign mmu_req.is_tlbwr=dataM3[1].ctl.tlb_type==TLBWR;
 
     // assign config_k0=regs_out.config0[2:0];
     assign config_k0=regs_out.config0[2:0];
