@@ -791,8 +791,8 @@ module MyCore (
     assign mmu_req.entry_lo1=regs_out.entry_lo1;
     assign mmu_req.random=regs_out.random;
 
-    assign mmu_req.is_tlbwi=dataM3[valid_n].ctl.tlb_type==TLBWI;
-    assign mmu_req.is_tlbwr=dataM3[valid_n].ctl.tlb_type==TLBWR;
+    assign mmu_req.is_tlbwi=dataM3[1].ctl.tlb_type==TLBWI;
+    assign mmu_req.is_tlbwr=dataM3[1].ctl.tlb_type==TLBWR;
 
     // assign config_k0=regs_out.config0[2:0];
     assign config_k0=regs_out.config0[2:0];
