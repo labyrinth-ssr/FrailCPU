@@ -285,8 +285,10 @@ module ICache (
     end
 
     always_ff @(posedge clk) begin
-        if (resetn & cache_oper==REQ) begin
-            plru <= plru_new;
+        if (resetn) begin
+            if (cache_oper==REQ) begin
+                plru <= plru_new;
+            end
         end
         else begin
             plru <= '0;

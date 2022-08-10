@@ -454,8 +454,10 @@ module DCache (
         end
     end
     always_ff @(posedge clk) begin
-        if (resetn & cache_handle.cache_oper==REQ) begin
-            plru <= plru_new;
+        if (resetn) begin
+            if (cache_handle.cache_oper==REQ) begin
+                plru <= plru_new;
+            end
         end
         else begin
             plru <= '0;
@@ -511,8 +513,10 @@ module DCache (
         end     
     end
     always_ff @(posedge clk) begin
-        if (resetn & cache_handle.cache_oper==REQ) begin
-            cache_dirty <= cache_dirty_new;
+        if (resetn) begin
+            if (cache_handle.cache_oper==REQ) begin
+                cache_dirty <= cache_dirty_new;
+            end
         end 
         else begin
             cache_dirty <= '0;
@@ -561,7 +565,7 @@ module DCache (
                             : (cache_handle.dreq_1.valid & cache_handle.dreq_1_is_uncached) ? UNCACHE_1 : FETCH_1;
     assign finish = (cache_handle.cache_oper==REQ&state==finish_state & dcresp.last)
                     | (cache_handle.cache_oper==WRITEBACK_INVALID&(~wb_dirty|dcresp.last))
-                    | (cache_handle.cache_oper==STORE&(&miss_addr.offset));
+                    | (cache_handle.cache_oper==INDEX_STORE&(&miss_addr.offset));
     
 
     always_ff @(posedge clk) begin
@@ -664,7 +668,7 @@ module DCache (
 
                     WRITEBACK_1: begin
                         if (dcresp.ready) begin
-                            state  <= dcresp.last ? FETCH_1 : WRITEBACK_1;
+                            state  <= dcresp.last ? IDLE : WRITEBACK_1;
                             offset_count <= offset_count + 1;
                         end
 
