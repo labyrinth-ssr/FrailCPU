@@ -85,6 +85,10 @@ module cp0
 	always_ff @(posedge clk) begin
 		if (reset) begin
 			regs <= '0;
+			regs.config0<=32'h80000480;
+			regs.config1<=32'h1e693480;
+			regs.prid<=32'h00004220;
+			regs.ebase.one<='1;
 			soft_int_pc<='0;
 			// regs.mcause[1] <= 1'b1;
 			// regs.epc[31] <= 1'b1;
@@ -119,7 +123,13 @@ module cp0
 			5'd16: rd = regs.config0;
 			default: rd = '0;
 		endcase
-		end 
+		end else if (ra[2:0]==3'b001) begin
+			unique case(ra[7:3])
+			5'd16: rd = regs.config1;
+			default:;
+
+			endcase
+		end
 	end
 
 		always_comb begin
@@ -145,7 +155,13 @@ module cp0
 			5'd16: rdM = regs.config0;
 			default: rdM = '0;
 		endcase
-		end 
+		end else if (ra[2:0]==3'b001) begin
+			unique case(ra[7:3])
+			5'd16: rd = regs.config1;
+			default:;
+
+			endcase
+		end
 	end
 		
 	// write
@@ -253,6 +269,11 @@ module cp0
 					// 5'd33: regs_nxt.ebase=wd;
 					default:;
 				endcase
+			end else if (wa[2:0]==3'b001) begin
+					case (wa[7:3])
+						5'd15:regs_nxt.ebase.ebase=wd[29:12];
+						default:;
+					endcase
 			end
 		end else begin
 			case(tlb_type)
