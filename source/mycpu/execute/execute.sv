@@ -340,7 +340,7 @@
 
             if (load_misalign[0]) begin
                 dataE[0].ctl.memtoreg='0;
-            end else if (load_misalign[0]) begin
+            end else if (store_misalign[0]) begin
                 dataE[0].ctl.memwrite='0;
             end
 
