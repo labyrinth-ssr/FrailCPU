@@ -70,10 +70,10 @@ RAM_SimpleDualPort #(
 assign candidate2_invalid=~candidate2.valid;
 assign issue_en_1=issue_en1;
 function index_t push(index_t tail_in);
-    return tail_in==0? 4'd15:tail_in-1;
+    return ~(|tail_in)? 4'd15:tail_in-1;
 endfunction
 function index_t pop(index_t head_in);
-    return head_in==0? 4'd15:head_in-1;
+    return ~(|head_in)? 4'd15:head_in-1;
 endfunction
 function u1 multi_op(control_t ctl);
     return ctl.div||ctl.mul;

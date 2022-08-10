@@ -79,6 +79,7 @@ typedef struct packed {
 } excp_type_t;
 
 typedef struct packed {
+	u1 exc_eret;
 	cp0_type_t ctype;
 	excp_type_t etype;
 	word_t vaddr;
