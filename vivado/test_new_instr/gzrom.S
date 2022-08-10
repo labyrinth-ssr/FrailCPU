@@ -147,11 +147,11 @@ Disassembly of section .data:
      760:	c01080ac 	sw	zero,4288(a0)
      764:	c41080ac 	sw	zero,4292(a0)
      768:	00000424 	li	a0,0
-     76c:	64011104 	bal	0xd00
+     /**/76c:	64011104 	bal	0xd00
      770:	00000000 	nop
      774:	9087043c 	lui	a0,0x8790
      778:	1c318424 	addiu	a0,a0,12572
-     77c:	1c011104 	bal	0xbf0
+     /**/77c:	1c011104 	bal	0xbf0
      780:	00000000 	nop
      784:	9087043c 	lui	a0,0x8790
      788:	47318424 	addiu	a0,a0,12615
@@ -435,13 +435,13 @@ Disassembly of section .data:
      be4:	00288940 	mtc0	t1,$5
      be8:	0800e003 	jr	ra
      bec:	00000000 	nop
-     bf0:	00000000 	nop
+     /**/bf0:	00000000 	nop
      bf4:	2130e003 	move	a2,ra
      bf8:	21289000 	addu	a1,a0,s0
      bfc:	0000a490 	lbu	a0,0(a1)
      c00:	05008010 	beqz	a0,0xc18
      c04:	00000000 	nop
-     c08:	25001104 	bal	0xca0
+     /**/c08:	25001104 	bal	0xca0
      c0c:	0100a524 	addiu	a1,a1,1
      c10:	fbff0010 	b	0xc00
      c14:	0000a490 	lbu	a0,0(a1)
@@ -477,7 +477,7 @@ Disassembly of section .data:
      c90:	ffffe724 	addiu	a3,a3,-1
      c94:	0800c000 	jr	a2
      c98:	00000000 	nop
-	...
+	/**/...
      ca4:	e4bf023c 	lui	v0,0xbfe4
      ca8:	05004390 	lbu	v1,5(v0)
      cac:	20006330 	andi	v1,v1,0x20
@@ -518,7 +518,7 @@ Disassembly of section .data:
      d38:	040043a0 	sb	v1,4(v0)
      d3c:	00000324 	li	v1,0
      d40:	010043a0 	sb	v1,1(v0)
-     d44:	0800e003 	jr	ra
+     /**/d44:	0800e003 	jr	ra
      d48:	00000000 	nop
      d4c:	0800e003 	jr	ra
      d50:	00000000 	nop

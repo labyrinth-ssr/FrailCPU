@@ -119,13 +119,14 @@ module cp0
 			5'd12: rd = regs.status;
 			5'd13: rd = regs.cause;
 			5'd14: rd = regs.epc;
-			5'd15: rd = regs.prid;
-			5'd16: rd = regs.config0;
+			5'd15: rd = 32'h00004220;
+			5'd16: rd = {28'h8000048,1'b0,regs.config0[2:0]};
 			default: rd = '0;
 		endcase
 		end else if (ra[2:0]==3'b001) begin
 			unique case(ra[7:3])
-			5'd16: rd = regs.config1;
+			5'd15: rd=  {2'b10,regs.ebase.ebase,12'b0};
+			5'd16: rd = 32'h1e693480;
 			default:;
 
 			endcase
@@ -151,13 +152,14 @@ module cp0
 			5'd12: rdM = regs.status;
 			5'd13: rdM = regs.cause;
 			5'd14: rdM = regs.epc;
-			5'd15: rdM = regs.prid;
-			5'd16: rdM = regs.config0;
+			5'd15: rdM = 32'h00004220;
+			5'd16: rdM = {28'h8000048,1'b0,regs.config0[2:0]};
 			default: rdM = '0;
 		endcase
 		end else if (raM[2:0]==3'b001) begin
 			unique case(raM[7:3])
-			5'd16: rdM = regs.config1;
+			5'd15: rdM=  {2'b10,regs.ebase.ebase,12'b0};
+			5'd16: rdM = 32'h1e693480;
 			default:;
 
 			endcase
