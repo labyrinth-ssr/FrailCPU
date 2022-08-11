@@ -125,11 +125,11 @@ void MyCPU::tick() {
 
     // check for the end of tests
     if ((get_writeback_pc1() & TEST_END_PC_MASK) == TEST_END_PC + 4 ||
-        (con->has_char() && con->get_char() == 0xff));
-        // test_finished = true;
+        (con->has_char() && con->get_char() == 0xff))
+        test_finished = true;
         else if ((get_writeback_pc2() & TEST_END_PC_MASK) == TEST_END_PC + 4 ||
-        (con->has_char() && con->get_char() == 0xff));
-        // test_finished = true;
+        (con->has_char() && con->get_char() == 0xff))
+        test_finished = true;
 }
 
 
