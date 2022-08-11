@@ -308,13 +308,10 @@ module MyCore (
     u1 rawinstr_saved;
     u64  raw_instrf2_save;
     tlb_exc_t [1:0] i_tlb_exc_save;
+    // tlb_exc_t [1:0] selected_i_tlb_exc;
+    // assign selected_i_tlb_exc=rawinstr_saved? i_tlb_exc_save:mmu_exc_out.i_tlb_exc;
+
     u1 delay_flushF2;
-    // u1 delay_zeroprej;
-
-    // always_ff @(posedge clk) begin
-    //     delay_zeroprej<=zero_prej||pred_pc_saved;
-    // end
-
     always_ff @(posedge clk) begin
         if (reset) begin
             {raw_instrf2_save,rawinstr_saved,delay_flushF2,i_tlb_exc_save}<='0;
@@ -336,19 +333,20 @@ module MyCore (
     //     delay_save_slotD<=save_slotD;
     // end
 
+
     always_comb begin
         dataF2_nxt[1].raw_instr=  iresp.data[31:0];
         dataF2_nxt[1].i_tlb_exc=  mmu_exc_out.i_tlb_exc[1];
         dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
         dataF2_nxt[1].cp0_ctl.ctype=|mmu_exc_out.i_tlb_exc[1]? EXCEPTION:dataF1.cp0_ctl.ctype;
         dataF2_nxt[1].cp0_ctl.exc_eret= dataF1.cp0_ctl.exc_eret||(|mmu_exc_out.i_tlb_exc[1]);
-        if (dataF1.cp0_ctl.ctype==EXCEPTION) begin
+        if (dataF1.cp0_ctl.exc_eret) begin
             dataF2_nxt[1].raw_instr='0;
         end else if (rawinstr_saved) begin
             dataF2_nxt[1].raw_instr= raw_instrf2_save[31:0];
             dataF2_nxt[1].i_tlb_exc= i_tlb_exc_save[1];
             dataF2_nxt[1].cp0_ctl.ctype=|i_tlb_exc_save[1]? EXCEPTION:dataF1.cp0_ctl.ctype;
-            dataF2_nxt[1].cp0_ctl.exc_eret= dataF1.cp0_ctl.exc_eret||(|mmu_exc_out.i_tlb_exc[1]);
+            dataF2_nxt[1].cp0_ctl.exc_eret= dataF1.cp0_ctl.exc_eret||(|i_tlb_exc_save[1]);
         end else if (delay_flushF2) begin
             dataF2_nxt[1].raw_instr='0;
             dataF2_nxt[1].i_tlb_exc='0;
@@ -360,7 +358,9 @@ module MyCore (
         dataF2_nxt[0].i_tlb_exc=  mmu_exc_out.i_tlb_exc[0];
         dataF2_nxt[0].cp0_ctl='0;
         dataF2_nxt[0].cp0_ctl.ctype=|mmu_exc_out.i_tlb_exc[0]? EXCEPTION:NO_EXC;
-        if (rawinstr_saved) begin
+        if (dataF1.cp0_ctl.exc_eret) begin
+            dataF2_nxt[0].raw_instr='0;
+        end else if (rawinstr_saved) begin
             dataF2_nxt[0].raw_instr=raw_instrf2_save[63:32];
             dataF2_nxt[0].i_tlb_exc= i_tlb_exc_save[0];
             dataF2_nxt[0].cp0_ctl.ctype=|i_tlb_exc_save[0]? EXCEPTION:NO_EXC;
