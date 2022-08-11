@@ -90,7 +90,7 @@ module cache_manage (
         .clk,
         .resetn,
 
-        .config_k0(3'd3),
+        .config_k0(config_k0),
 
         //地址翻译 
         .v_ireq,

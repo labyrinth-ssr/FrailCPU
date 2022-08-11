@@ -95,6 +95,10 @@ module cp0
 	always_ff @(posedge clk) begin
 		if (reset) begin
 			regs <= '0;
+			regs.config0<=32'h80000480;
+			regs.config1<=32'h1e693480;
+			regs.prid<=32'h00004220;
+			regs.ebase.one<='1;
 			soft_int_pc<='0;
 			// regs.mcause[1] <= 1'b1;
 			// regs.epc[31] <= 1'b1;
@@ -125,11 +129,18 @@ module cp0
 			5'd12: rd = regs.status;
 			5'd13: rd = regs.cause;
 			5'd14: rd = regs.epc;
-			5'd15: rd = regs.prid;
-			5'd16: rd = regs.config0;
+			5'd15: rd = 32'h00004220;
+			5'd16: rd = {28'h8000048,1'b0,regs.config0[2:0]};
 			default: rd = '0;
 		endcase
-		end 
+		end else if (ra[2:0]==3'b001) begin
+			unique case(ra[7:3])
+			5'd15: rd=  {2'b10,regs.ebase.ebase,12'b0};
+			5'd16: rd = 32'h1e693480;
+			default:;
+
+			endcase
+		end
 	end
 
 		always_comb begin
@@ -151,11 +162,18 @@ module cp0
 			5'd12: rdM = regs.status;
 			5'd13: rdM = regs.cause;
 			5'd14: rdM = regs.epc;
-			5'd15: rdM = regs.prid;
-			5'd16: rdM = regs.config0;
+			5'd15: rdM = 32'h00004220;
+			5'd16: rdM = {28'h8000048,1'b0,regs.config0[2:0]};
 			default: rdM = '0;
 		endcase
-		end 
+		end else if (raM[2:0]==3'b001) begin
+			unique case(raM[7:3])
+			5'd15: rdM=  {2'b10,regs.ebase.ebase,12'b0};
+			5'd16: rdM = 32'h1e693480;
+			default:;
+
+			endcase
+		end
 	end
 		
 	// write
@@ -266,6 +284,11 @@ module cp0
 					// 5'd33: regs_nxt.ebase=wd;
 					default:;
 				endcase
+			end else if (wa[2:0]==3'b001) begin
+					case (wa[7:3])
+						5'd15:regs_nxt.ebase.ebase=wd[29:12];
+						default:;
+					endcase
 			end
 		end else begin
 			case(tlb_type)

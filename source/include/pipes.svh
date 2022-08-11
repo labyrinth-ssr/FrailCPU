@@ -240,7 +240,7 @@ typedef struct packed {
 	u1 branch_taken;
 	u1 is_slot;
 	u1 is_jr_ra;
-	u1 penalty_taken;
+	// u1 penalty_taken;
 	word_t dest_pc;
 	word_t cache_addr;
 	// u1 cache_inst_i;

@@ -29,24 +29,33 @@ end
         stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;branchI_iwait_nxt=branchI_iwait;
         stallM='0;stallE='0;excp_iwait_nxt=excp_iwait;stallM2='0;flushW='0;branch_iwait_nxt=branch_iwait;flushM2='0;flushM3='0;
         pred_flush_que='0;
-        if (excpW||excpM) begin
+        if (excpW) begin
             flushF2='1;
             flushD='1;
             flushI='1;
             flushE='1;
             flushM='1;
             flush_que='1;
-            if (excpW) begin
-                flushM3='1;
-                flushM2='1;
-                flushW='1;
-            end
+            flushM3='1;
+            flushM2='1;
+            flushW='1;
             if (i_wait) begin
                 excp_iwait_nxt=1'b1;
                 stallF ='1;
             end
         end else if (d_wait||waitM) begin
             stallF='1;stallF2='1;stallD='1;stallI='1;stallI_de='1;stallE='1;stallM='1; stallM2='1;flushM3='1;
+        end else if (excpM) begin
+            flushF2='1;
+            flushD='1;
+            flushI='1;
+            flushE='1;
+            flushM='1;
+            flush_que='1;
+            if (i_wait) begin
+                excp_iwait_nxt=1'b1;
+                stallF ='1;
+            end
         end else if (branchM) begin
             flushF2='1;
             flushD='1;
