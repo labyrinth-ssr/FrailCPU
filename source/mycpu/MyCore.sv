@@ -70,7 +70,6 @@ module MyCore (
     // assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~jr_pred_finish&&~candidate2_invalid;
     // (dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
     u1 jrI;
-    assign jrI=is_jr_ra_issue&&~jr_ra_fail;
     // assign jrI='0;
 
     // u1 save_slotD;
@@ -441,14 +440,15 @@ module MyCore (
     always_ff @(posedge clk) begin
         if (reset) begin
             jr_pred_finish<='0;
-        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~candidate2_invalid&&~issue_en_1) begin
+        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~candidate2_invalid&&~issue_en_1&&~(d_wait||e_wait)) begin
             jr_pred_finish<='1;
         end else if (issue_en_1) begin
             jr_pred_finish<='0;
         end
     end
 
-    assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~jr_pred_finish&&~candidate2_invalid&&~issue_en_1;
+    assign jrI=is_jr_ra_issue&&~jr_ra_fail;
+    assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~jr_pred_finish&&~candidate2_invalid&&~issue_en_1&&~(d_wait||e_wait);
 
     u1 jr_predicted;
     word_t jr_predicted_pc;
