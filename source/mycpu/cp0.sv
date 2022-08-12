@@ -124,6 +124,7 @@ module cp0
 			5'd14: rd = regs.epc;
 			5'd15: rd = 32'h00004220;
 			5'd16: rd = {28'h8000048,1'b0,regs.config0[2:0]};
+			5'd30: rd = regs.error_epc;
 			default: rd = '0;
 		endcase
 		end else if (ra[2:0]==3'b001) begin
@@ -157,6 +158,7 @@ module cp0
 			5'd14: rdM = regs.epc;
 			5'd15: rdM = 32'h00004220;
 			5'd16: rdM = {28'h8000048,1'b0,regs.config0[2:0]};
+			5'd30: rdM = regs.error_epc;
 			default: rdM = '0;
 		endcase
 		end else if (raM[2:0]==3'b001) begin
@@ -281,6 +283,7 @@ module cp0
 					// 5'd15: regs_nxt.prid=wd;
 					5'd16: regs_nxt.config0[2:0] = wd[2:0];
 					5'd28: regs_nxt.tag_lo=wd;
+					5'd30: regs_nxt.error_epc=wd;
 					// 5'd33: regs_nxt.ebase=wd;
 					default:;
 				endcase

@@ -310,47 +310,47 @@ module decoder (
 
             end
             `OP_CACHE: begin
-                ctl.alusrc=IMM;
-                ctl.alufunc=ALU_ADDU;
-                srcrega=rs;
-                ctl.cache='1;
-				case(instr[20:16])
-                    `I_INDEX_INVALID:begin
-                        cache_ctl.icache_inst=I_INDEX_INVALID;
-                        ctl.cache_i='1;
-                    end
-                    `I_INDEX_STORE_TAG:begin
-                        cache_ctl.icache_inst=I_INDEX_STORE_TAG;
-                        ctl.cache_i='1;
-                        cp0ra={5'd28,3'b000};
+                // ctl.alusrc=IMM;
+                // ctl.alufunc=ALU_ADDU;
+                // srcrega=rs;
+                // ctl.cache='1;
+				// case(instr[20:16])
+                //     `I_INDEX_INVALID:begin
+                //         cache_ctl.icache_inst=I_INDEX_INVALID;
+                //         ctl.cache_i='1;
+                //     end
+                //     `I_INDEX_STORE_TAG:begin
+                //         cache_ctl.icache_inst=I_INDEX_STORE_TAG;
+                //         ctl.cache_i='1;
+                //         cp0ra={5'd28,3'b000};
 
-                    end
-                    `I_HIT_INVALID:begin
-                        cache_ctl.icache_inst=I_HIT_INVALID;
-                        ctl.cache_i='1;
+                //     end
+                //     `I_HIT_INVALID:begin
+                //         cache_ctl.icache_inst=I_HIT_INVALID;
+                //         ctl.cache_i='1;
 
-                    end
-                    `D_INDEX_WRITEBACK_INVALID:begin
-                        cache_ctl.dcache_inst=D_INDEX_WRITEBACK_INVALID;
-                        ctl.cache_d='1;
-                    end
-                    `D_INDEX_STORE_TAG:begin
-                        cache_ctl.dcache_inst=D_INDEX_STORE_TAG;
-                        ctl.cache_d='1;
-                        cp0ra={5'd28,3'b000};
-                    end
-                    `D_HIT_INVALID:begin
-                        cache_ctl.dcache_inst=D_HIT_INVALID;
-                        ctl.cache_d='1;
+                //     end
+                //     `D_INDEX_WRITEBACK_INVALID:begin
+                //         cache_ctl.dcache_inst=D_INDEX_WRITEBACK_INVALID;
+                //         ctl.cache_d='1;
+                //     end
+                //     `D_INDEX_STORE_TAG:begin
+                //         cache_ctl.dcache_inst=D_INDEX_STORE_TAG;
+                //         ctl.cache_d='1;
+                //         cp0ra={5'd28,3'b000};
+                //     end
+                //     `D_HIT_INVALID:begin
+                //         cache_ctl.dcache_inst=D_HIT_INVALID;
+                //         ctl.cache_d='1;
 
-                    end
-                    `D_HIT_WRITEBACK_INVALID:begin
-                        cache_ctl.dcache_inst=D_HIT_WRITEBACK_INVALID;
-                        ctl.cache_d='1;
+                //     end
+                //     `D_HIT_WRITEBACK_INVALID:begin
+                //         cache_ctl.dcache_inst=D_HIT_WRITEBACK_INVALID;
+                //         ctl.cache_d='1;
 
-                    end
-                    default: ;
-                endcase
+                //     end
+                //     default: ;
+                // endcase
 			end    
             `OP_ERET: begin
                 case (instr[25:21])
@@ -364,20 +364,20 @@ module decoder (
                                 destreg = '0;
                             end
                             `CP_TLBP:begin
-                                ctl.tlb='1;
-                                ctl.tlb_type=TLBP;
+                                // ctl.tlb='1;
+                                // ctl.tlb_type=TLBP;
                             end
                             `CP_TLBR:begin
-                                ctl.tlb='1;
-                                ctl.tlb_type=TLBR;
+                                // ctl.tlb='1;
+                                // ctl.tlb_type=TLBR;
                             end
                             `CP_TLBWI:begin
-                                ctl.tlb='1;
-                                ctl.tlb_type=TLBWI;
+                                // ctl.tlb='1;
+                                // ctl.tlb_type=TLBWI;
                             end
                             `CP_TLBWR:begin
-                                ctl.tlb='1;
-                                ctl.tlb_type=TLBWR;
+                                // ctl.tlb='1;
+                                // ctl.tlb_type=TLBWR;
                             end
                             default:begin
                                 exception_ri = 1'b1;
