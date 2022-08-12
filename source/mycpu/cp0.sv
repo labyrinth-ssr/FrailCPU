@@ -34,7 +34,9 @@ module cp0
 	input u1 d_write,
 	input tlb_type_t tlb_type,
 	input mmu_resp_t mmu_resp,
-	output word_t entrance
+	output word_t entrance,
+	output u1 is_int,
+	input u1 int_slot
 	// input dataM2_save_t dataM2_save[1:0]
 );
 	u1 double;
@@ -59,6 +61,7 @@ module cp0
 	// 		end
 	// 	end
 	// end
+	assign is_int=interrupt||int_saved;
 
 	typedef struct packed {
 		word_t pc;
@@ -208,10 +211,20 @@ module cp0
 			regs_nxt.count = regs.count + 1;
 		end
 
-	
-
-
-		if (ctype==EXCEPTION||((interrupt||int_saved)&&inter_valid)) begin
+		if ((interrupt||int_saved)&&inter_valid) begin
+			regs_nxt.cause.exc_code=EXCCODE_INT;
+			if (~regs.status.exl) begin
+				if (~int_slot) begin
+					regs_nxt.epc=int_pc;
+					regs_nxt.cause.bd='0;
+				end else begin
+					regs_nxt.epc=int_pc-4;
+					regs_nxt.cause.bd='1;
+				end
+			end
+		regs_nxt.status.exl='1;
+			
+		end else if (ctype==EXCEPTION) begin
 			if ((code==EXCCODE_ADEL&&etype.badVaddrF)||(code==EXCCODE_TLBL&&|i_tlb_exc)) begin
 				regs_nxt.bad_vaddr=pc;
 			end else if ((code==EXCCODE_ADEL&&etype.adelD)||code==EXCCODE_ADES||code==EXCCODE_TLBS||(code==EXCCODE_TLBL&&|d_tlb_exc)) begin
@@ -227,10 +240,10 @@ module cp0
 			regs_nxt.cause.exc_code=code;
 			if (~regs.status.exl) begin
 				if (~is_slot) begin
-					regs_nxt.epc= (interrupt||int_saved)&&inter_valid? int_pc:pc;
+					regs_nxt.epc= pc;
 					regs_nxt.cause.bd='0;
 				end else begin
-					regs_nxt.epc=(interrupt||int_saved)&&inter_valid? int_pc:pc-4;
+					regs_nxt.epc=pc-4;
 					regs_nxt.cause.bd='1;
 				end
 			end
