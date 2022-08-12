@@ -202,7 +202,7 @@
 
     assign dataE[1].branch_taken=(dataI[1].ctl.jump&&~(dataI[1].pre_b&&dataI[1].pre_pc==target))
     ||(dataI[1].ctl.branch&&branch_condition&&~dataI[1].pre_b)
-    ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b);
+    ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b)||dataI[1].ctl.tlb;
 
     for (genvar i=0; i<2; ++i) begin
         assign dataE[i].srcb=rd2[i];

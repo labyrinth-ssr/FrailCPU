@@ -29,8 +29,8 @@
 
 module MyCore (
     input logic clk, resetn,
-    (*mark_debug = "true"*)output ibus_req_t  ireq,
-    (*mark_debug = "true"*)input  ibus_resp_t iresp,
+    output ibus_req_t  ireq,
+    input  ibus_resp_t iresp,
     output dbus_req_t [1:0]  dreq,
     input  dbus_resp_t dresp,
     input logic[5:0] ext_int,
@@ -49,10 +49,10 @@ module MyCore (
     u1 i_tlb_exc_bit;
     assign i_tlb_exc_bit='1;
     
-    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3,pred_flush_que;;
+    u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3,pred_flush_que;
     u1 is_eret;
     u1 i_wait;
-    (*mark_debug = "true"*)u1 d_wait;
+    u1 d_wait;
     u1 e_wait;
     u1 is_INTEXC,is_EXC;
     word_t epc;
@@ -123,7 +123,7 @@ module MyCore (
 	assign ireq.valid=  dataE[1].ctl.cache_i||~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
-    (*mark_debug = "true"*)fetch_data_t [1:0] dataF2_nxt ;
+    fetch_data_t [1:0] dataF2_nxt ;
     fetch_data_t [1:0] dataF2 ;
     decode_data_t [1:0] dataD_nxt ,dataD ;
     issue_data_t [1:0] dataI_nxt,dataI;
@@ -131,7 +131,7 @@ module MyCore (
     execute_data_t [1:0] dataM1_nxt,dataM1;
     execute_data_t [1:0] dataM2_nxt,dataM2;
     memory_data_t [1:0] dataM3_nxt;
-    (*mark_debug = "true"*)memory_data_t [1:0] dataM3;
+    memory_data_t [1:0] dataM3;
 
     // always_comb begin
     assign pc_succ=dataP_pc+8;
@@ -141,7 +141,7 @@ module MyCore (
     // end
 
     word_t jpc_save,ipc_save,jrpc_save,icache_addr_save;
-    (*mark_debug = "true"*)word_t pc_nxt;
+    word_t pc_nxt;
     u1 jpc_saved,ipc_saved,jrpc_saved,icache_addr_saved;
     always_ff @(posedge clk) begin
         if (reset) begin
@@ -309,8 +309,8 @@ module MyCore (
         .en(~stallF2),
         .flush(flushF2)
     );
-    (*mark_debug = "true"*)u1 rawinstr_saved;
-    (*mark_debug = "true"*)u64  raw_instrf2_save;
+    u1 rawinstr_saved;
+    u64  raw_instrf2_save;
     tlb_exc_t [1:0] i_tlb_exc_save;
     // tlb_exc_t [1:0] selected_i_tlb_exc;
     // assign selected_i_tlb_exc=rawinstr_saved? i_tlb_exc_save:mmu_exc_out.i_tlb_exc;

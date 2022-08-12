@@ -840,6 +840,9 @@ module decoder (
                     default:;
                 endcase
             end
+            `OP_PREF:begin
+                
+            end
             default: begin
                 exception_ri = 1'b1;
                 ctl.op = RESERVED;
