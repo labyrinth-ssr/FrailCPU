@@ -357,7 +357,6 @@ module decoder (
                         cache_ctl.icache_inst=I_INDEX_STORE_TAG;
                         ctl.cache_i='1;
                         cp0ra={5'd28,3'b000};
-
                     end
                     `I_HIT_INVALID:begin
                         cache_ctl.icache_inst=I_HIT_INVALID;
