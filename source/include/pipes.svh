@@ -164,6 +164,8 @@ typedef struct packed {
 	u1 pre_b;
 	word_t pre_pc;
 	u1 nxt_valid;
+	u1 nxt_exception;
+	tlb_exc_t i_tlb_exc;
 	// int_type_t int_type;
     } fetch1_data_t;//
 
@@ -251,6 +253,7 @@ typedef struct packed {
 	// u64 rs1rd;
 	cp0_control_t cp0_ctl;
 	tlb_exc_t i_tlb_exc;
+	tlb_exc_t d_tlb_exc;
 } execute_data_t;
 
 typedef struct packed {
