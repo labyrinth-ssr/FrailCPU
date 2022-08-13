@@ -32,7 +32,7 @@ typedef struct packed {
 	creg_addr_t rdst;
 	// u8 cp0ra;
 	// u1 lowrite,hiwrite,cp0write;
-	u1 memtoreg,lotoreg,hitoreg,cp0toreg;
+	u1 memtoreg,lotoreg,hitoreg,cp0toreg,mul;
 	u1 regwrite;
 } bypass_input_t;
 
@@ -53,7 +53,7 @@ typedef struct packed {
 	// u8 cp0ra;
 	u1 regwrite;
 	creg_addr_t rdst;
-	u1 memtoreg,lotoreg,hitoreg,cp0toreg;
+	u1 memtoreg,lotoreg,hitoreg,cp0toreg,mul;
 } bypass_execute_t;
 
 typedef struct packed {
