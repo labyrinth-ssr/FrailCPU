@@ -93,7 +93,6 @@ module MyCore (
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.tlb||dataE[1].ctl.cache_d),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
 	);
 
-    word_t iaddrE;
     // word_t icache_addr_save;
     // u1 icache_addr_saved;
 
@@ -135,10 +134,61 @@ module MyCore (
     assign dcache_inst = dataE[1].cache_ctl.dcache_inst;
     // always_comb begin
     assign pc_succ=dataP_pc+8;
-    //     if (dataP_pc[2]==1) begin
-    //         pc_succ=dataP_pc+4;
+    // word_t pc_save,icache_addr_save;
+    // u1 pc_saved,icache_addr_saved;
+    // // word_t jpc_save,ipc_save,jrpc_save,icache_addr_save;
+    // word_t pc_nxt;
+    // // u1 jpc_saved,ipc_saved,jrpc_saved,icache_addr_saved;
+    // u1 forward_pc;
+    // //icache，且无stallF时，存下一条
+    // //icache且有stallF时，存两条
+    // assign forward_pc=is_INTEXC|is_eret|dataE[1].branch_taken|dataE[1].ctl.cache|dataE[1].ctl.tlb;
+    // always_ff @(posedge clk) begin
+    //     if (reset) begin
+    //         // {jpc_save,ipc_save,jrpc_save,jpc_saved,ipc_saved,jrpc_saved}<='0;
+    //         {pc_save,pc_saved}<='0;
+    //     end else if (stallF&&(is_INTEXC||is_eret)) begin
+	// 		pc_save<=pc_selected;
+	// 		pc_saved<='1;
+    //     end else if (stallF && (dataE[1].branch_taken||dataE[1].ctl.cache_d||dataE[1].ctl.tlb) ) begin
+    //         pc_save<=pc_selected;
+    //         pc_saved<='1;
+    //     end else if (dataE[1].ctl.cache_i ) begin
+    //         if (stallF) begin
+    //             icache_addr_save<=dataE[1].cache_addr;
+    //             icache_addr_saved<='1;
+    //         end
+    //         pc_save<=dataE[1].target;
+    //         pc_saved<='1;
+    //     end else if (stallF && jrI) begin
+    //         pc_save<=pc_selected;
+    //         pc_saved<='1;
+    //     end else if (~stallF) begin
+    //         if (~icache_addr_saved) begin
+    //             pc_save<='0;
+    //             pc_saved<='0;
+    //         end
+    //         {icache_addr_save,icache_addr_saved}<='0;
+	// 	end
+	// end
+
+    // always_comb begin
+    //     if (pc_saved) begin
+    //         pc_nxt=pc_save;
+    //     end else if (icache_addr_saved&&~is_INTEXC&&~is_eret) begin
+    //         pc_nxt=icache_addr_save;
+    //     end 
+    //     // else if (jpc_saved&&~is_INTEXC&&~is_eret) begin
+    //     //     pc_nxt=jpc_save;
+    //     // end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d||dataE[1].ctl.tlb)&&~is_INTEXC) begin
+    //     //     pc_nxt=jrpc_save;
+    //     // end 
+    //     else begin
+    //         pc_nxt=pc_selected;
     //     end
     // end
+
+    
 
     word_t jpc_save,ipc_save,jrpc_save,icache_addr_save;
     word_t pc_nxt;
@@ -188,7 +238,6 @@ module MyCore (
             pc_nxt=pc_selected;
         end
     end
-
     // u1 j_misalign_hazard;
     // u1 jr_pc_saved;
     // word_t jr_pc_save;
@@ -236,13 +285,14 @@ module MyCore (
     fetch1_data_t dataF1_nxt,dataF1;
     assign dataF1_nxt.valid='1;
     assign dataF1_nxt.pc=dataP_pc;
-    assign dataF1_nxt.cp0_ctl.ctype= pc_except ? EXCEPTION : NO_EXC;
+    assign dataF1_nxt.cp0_ctl.ctype= pc_except||(|mmu_exc_out.i_tlb_exc[1]) ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.cp0_ctl.exc_eret= pc_except;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     assign dataF1_nxt.pre_pc= pre_pc;
     assign dataF1_nxt.nxt_valid=~zero_prej;
-    always_comb begin
-        dataF1_nxt.cp0_ctl.etype='0;
+    assign dataF1_nxt.nxt_exception=~(|mmu_exc_out.i_tlb_exc[1]) && (|mmu_exc_out.i_tlb_exc[0]);
+    assign dataF1_nxt.i_tlb_exc= ~(|mmu_exc_out.i_tlb_exc[1])? mmu_exc_out.i_tlb_exc[0]:mmu_exc_out.i_tlb_exc[1];
+    always_comb begin 
         dataF1_nxt.cp0_ctl.vaddr='0;
         dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except;
     end
@@ -313,23 +363,23 @@ module MyCore (
     );
     u1 rawinstr_saved;
     u64  raw_instrf2_save;
-    tlb_exc_t [1:0] i_tlb_exc_save;
+    // tlb_exc_t [1:0] i_tlb_exc_save;
     // tlb_exc_t [1:0] selected_i_tlb_exc;
     // assign selected_i_tlb_exc=rawinstr_saved? i_tlb_exc_save:mmu_exc_out.i_tlb_exc;
 
     u1 delay_flushF2;
     always_ff @(posedge clk) begin
         if (reset) begin
-            {raw_instrf2_save,rawinstr_saved,delay_flushF2,i_tlb_exc_save}<='0;
+            {raw_instrf2_save,rawinstr_saved,delay_flushF2}<='0;
         end else begin
             delay_flushF2 <=flushF2;
             if (stallF2&&~rawinstr_saved) begin
                 raw_instrf2_save<=iresp.data;
                 rawinstr_saved<='1;
-                i_tlb_exc_save<=mmu_exc_out.i_tlb_exc;
+                // i_tlb_exc_save<=mmu_exc_out.i_tlb_exc;
                 
             end else if (~stallF2) begin
-                {raw_instrf2_save,rawinstr_saved,i_tlb_exc_save}<='0;
+                {raw_instrf2_save,rawinstr_saved}<='0;
             end
         end
     end
@@ -342,37 +392,33 @@ module MyCore (
 
     always_comb begin
         dataF2_nxt[1].raw_instr=  iresp.data[31:0];
-        dataF2_nxt[1].i_tlb_exc=  mmu_exc_out.i_tlb_exc[1];
+        dataF2_nxt[1].i_tlb_exc= dataF1.nxt_exception? '0:dataF1.i_tlb_exc ;
         dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
-        dataF2_nxt[1].cp0_ctl.ctype=|mmu_exc_out.i_tlb_exc[1]? EXCEPTION:dataF1.cp0_ctl.ctype;
-        dataF2_nxt[1].cp0_ctl.exc_eret= dataF1.cp0_ctl.exc_eret||(|mmu_exc_out.i_tlb_exc[1]);
+        dataF2_nxt[1].cp0_ctl.ctype=dataF1.cp0_ctl.ctype;
+        // dataF2_nxt[1].cp0_ctl.exc_eret= dataF1.cp0_ctl.exc_eret;
         if (dataF1.cp0_ctl.exc_eret) begin
             dataF2_nxt[1].raw_instr='0;
         end else if (rawinstr_saved) begin
             dataF2_nxt[1].raw_instr= raw_instrf2_save[31:0];
-            dataF2_nxt[1].i_tlb_exc= i_tlb_exc_save[1];
-            dataF2_nxt[1].cp0_ctl.ctype=|i_tlb_exc_save[1]? EXCEPTION:dataF1.cp0_ctl.ctype;
-            dataF2_nxt[1].cp0_ctl.exc_eret= dataF1.cp0_ctl.exc_eret||(|i_tlb_exc_save[1]);
         end else if (delay_flushF2) begin
             dataF2_nxt[1].raw_instr='0;
-            dataF2_nxt[1].i_tlb_exc='0;
         end
     end
 
     always_comb begin
         dataF2_nxt[0].raw_instr=  iresp.data[63:32];
-        dataF2_nxt[0].i_tlb_exc=  mmu_exc_out.i_tlb_exc[0];
+        dataF2_nxt[0].i_tlb_exc=  dataF1.nxt_exception? dataF1.i_tlb_exc :'0;
         dataF2_nxt[0].cp0_ctl='0;
-        dataF2_nxt[0].cp0_ctl.ctype=|mmu_exc_out.i_tlb_exc[0]? EXCEPTION:NO_EXC;
+        dataF2_nxt[0].cp0_ctl.ctype=dataF1.nxt_exception? EXCEPTION:NO_EXC;
         if (dataF1.cp0_ctl.exc_eret) begin
             dataF2_nxt[0].raw_instr='0;
         end else if (rawinstr_saved) begin
             dataF2_nxt[0].raw_instr=raw_instrf2_save[63:32];
-            dataF2_nxt[0].i_tlb_exc= i_tlb_exc_save[0];
-            dataF2_nxt[0].cp0_ctl.ctype=|i_tlb_exc_save[0]? EXCEPTION:NO_EXC;
+            // dataF2_nxt[0].i_tlb_exc= i_tlb_exc_save[0];
+            // dataF2_nxt[0].cp0_ctl.ctype=|i_tlb_exc_save[0]? EXCEPTION:NO_EXC;
         end else if (delay_flushF2) begin
             dataF2_nxt[0].raw_instr='0;
-            dataF2_nxt[0].i_tlb_exc='0;
+            // dataF2_nxt[0].i_tlb_exc='0;
         end
     end
 
@@ -536,6 +582,7 @@ module MyCore (
         assign dataE_in[i].hitoreg=dataE[i].ctl.hitoreg;
         assign dataE_in[i].cp0toreg=dataE[i].ctl.cp0toreg;
         assign dataE_in[i].regwrite=dataE[i].ctl.regwrite;
+        assign dataE_in[i].mul=dataE[i].ctl.mul&&dataE[i].ctl.regwrite;
 
         assign dataM1_in[i].data=dataM1[i].alu_out;
         assign dataM1_in[i].rdst=dataM1[i].rdst;
@@ -544,6 +591,7 @@ module MyCore (
         assign dataM1_in[i].hitoreg=dataM1[i].ctl.hitoreg;
         assign dataM1_in[i].cp0toreg=dataM1[i].ctl.cp0toreg;
         assign dataM1_in[i].regwrite=dataM1[i].ctl.regwrite;
+        assign dataM1_in[i].mul=dataM1[i].ctl.mul&&dataM1[i].ctl.regwrite;
 
         assign dataM1_inM[i].cp0write=dataM1[i].ctl.cp0write;
         assign dataM1_inM[i].data=dataM1[i].srcb;
@@ -557,6 +605,7 @@ module MyCore (
         assign dataM2_in[i].hitoreg=dataM2[i].ctl.hitoreg;
         assign dataM2_in[i].cp0toreg=dataM2[i].ctl.cp0toreg;
         assign dataM2_in[i].regwrite=dataM2[i].ctl.regwrite;
+        assign dataM2_in[i].mul=dataM2[i].ctl.mul&&dataM2[i].ctl.regwrite;
 
         assign dataM2_inM[i].cp0write=dataM2[i].ctl.cp0write;
         assign dataM2_inM[i].cp0wa=dataM2[i].cp0ra;
@@ -570,6 +619,7 @@ module MyCore (
         assign dataM3_in[i].hitoreg=dataM3[i].ctl.hitoreg;
         assign dataM3_in[i].cp0toreg=dataM3[i].ctl.cp0toreg;
         assign dataM3_in[i].regwrite=dataM3[i].ctl.regwrite;
+        assign dataM3_in[i].mul=dataM3[i].ctl.mul&&dataM3[i].ctl.regwrite;
 
         assign dataM3_inM[i].cp0write=dataM3[i].ctl.cp0write;
         assign dataM3_inM[i].cp0wa=dataM3[i].cp0ra;
@@ -582,6 +632,7 @@ module MyCore (
         assign dataEnxt_in[i].hitoreg=dataI[i].ctl.hitoreg;
         assign dataEnxt_in[i].lotoreg=dataI[i].ctl.lotoreg;
         assign dataEnxt_in[i].cp0toreg=dataI[i].ctl.cp0toreg;
+        assign dataEnxt_in[i].mul=dataI[i].ctl.mul&&dataI[i].ctl.regwrite;
 
         assign dataE_nxt_in[i].ra1=dataI[i].ra1;
         assign dataE_nxt_in[i].ra2=dataI[i].ra2;
@@ -666,6 +717,7 @@ module MyCore (
 		.dataE(dataE),
 		.dataE2(dataM1_nxt),
 		.dreq,
+        .d_tlb_exc(mmu_exc_out.d_tlb_exc),
         // .bypass_input(cp0rd)
         // .req_finish('0),
         .excpM
@@ -699,8 +751,8 @@ module MyCore (
 		.dataM(dataM3_nxt),
 		.dresp,
         .dreq,
-        .resetn,
-        .d_tlb_exc(mmu_exc_out.d_tlb_exc)
+        .resetn
+        // .d_tlb_exc(mmu_exc_out.d_tlb_exc)
 	);
 
 	pipereg2 #(.T(memory_data_t)) M3Wreg(

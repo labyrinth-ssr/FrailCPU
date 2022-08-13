@@ -16,8 +16,7 @@ module memory3
     output memory_data_t [1:0] dataM,
     input  dbus_resp_t dresp,
     input dbus_req_t [1:0] dreq,
-    input logic resetn,
-    input tlb_exc_t [1:0] d_tlb_exc
+    input logic resetn
 );
 u1 uncache;
 assign uncache=dreq[1].addr[29] || dreq[0].addr[29];
@@ -104,7 +103,7 @@ for (genvar i=0; i<2; ++i) begin
     assign dataM[i].srcb=dataE[i].srcb;
     assign dataM[i].srca=dataE[i].srca;
     assign dataM[i].hilo=dataE[i].hilo;
-    assign dataM[i].d_tlb_exc=d_tlb_exc[i];
+    assign dataM[i].d_tlb_exc=dataE[i].d_tlb_exc;
 end
 
 endmodule

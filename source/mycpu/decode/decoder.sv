@@ -361,7 +361,6 @@ module decoder (
                     `I_HIT_INVALID:begin
                         cache_ctl.icache_inst=I_HIT_INVALID;
                         ctl.cache_i='1;
-
                     end
                     `D_INDEX_WRITEBACK_INVALID:begin
                         cache_ctl.dcache_inst=D_INDEX_WRITEBACK_INVALID;
@@ -375,12 +374,10 @@ module decoder (
                     `D_HIT_INVALID:begin
                         cache_ctl.dcache_inst=D_HIT_INVALID;
                         ctl.cache_d='1;
-
                     end
                     `D_HIT_WRITEBACK_INVALID:begin
                         cache_ctl.dcache_inst=D_HIT_WRITEBACK_INVALID;
                         ctl.cache_d='1;
-
                     end
                     default: ;
                 endcase

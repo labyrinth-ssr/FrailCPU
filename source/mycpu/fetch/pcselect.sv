@@ -15,8 +15,11 @@ module pcselect(
     input word_t entrance,
     input u1 icache,
     input word_t icache_addr
+    // output u1 forward_pc_taken
     // input u1 is_tlb_refill
 );
+
+    // assign forward_pc_taken=is_eret|is_INTEXC|icache|branch_taken|issue
     always_comb begin
         pc_selected='0;
         if (is_eret) begin

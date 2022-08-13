@@ -49,9 +49,9 @@ module cp0
 	assign entrance=32'hbfc00200+offset;
 	always_comb begin
 		offset=32'h180;
-		/*if (has_int&&regs.cause.iv) begin
+		if (is_int&&regs.cause.iv) begin
 			offset=32'h200;
-		end */if ((i_tlb_exc.refill||d_tlb_exc.refill)&&regs.status.exl) begin
+		end else if ((i_tlb_exc.refill||d_tlb_exc.refill)&&~regs.status.exl) begin
 			offset=32'h0;
 		end
 	end

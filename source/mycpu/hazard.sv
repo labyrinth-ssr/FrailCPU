@@ -61,7 +61,7 @@ end
             flushD='1;
             flushI='1;
             flushE='1;
-            flushM='1;
+            flushM='1;    
             flush_que='1;
             if (i_wait) begin
                 branch_iwait_nxt=1'b1;
