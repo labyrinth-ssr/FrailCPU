@@ -24,7 +24,7 @@ module ICache (
     //1 + 7 + 4 + 2
     localparam DATA_PER_LINE = 16;
     localparam ASSOCIATIVITY = 2;
-    localparam SET_NUM = 128;
+    localparam SET_NUM = 64;
 
     localparam BYTE_WIDTH = 8;
     localparam BYTE_PER_DATA = 4;
@@ -135,9 +135,9 @@ module ICache (
     endfunction
 
 
-    assign cache_oper = ((cache_inst==I_INDEX_INVALID)|(cache_inst==I_HIT_INVALID&hit_1))?INVALID
-                        :(cache_inst==I_INDEX_STORE_TAG)?INDEX_STORE
-                        :(cache_inst==I_UNKNOWN)?REQ:NULL;
+    assign cache_oper = ((cache_inst==I_INDEX_INVALID|(cache_inst==I_HIT_INVALID&hit_1)) & ireq_1.valid)?INVALID
+                        :(cache_inst==I_INDEX_STORE_TAG & ireq_1.valid)?INDEX_STORE
+                        :(cache_inst==I_UNKNOWN & ireq_1.valid)?REQ:NULL;
     assign index_line = get_line(ireq_1_addr);
     assign invalid_line = (cache_inst == I_INDEX_INVALID) ? index_line : hit_line_1;
 
@@ -175,6 +175,7 @@ module ICache (
     
     assign ireq_hit = ireq_1.valid & hit_1 & hit_2;
 
+    //if ireq_1 is valid
     assign en = (((cache_inst==I_UNKNOWN&ireq_hit)|cache_inst==I_HIT_INVALID|cache_inst==I_INDEX_INVALID)&state==IDLE)
                 | (state==STORE&(&miss_addr.offset));
 
@@ -188,23 +189,49 @@ module ICache (
     assign meta_addr_2 = ireq_2_addr.index;
     assign meta_en = ~resetn
                     |((state==FETCH_1|state==FETCH_2)&icresp.last)
-                    |((cache_oper==INVALID|cache_oper==INDEX_STORE)&state==IDLE);
+                    |(state==IDLE&cache_oper==INVALID)
+                    |(state==STORE&(&miss_addr.offset));
 
     always_comb begin
         meta_w = meta_r_1;
         if (resetn) begin
-            unique case(cache_oper)
-                INVALID: begin
+            unique case (state)
+                IDLE: begin
+                    if (cache_oper==INVALID) begin
+                        for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                            if (invalid_line == associativity_t'(i)) begin
+                                meta_w[i].valid = 1'b0;
+                            end
+                            else begin
+                            end
+                        end
+                    end
+                end
+
+                FETCH_1: begin
                     for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                        if (invalid_line == associativity_t'(i)) begin
-                            meta_w[i].valid = 1'b0;
+                        if (replace_line_1 == associativity_t'(i)) begin
+                            meta_w[i].tag = ireq_1_addr.tag;
+                            meta_w[i].valid = 1'b1;
+                        end
+                        else begin
+                        end
+                    end
+                    
+                end
+
+                FETCH_2: begin
+                    for (int i = 0; i < ASSOCIATIVITY; i++) begin
+                        if (replace_line_2 == associativity_t'(i)) begin
+                            meta_w[i].tag = ireq_2_addr.tag;
+                            meta_w[i].valid = 1'b1;
                         end
                         else begin
                         end
                     end
                 end
 
-                INDEX_STORE: begin
+                STORE: begin
                     for (int i = 0; i < ASSOCIATIVITY; i++) begin
                         if (index_line == associativity_t'(i)) begin
                             meta_w[i].tag = tag_lo_tag(tag_lo);
@@ -215,37 +242,9 @@ module ICache (
                     end
                 end
 
-                REQ: begin
-                    unique case (state)
-                        FETCH_1: begin
-                            for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                                if (replace_line_1 == associativity_t'(i)) begin
-                                    meta_w[i].tag = ireq_1_addr.tag;
-                                    meta_w[i].valid = 1'b1;
-                                end
-                                else begin
-                                end
-                            end
-                            
-                        end
-
-                        FETCH_2: begin
-                            for (int i = 0; i < ASSOCIATIVITY; i++) begin
-                                if (replace_line_2 == associativity_t'(i)) begin
-                                    meta_w[i].tag = ireq_2_addr.tag;
-                                    meta_w[i].valid = 1'b1;
-                                end
-                                else begin
-                                end
-                            end
-                        end
-                        default: begin   
-                        end
-                    endcase            
+                default: begin   
                 end
-                default: begin
-                end
-            endcase
+            endcase         
             
         end
         else begin

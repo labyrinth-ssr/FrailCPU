@@ -25,7 +25,7 @@ module DCache (
     //1 + 7 + 4 + 2
     localparam DATA_PER_LINE = 16;
     localparam ASSOCIATIVITY = 2;
-    localparam SET_NUM = 128;
+    localparam SET_NUM = 64;
 
     localparam BYTE_WIDTH = 8;
     localparam BYTE_PER_DATA = 4;

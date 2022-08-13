@@ -53,12 +53,16 @@ module cache_manage (
     always_comb begin
         v_ireq[1] = ireq;
         v_ireq[1].addr = ireq.addr + 4;
+        v_ireq[1].valid = icache_inst==I_UNKNOWN & ireq.valid;
     end
 
     //dreq
     dbus_req_t [1:0] v_dreq;
     assign v_dreq[0] = dreq_1;
-    assign v_dreq[1] = dreq_2;
+    always_comb begin
+        v_dreq[1] = dreq_2;
+        v_dreq[1].valid = dcache_inst==D_UNKNOWN & dreq_2.valid;
+    end
 
     //地址转换
     ibus_req_t mmu_ireq_1;
