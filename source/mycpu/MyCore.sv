@@ -79,8 +79,7 @@ module MyCore (
     // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
     // logic dreq_valid;
     assign d_wait= ~dresp.addr_ok;
-    assign icache_inst = dataE[1].cache_ctl.icache_inst;
-    assign dcache_inst = dataE[1].cache_ctl.dcache_inst;
+
     // always_ff @(posedge clk) begin
     //     if (resetn) begin
     //         dreq_valid <= dreq[0].valid | dreq[1].valid;
@@ -132,7 +131,8 @@ module MyCore (
     execute_data_t [1:0] dataM2_nxt,dataM2;
     memory_data_t [1:0] dataM3_nxt;
     memory_data_t [1:0] dataM3;
-
+    assign icache_inst = dataM1[1].cache_ctl.icache_inst;
+    assign dcache_inst = dataE[1].cache_ctl.dcache_inst;
     // always_comb begin
     assign pc_succ=dataP_pc+8;
     //     if (dataP_pc[2]==1) begin
@@ -146,16 +146,18 @@ module MyCore (
     always_ff @(posedge clk) begin
         if (reset) begin
             {jpc_save,ipc_save,jrpc_save,jpc_saved,ipc_saved,jrpc_saved}<='0;
-        end else if ((stallF)&&(is_INTEXC||is_eret)) begin
+        end else if (stallF&&(is_INTEXC||is_eret)) begin
 			ipc_save<=pc_selected;
 			ipc_saved<='1;
         end else if (stallF && (dataE[1].branch_taken||dataE[1].ctl.cache_d||dataE[1].ctl.tlb) ) begin
             jpc_save<=pc_selected;
             jpc_saved<='1;
-        end else if (stallF && dataE[1].ctl.cache_i ) begin
-            icache_addr_save<=dataE[1].cache_addr;
-            icache_addr_saved<='1;
-            jpc_save<=pc_selected;
+        end else if (dataE[1].ctl.cache_i ) begin
+            if (stallF) begin
+                icache_addr_save<=dataE[1].cache_addr;
+                icache_addr_saved<='1;
+            end
+            jpc_save<=dataE[1].target;
             jpc_saved<='1;
         end else if (stallF && jrI) begin
             jrpc_save<=pc_selected;
@@ -168,8 +170,6 @@ module MyCore (
                 jpc_saved<='0;
             end
             {icache_addr_save,icache_addr_saved}<='0;
-            // jpc_save<='0;
-			// jpc_saved<='0;
             jrpc_save<='0;
 			jrpc_saved<='0;
 		end
@@ -218,6 +218,8 @@ module MyCore (
         .pc_branch(dataE[1].target),
         .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d||dataE[1].ctl.tlb),
         .epc,
+        .icache(dataE[1].ctl.cache_i),
+        .icache_addr(dataE[1].cache_addr),
         // .is_tlb_refill(dataM3[valid_n].i_tlb_exc.refill||dataM3[valid_n].d_tlb_exc.refill),
         .entrance,
 		.is_eret,
@@ -724,6 +726,8 @@ module MyCore (
     word_t hi_data,lo_data;
     u1 hi_write,lo_write;
     u64 hilo_res;
+    word_t hi_rd,lo_rd;
+
     //如果有两条连续的写，均以后一条的写入数据为准，若未两条连续的读，则内容恒定
     always_comb begin
         {hi_data,lo_data}='0;
@@ -764,7 +768,6 @@ module MyCore (
             end
         end
     end
-    word_t hi_rd,lo_rd;
     // u1 hi_write
 
     // always_comb begin

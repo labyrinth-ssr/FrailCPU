@@ -175,7 +175,9 @@ module ICache (
     
     assign ireq_hit = ireq_1.valid & hit_1 & hit_2;
 
-    assign en = ((cache_inst==I_UNKNOWN&ireq_hit)|cache_inst==I_HIT_INVALID|cache_inst==I_INDEX_INVALID|cache_inst==I_INDEX_STORE_TAG&(&miss_addr.offset))&state==IDLE;
+    assign en = (((cache_inst==I_UNKNOWN&ireq_hit)|cache_inst==I_HIT_INVALID|cache_inst==I_INDEX_INVALID)&state==IDLE)
+                | (state==STORE&(&miss_addr.offset));
+
 
     
     //meta_ram

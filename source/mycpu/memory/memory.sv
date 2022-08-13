@@ -64,6 +64,10 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].hilo=dataE[i].hilo;
     assign dataE2[i].branch_taken=dataE[i].branch_taken;
     assign dataE2[i].target=dataE[i].target;
+    assign dataE2[i].dest_pc=dataE[i].dest_pc;
+    assign dataE2[i].cache_addr=dataE[i].cache_addr;
+    assign dataE2[i].cache_ctl=dataE[i].cache_ctl;
+    assign dataE2[i].is_jr_ra=dataE[i].is_jr_ra;
 end
     
 writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.memtype(dataE[1].ctl.memtype));
