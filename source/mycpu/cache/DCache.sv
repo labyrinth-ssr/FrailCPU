@@ -378,7 +378,8 @@ module DCache (
                     // | (cache_inst==D_INDEX_WRITEBACK_INVALID & ~meta_r_1[index_line].dirty)
                     | (cache_inst==D_HIT_INVALID)
                     // | (cache_inst==D_HIT_WRITEBACK_INVALID & (~meta_r_1[hit_line_1].dirty|~hit_1));
-                    | (cache_inst==D_HIT_WRITEBACK_INVALID & ~hit_1);
+                    | (cache_inst==D_HIT_WRITEBACK_INVALID & ~hit_1)
+                    | (~dreq_1.valid & ~dreq_2.valid);
 
 
     always_ff @(posedge clk) begin
