@@ -29,23 +29,33 @@
 
 module MyCore (
     input logic clk, resetn,
-    output ibus_req_t  ireq,
+
+    output ibus_req_t [1:0] p_ireq,
     input  ibus_resp_t iresp,
-    output dbus_req_t [1:0]  dreq,
+
+    output dbus_req_t [1:0]  p_dreq,
+    output logic [1:0] d_uncache,
     input  dbus_resp_t dresp,
-    input logic[5:0] ext_int,
+
+    input logic [5:0] ext_int,
+
     output icache_inst_t icache_inst,
     output dcache_inst_t dcache_inst,
-    output word_t tag_lo,
-    output mmu_req_t mmu_req,
-    input mmu_resp_t mmu_resp,
-    input mmu_exc_out_t mmu_exc_out,
-    output u3 config_k0
+
+    output word_t tag_lo
 );
     /**
      * TODO (Lab1) your code here :)
      */
     // assign tag_lo='0;
+    u3 config_k0;
+    mmu_req_t mmu_req;
+    mmu_resp_t mmu_resp;
+    mmu_exc_out_t mmu_exc_out;
+
+    dbus_req_t [1:0] dreq;
+    ibus_req_t ireq;
+
     u1 i_tlb_exc_bit;
     assign i_tlb_exc_bit='1;
     
@@ -64,7 +74,6 @@ module MyCore (
     // u1 cache_instE;
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
-    assign i_wait=ireq.valid && ~iresp.addr_ok;
     // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     u1 pred_taken;
     word_t pre_pc;
@@ -928,6 +937,54 @@ module MyCore (
 
     // assign config_k0=regs_out.config0[2:0];
     assign config_k0=regs_out.config0[2:0];
+
+
+
+
+    //ireq
+    ibus_req_t [1:0] v_ireq;
+    assign v_ireq[0] = ireq;
+    always_comb begin
+        v_ireq[1] = ireq;
+        v_ireq[1].addr = ireq.addr + 4;
+        v_ireq[1].valid = icache_inst==I_UNKNOWN & ireq.valid;
+    end
+
+    //dreq
+    dbus_req_t [1:0] v_dreq;
+    assign v_dreq[0] = dreq[1];
+    always_comb begin
+        v_dreq[1] = dreq[0];
+        v_dreq[1].valid = dcache_inst==D_UNKNOWN & dreq[0].valid;
+    end
+
+    assign i_wait = p_ireq[0].valid & ~iresp.addr_ok;
+
+    logic [1:0] i_uncache;
+
+    mmu mmu (
+        .clk,
+        .resetn,
+
+        .config_k0,
+
+        //地址翻译 
+        .v_ireq,
+        .ireq(p_ireq),
+        .v_dreq,
+        .dreq(p_dreq),
+
+        //uncache信号
+        .i_uncache,
+        .d_uncache,
+
+        //TLB指令相关
+        .mmu_in(mmu_req),
+        .mmu_out(mmu_resp),
+
+        //TLB例外
+        .mmu_exc(mmu_exc_out)
+    );
 
 endmodule
 

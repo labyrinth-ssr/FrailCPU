@@ -177,8 +177,7 @@ module ICache (
 
     //if ireq_1 is valid
     assign en = (((cache_inst==I_UNKNOWN&ireq_hit)|cache_inst==I_HIT_INVALID|cache_inst==I_INDEX_INVALID)&state==IDLE)
-                | (state==STORE&(&miss_addr.offset))
-                | ~ireq_1.valid;
+                | (state==STORE&(&miss_addr.offset));
 
 
     
