@@ -242,9 +242,9 @@ module DCache (
     assign invalid_flag = (cache_inst==D_HIT_INVALID & hit_1);
     assign wb_invalid_flag = (cache_inst==D_HIT_WRITEBACK_INVALID & hit_1)
                             | (cache_inst==D_INDEX_WRITEBACK_INVALID);
-    assign cache_oper = invalid_flag ? INVALID
-                        : wb_invalid_flag ? WRITEBACK_INVALID
-                        : (cache_inst==D_INDEX_STORE_TAG) ? INDEX_STORE
+    assign cache_oper = (invalid_flag & dreq_1.valid) ? INVALID
+                        : (wb_invalid_flag & dreq_1.valid) ? WRITEBACK_INVALID
+                        : (cache_inst==D_INDEX_STORE_TAG & dreq_1.valid) ? INDEX_STORE
                         : (cache_inst==D_UNKNOWN) ? REQ
                         : NULL;
 
