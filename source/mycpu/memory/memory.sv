@@ -15,7 +15,8 @@ module memory
     output execute_data_t [1:0] dataE2,
     output dbus_req_t [1:0]  dreq,
     // input u1 [1:0]  req_finish,
-    output u1 excpM
+    output u1 excpM,
+    input tlb_exc_t [1:0] d_tlb_exc
     // input u1 exception
 );
 word_t [1:0] wd;
@@ -46,7 +47,7 @@ for (genvar i=0; i<2; ++i) begin
             dreq[i].data=wd[i];
             dreq[i].strobe=strobe[i];
         end
-        dreq[i].valid=dataE[i].ctl.memtoreg||dataE[i].ctl.memwrite||dataE[i].ctl.cache_d;
+        dreq[i].valid=dataE[i].ctl.memtoreg||dataE[i].ctl.memwrite||dataE[i].ctl.cache_d ;
         dreq[i].addr = dataE[i].ctl.cache_d? dataE[i].cache_addr :dataE[i].alu_out;
         dreq[i].size=dataE[i].ctl.msize;
     end
@@ -73,10 +74,20 @@ end
 writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.memtype(dataE[1].ctl.memtype));
 writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]),.memtype(dataE[0].ctl.memtype));     
 
+for (genvar i = 0;i<2 ; ++i) begin
+    always_comb begin
+        dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
+        if (|d_tlb_exc[i]) begin
+            dataE2[i].cp0_ctl.ctype=EXCEPTION;
+        end
+    end
+    assign dataE2[i].d_tlb_exc=d_tlb_exc[i];
+end
+
 always_comb begin
         dataE2[1].ctl=dataE[1].ctl;
         dataE2[0].ctl=dataE[0].ctl;
-        if (dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==ERET) begin
+        if (dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==ERET||(|d_tlb_exc[1])||(|d_tlb_exc[0])) begin
             dataE2[0].ctl.regwrite='0;
             dataE2[0].ctl.memtoreg='0;
             dataE2[0].ctl.lowrite='0;
@@ -85,7 +96,7 @@ always_comb begin
         end
     end
 
-assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==ERET /*|| load_misalign[1]||load_misalign[0]|| store_misalign[1]||store_misalign[0]*/;
+assign excpM=dataE[0].cp0_ctl.ctype==EXCEPTION||dataE[0].cp0_ctl.ctype==ERET||dataE[1].cp0_ctl.ctype==EXCEPTION||dataE[1].cp0_ctl.ctype==ERET||(|d_tlb_exc[1])||(|d_tlb_exc[0]) ;
 
 endmodule
 
