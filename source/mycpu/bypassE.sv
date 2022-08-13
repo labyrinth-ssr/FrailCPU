@@ -22,7 +22,7 @@ module bypassE(
     // u1 no_relate_[1:0][1:0];
     // u1 invalid[1:0];
 function u1 delay_toreg(bypass_input_t a);
-    return a.memtoreg||a.lotoreg||a.hitoreg||a.cp0toreg;
+    return a.memtoreg||a.lotoreg||a.hitoreg||a.cp0toreg||a.mul;
 endfunction
 
     for (genvar i=0; i<2; ++i) begin//针对issue head的对应端口

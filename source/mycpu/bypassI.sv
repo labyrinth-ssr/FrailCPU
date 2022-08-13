@@ -23,10 +23,10 @@ module bypassI(
     // u1 no_relate_[1:0][1:0];
     // u1 invalid[1:0];
 function u1 delay_toreg(bypass_input_t a);
-    return a.memtoreg||a.lotoreg||a.hitoreg||a.cp0toreg;
+    return a.memtoreg||a.lotoreg||a.hitoreg||a.cp0toreg||a.mul;
 endfunction
 function u1 delay_toreg2(bypass_execute_t b);
-    return b.memtoreg||b.lotoreg||b.hitoreg||b.cp0toreg;
+    return b.memtoreg||b.lotoreg||b.hitoreg||b.cp0toreg||b.mul;
 endfunction
     for (genvar i=0; i<2; ++i) begin//针对issue head的对应端口
         always_comb begin
