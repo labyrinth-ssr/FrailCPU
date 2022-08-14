@@ -58,6 +58,8 @@ module MyCore (
 
     u1 i_tlb_exc_bit;
     assign i_tlb_exc_bit='1;
+    pcselect_data_t dataP_nxt,dataP;
+
     
     u1 stallF,stallD,flushD,flushE,flushM,stallM,stallE,flushW,stallM2,flushF2,flushI,flush_que,stallF2,flushM2,stallI,stallI_de,flushM3,pred_flush_que;
     u1 is_eret;
@@ -71,8 +73,10 @@ module MyCore (
     writeback_data_t [1:0]dataW;
     u1 pc_except;
     word_t entrance;
-    word_t pc_selected,pc_succ,dataP_pc;
-    assign pc_except=dataP_pc[1:0]!=2'b00;
+    word_t pc_selected,pc_succ;
+    // word_t dataP_pc;
+    // assign dataP_pc=dataP_pc;
+    assign pc_except=dataP.pc[1:0]!=2'b00;
     // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     u1 pred_taken;
     word_t pre_pc;
@@ -93,7 +97,7 @@ module MyCore (
     hazard hazard (
 		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken|dataE[1].ctl.cache_i),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
 	);
-    assign ireq.addr= dataP_pc;
+    assign ireq.addr= dataP.pc;
 	assign ireq.valid=  ~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
@@ -109,19 +113,19 @@ module MyCore (
     assign icache_inst = dataM1[1].cache_ctl.icache_inst;
     assign dcache_inst = dataE[1].cache_ctl.dcache_inst;
     // always_comb begin
-    assign pc_succ=dataP_pc+8;
+    assign pc_succ=dataP.pc+8;
 
     word_t pc_save,icache_pcnxt_save;
     u1 pc_saved,icache_pcnxt_saved,icache_saved;
     forward_pc_type_t forward_pctype_save;
-    word_t pc_nxt;
+    // word_t dataP_nxt.pc;
     forward_pc_type_t forward_pc_type;
     //icache，且无stallF时，存下一条
     //icache且有stallF时，存两条
     always_ff @(posedge clk) begin
         if (reset) begin
             {pc_save,pc_saved,icache_saved,forward_pctype_save}<='0;
-        end else if (stallF&&(|forward_pc_type)) begin
+        end else if (stallF&(|forward_pc_type)) begin
 			pc_save<=pc_selected;
 			pc_saved<='1;
             forward_pctype_save<=forward_pc_type;
@@ -144,12 +148,14 @@ module MyCore (
     end 
 
     always_comb begin
+        dataP_nxt.cache_i='0;
         if (pc_saved&&(forward_pc_type<forward_pctype_save)) begin
-            pc_nxt=pc_save;
+            dataP_nxt.pc=pc_save;
         end else if (icache_pcnxt_saved&&~pc_saved) begin
-            pc_nxt=icache_pcnxt_save;
+            dataP_nxt.pc=icache_pcnxt_save;
+            dataP_nxt.cache_i='1;
         end else begin
-            pc_nxt=pc_selected;
+            dataP_nxt.pc=pc_selected;
         end
     end
 
@@ -191,13 +197,13 @@ module MyCore (
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
-    assign dataF1_nxt.valid= ~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait&&~icache_saved;
-    assign dataF1_nxt.pc=dataP_pc;
+    assign dataF1_nxt.valid= ~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait&&~icache_saved&&~dataP.cache_i;
+    assign dataF1_nxt.pc=dataP.pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except||(|mmu_exc_out.i_tlb_exc[1]) ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.cp0_ctl.exc_eret= pc_except;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     assign dataF1_nxt.pre_pc= pre_pc;
-    assign dataF1_nxt.nxt_valid=~zero_prej&&~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait&&~icache_saved;
+    assign dataF1_nxt.nxt_valid=~zero_prej&&~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait&&~icache_saved&&~dataP.cache_i;
     assign dataF1_nxt.nxt_exception=~(|mmu_exc_out.i_tlb_exc[1]) && (|mmu_exc_out.i_tlb_exc[0]);
     assign dataF1_nxt.i_tlb_exc= ~(|mmu_exc_out.i_tlb_exc[1])? mmu_exc_out.i_tlb_exc[0]:mmu_exc_out.i_tlb_exc[1];
     always_comb begin 
@@ -208,16 +214,18 @@ module MyCore (
     // u1 dataF1_pc;
     always_ff @( posedge clk ) begin
 		if (reset) begin
-			dataP_pc<=32'hbfc0_0000;//
+			dataP.pc<=32'hbfc0_0000;//
+            dataP.cache_i<='0;
 		end else if(~stallF) begin
-			dataP_pc<=pc_nxt;
+			dataP.pc<=dataP_nxt.pc;
+            dataP.cache_i<=dataP_nxt.cache_i;
 		end
 	end
     // word_t pc_f1;
 
     bpu bpu (
         .clk,.resetn,
-        .f1_pc(dataP_pc),
+        .f1_pc(dataP.pc),
         // .hit(pred_hit),
         .f1_taken(pred_taken),
         .pre_pc,
@@ -738,7 +746,7 @@ module MyCore (
     //     endcase
     // end
 
-	assign inter_valid=(~i_wait||dataE[1].ctl.wait_signal)&&int_pc_saved;
+	assign inter_valid=(~i_wait)&&int_pc_saved;
     u1 is_int;
     cp0 cp0(
         .clk,.reset,

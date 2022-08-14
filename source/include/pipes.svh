@@ -72,6 +72,12 @@ typedef enum  u2{
 	NO_HILO_OP,HILO_ADD,HILO_SUB
 } hilo_op_t;
 
+typedef struct packed {
+	word_t pc;
+	u1 cache_i;
+	
+} pcselect_data_t;
+
 // typedef enum logic[1:0] { REGB, IMM} alusrcb_t;
 
 typedef struct packed {
