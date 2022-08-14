@@ -32,8 +32,11 @@ end
 // assign stallM = wait_m;
 // assign stallM2 = wait_m;
 
-// assign flushF2 = excpW | (~(overflowI&i_wait) &fihazrd)  | (~wait_m & (excpM| branchM | jrI | i_wait  ));
-// assign flushD = 
+// assign flushF2 = excpW | (~(overflowI&i_wait) &fihazrd)  | (~wait_m & (excpM| branchM | (~e_wait & (jrI | i_wait))  ));
+// assign flushD =  excpW | (~(overflowI&i_wait) &fihazrd)  | (~wait_m & (excpM| branchM | (~e_wait & jrI )  ));
+// assign flushI =  excpW | (~wait_m & (excpM| branchM | (~e_wait & jrI )  ));
+// assign flushE =  excpW | (~wait_m & (excpM| branchM ));
+// assign flushM =  excpW | 
 
 // assign flush_que= excpW | excpM | branchM;
 

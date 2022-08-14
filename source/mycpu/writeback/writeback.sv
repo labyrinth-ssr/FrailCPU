@@ -66,6 +66,9 @@
                 if (dataM[i].ctl.hitoreg) begin
                     dataW[i].wd=hi_rd;
                 end
+                if (dataM[i].ctl.sc) begin
+                    dataW[i].wd=32'b01;
+                end
             end
             //不需要valid位
         end

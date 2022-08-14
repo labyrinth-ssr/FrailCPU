@@ -106,6 +106,7 @@ typedef struct packed {
 	u1 tne;
 	u1 wait_signal;
 	u1 div;
+	u1 sc;
 } control_t;
 
 typedef struct packed {

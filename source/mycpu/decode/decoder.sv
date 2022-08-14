@@ -288,13 +288,25 @@ module decoder (
                 destreg = '0;
                 ctl.msize=MSIZE2;
             end    
-            `OP_SW,`OP_SC: begin
+            `OP_SW: begin
                 ctl.op = SW;
                 ctl.memwrite = 1'b1;
                 ctl.alusrc = IMM;
                 srcrega = rs;
                 srcregb = rt;
                 destreg = '0;
+                ctl.msize=MSIZE4;
+                ctl.sc='1;
+            end
+            `OP_SC:begin
+                ctl.op = SW;
+                ctl.memwrite = 1'b1;
+                ctl.alusrc = IMM;
+                srcrega = rs;
+                srcregb = rt;
+                destreg = rt;
+                ctl.regwrite='1;
+                
                 ctl.msize=MSIZE4;
             end
             `OP_LWL:begin
