@@ -80,8 +80,8 @@
     // assign dataE[1].cache_inst_i=dataI[1].ctl.cache_i;
     // assign dataE[0].cache_inst_i=dataI[0].ctl.cache_i;
 
-    assign dataE[1].cache_addr=  aluout;
-    assign dataE[0].cache_addr=  '0;
+    // assign dataE[1].cache_addr=  aluout;
+    // assign dataE[0].cache_addr=  '0;
     // assign cache_instE=dataI[1].ctl.cache||dataI[0].ctl.cache;
     // assign iaddrE= 1 ? aluout : aluout2;
 
@@ -408,7 +408,6 @@
             dataE[0].cp0_ctl.etype.adelD='1;
             dataE[0].cp0_ctl.vaddr=aluout2;
         end
-
 
         priority case(1'b1)
             trap[1]:begin

@@ -14,7 +14,8 @@ module pcselect(
     input u1 zero_prej,
     input word_t entrance,
     input u1 icache,
-    input word_t icache_addr
+    input word_t icache_addr,
+    output forward_pc_type_t forward_pc_type
     // output u1 forward_pc_taken
     // input u1 is_tlb_refill
 );
@@ -22,18 +23,22 @@ module pcselect(
     // assign forward_pc_taken=is_eret|is_INTEXC|icache|branch_taken|issue
     always_comb begin
         pc_selected='0;
+        forward_pc_type=NO_FORWARD;
         if (is_eret) begin
             pc_selected=epc;
-        end /*else if (is_tlb_refill) begin
-            pc_selected=32'hbfc00200;
-        end */else if (is_INTEXC) begin
+            forward_pc_type=PCW;
+        end else if (is_INTEXC) begin
             pc_selected=entrance;
+            forward_pc_type=PCW;
         end else if (icache) begin
             pc_selected=icache_addr;
+            forward_pc_type=PCM;
         end else if (branch_taken) begin
             pc_selected=pc_branch;
+            forward_pc_type=PCM;
         end else if (issue_taken) begin
             pc_selected=pre_pc;
+            forward_pc_type=PCI;
         end else if (zero_prej) begin
             pc_selected=pc_succ-4;
         end else if (pred_taken) begin
@@ -42,4 +47,5 @@ module pcselect(
             pc_selected=pc_succ;
         end
     end
+
 endmodule

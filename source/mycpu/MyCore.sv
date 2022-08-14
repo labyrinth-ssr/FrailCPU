@@ -61,7 +61,6 @@ module MyCore (
     writeback_data_t [1:0]dataW;
     u1 pc_except;
     word_t entrance;
-    // u1 cache_instE;
     word_t pc_selected,pc_succ,dataP_pc;
     assign pc_except=dataP_pc[1:0]!=2'b00;
     assign i_wait=ireq.valid && ~iresp.addr_ok;
@@ -70,14 +69,7 @@ module MyCore (
     word_t pre_pc;
     u1 jr_ra_fail;
     u1 is_jr_ra_issue;
-    // assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~issue_en_1&&~jr_pred_finish&&~candidate2_invalid;
-    // (dataD_nxt[1].ctl.op==JR&&dataD_nxt[1].ra1==31)||(dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31);
     u1 jrI;
-    // assign jrI='0;
-
-    // u1 save_slotD;
-    // assign save_slotD=dataD_nxt[0].ctl.op==JR&&dataD_nxt[0].ra1==31;
-    // logic dreq_valid;
     assign d_wait= ~dresp.addr_ok;
 
     // always_ff @(posedge clk) begin
@@ -90,40 +82,15 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.tlb||dataE[1].ctl.cache_d),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
 	);
-
-    // word_t icache_addr_save;
-    // u1 icache_addr_saved;
-
-    // always_ff @(posedge clk) begin
-    //     if (reset) begin
-    //         {icache_addr_save,icache_addr_saved}<='0;
-    //     end else if (dataE[1].ctl.cache_i&&i_wait) begin
-    //         icache_addr_save<=dataE[1].cache_addr;
-    //         icache_addr_saved<='1;
-    //     end else if (~i_wait) begin
-    //         {icache_addr_save,icache_addr_saved}<='0;
-    //     end
-    // end
-    // // u1 i_wait_copy;
-    // // assign 
-    // always_comb begin
-    //     ireq.addr=dataP_pc;
-    //     if (icache_addr_saved) begin
-    //         ireq.addr=icache_addr_save;
-    //     end else if(~iresp.addr_ok&&dataE[1].ctl.cache_i) begin
-    //         ireq.addr=dataE[1].cache_addr;
-    //     end
-    // end
-
     assign ireq.addr= dataP_pc;
-	assign ireq.valid=  dataE[1].ctl.cache_i||~pc_except /*|| is_eret||is_EXC || excpM*/;
+	assign ireq.valid=  ~pc_except /*|| is_eret||is_EXC || excpM*/;
     assign reset=~resetn;
 
     fetch_data_t [1:0] dataF2_nxt ;
     fetch_data_t [1:0] dataF2 ;
-    decode_data_t [1:0] dataD_nxt ,dataD ;
+    decode_data_t [1:0] dataD_nxt ,dataD;
     issue_data_t [1:0] dataI_nxt,dataI;
     execute_data_t [1:0] dataE_nxt,dataE;
     execute_data_t [1:0] dataM1_nxt,dataM1;
@@ -134,114 +101,49 @@ module MyCore (
     assign dcache_inst = dataE[1].cache_ctl.dcache_inst;
     // always_comb begin
     assign pc_succ=dataP_pc+8;
-    // word_t pc_save,icache_addr_save;
-    // u1 pc_saved,icache_addr_saved;
-    // // word_t jpc_save,ipc_save,jrpc_save,icache_addr_save;
-    // word_t pc_nxt;
-    // // u1 jpc_saved,ipc_saved,jrpc_saved,icache_addr_saved;
-    // u1 forward_pc;
-    // //icache，且无stallF时，存下一条
-    // //icache且有stallF时，存两条
-    // assign forward_pc=is_INTEXC|is_eret|dataE[1].branch_taken|dataE[1].ctl.cache|dataE[1].ctl.tlb;
-    // always_ff @(posedge clk) begin
-    //     if (reset) begin
-    //         // {jpc_save,ipc_save,jrpc_save,jpc_saved,ipc_saved,jrpc_saved}<='0;
-    //         {pc_save,pc_saved}<='0;
-    //     end else if (stallF&&(is_INTEXC||is_eret)) begin
-	// 		pc_save<=pc_selected;
-	// 		pc_saved<='1;
-    //     end else if (stallF && (dataE[1].branch_taken||dataE[1].ctl.cache_d||dataE[1].ctl.tlb) ) begin
-    //         pc_save<=pc_selected;
-    //         pc_saved<='1;
-    //     end else if (dataE[1].ctl.cache_i ) begin
-    //         if (stallF) begin
-    //             icache_addr_save<=dataE[1].cache_addr;
-    //             icache_addr_saved<='1;
-    //         end
-    //         pc_save<=dataE[1].target;
-    //         pc_saved<='1;
-    //     end else if (stallF && jrI) begin
-    //         pc_save<=pc_selected;
-    //         pc_saved<='1;
-    //     end else if (~stallF) begin
-    //         if (~icache_addr_saved) begin
-    //             pc_save<='0;
-    //             pc_saved<='0;
-    //         end
-    //         {icache_addr_save,icache_addr_saved}<='0;
-	// 	end
-	// end
 
-    // always_comb begin
-    //     if (pc_saved) begin
-    //         pc_nxt=pc_save;
-    //     end else if (icache_addr_saved&&~is_INTEXC&&~is_eret) begin
-    //         pc_nxt=icache_addr_save;
-    //     end 
-    //     // else if (jpc_saved&&~is_INTEXC&&~is_eret) begin
-    //     //     pc_nxt=jpc_save;
-    //     // end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d||dataE[1].ctl.tlb)&&~is_INTEXC) begin
-    //     //     pc_nxt=jrpc_save;
-    //     // end 
-    //     else begin
-    //         pc_nxt=pc_selected;
-    //     end
-    // end
-
-    
-
-    word_t jpc_save,ipc_save,jrpc_save,icache_addr_save;
+    word_t pc_save,icache_pcnxt_save;
+    u1 pc_saved,icache_pcnxt_saved,icache_saved;
+    forward_pc_type_t forward_pctype_save;
     word_t pc_nxt;
-    u1 jpc_saved,ipc_saved,jrpc_saved,icache_addr_saved;
+    forward_pc_type_t forward_pc_type;
+    //icache，且无stallF时，存下一条
+    //icache且有stallF时，存两条
     always_ff @(posedge clk) begin
         if (reset) begin
-            {jpc_save,ipc_save,jrpc_save,jpc_saved,ipc_saved,jrpc_saved}<='0;
-        end else if (stallF&&(is_INTEXC||is_eret)) begin
-			ipc_save<=pc_selected;
-			ipc_saved<='1;
-        end else if (stallF && (dataE[1].branch_taken||dataE[1].ctl.cache_d||dataE[1].ctl.tlb) ) begin
-            jpc_save<=pc_selected;
-            jpc_saved<='1;
-        end else if (dataE[1].ctl.cache_i ) begin
-            if (stallF) begin
-                icache_addr_save<=dataE[1].cache_addr;
-                icache_addr_saved<='1;
+            {pc_save,pc_saved,icache_saved,forward_pctype_save}<='0;
+        end else if (stallF&&(|forward_pc_type)) begin
+			pc_save<=pc_selected;
+			pc_saved<='1;
+            forward_pctype_save<=forward_pc_type;
+            if (dataE[1].ctl.cache_i)begin
+                icache_saved<='1;
             end
-            jpc_save<=dataE[1].target;
-            jpc_saved<='1;
-        end else if (stallF && jrI) begin
-            jrpc_save<=pc_selected;
-            jrpc_saved<='1;
         end else if (~stallF) begin
-			ipc_save<='0;
-			ipc_saved<='0;
-            if (~icache_addr_saved) begin
-                jpc_save<='0;
-                jpc_saved<='0;
-            end
-            {icache_addr_save,icache_addr_saved}<='0;
-            jrpc_save<='0;
-			jrpc_saved<='0;
+            pc_save<='0;
+            pc_saved<='0;
+            icache_saved<='0;
+            forward_pctype_save<=NO_FORWARD;
 		end
-	end
+
+        if (dataE[1].ctl.cache_i) begin
+            icache_pcnxt_save<=dataE[1].pc+4;
+            icache_pcnxt_saved<='1;
+        end else if (~stallF&&~icache_saved) begin
+            {icache_pcnxt_save,icache_pcnxt_saved}<='0;
+        end
+    end 
 
     always_comb begin
-        if (ipc_saved) begin
-            pc_nxt=ipc_save;
-        end else if (icache_addr_saved&&~is_INTEXC&&~is_eret) begin
-            pc_nxt=icache_addr_save;
-        end else if (jpc_saved&&~is_INTEXC&&~is_eret) begin
-            pc_nxt=jpc_save;
-        end else if (jrpc_saved&&~(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d||dataE[1].ctl.tlb)&&~is_INTEXC) begin
-            pc_nxt=jrpc_save;
+        if (pc_saved&&(forward_pc_type<forward_pctype_save)) begin
+            pc_nxt=pc_save;
+        end else if (icache_pcnxt_saved&&~pc_saved) begin
+            pc_nxt=icache_pcnxt_save;
         end else begin
             pc_nxt=pc_selected;
         end
     end
-    // u1 j_misalign_hazard;
-    // u1 jr_pc_saved;
-    // word_t jr_pc_save;
-    // assign j_misalign_hazard= pred_taken&&hit_bit&&dataP_pc[2];pred_pc_saved,pred_pc_save,
+
     u1 zero_prej;
     u1 hit_bit;
     assign zero_prej=pred_taken&&~hit_bit;
@@ -265,31 +167,28 @@ module MyCore (
         .pc_selected,
         .pc_succ,
         .pc_branch(dataE[1].target),
-        .branch_taken(dataE[1].branch_taken||dataE[1].ctl.cache_i||dataE[1].ctl.cache_d||dataE[1].ctl.tlb),
+        .branch_taken(dataE[1].branch_taken),
         .epc,
         .icache(dataE[1].ctl.cache_i),
-        .icache_addr(dataE[1].cache_addr),
-        // .is_tlb_refill(dataM3[valid_n].i_tlb_exc.refill||dataM3[valid_n].d_tlb_exc.refill),
+        .icache_addr(dataE[1].alu_out),
         .entrance,
 		.is_eret,
 		.is_INTEXC,
         .pred_taken(pred_taken&&~zero_prej),
         .pre_pc,
         .issue_taken(jrI),
-        // .refetchD_pc(dataD_nxt[0].pc),
-        // .select_refetchD(jrD_misalign),
-        .zero_prej
-        // .cache_instE
+        .zero_prej,
+        .forward_pc_type
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
-    assign dataF1_nxt.valid='1;
+    assign dataF1_nxt.valid= ~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait;
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except||(|mmu_exc_out.i_tlb_exc[1]) ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.cp0_ctl.exc_eret= pc_except;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     assign dataF1_nxt.pre_pc= pre_pc;
-    assign dataF1_nxt.nxt_valid=~zero_prej;
+    assign dataF1_nxt.nxt_valid=~zero_prej&&~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait;
     assign dataF1_nxt.nxt_exception=~(|mmu_exc_out.i_tlb_exc[1]) && (|mmu_exc_out.i_tlb_exc[0]);
     assign dataF1_nxt.i_tlb_exc= ~(|mmu_exc_out.i_tlb_exc[1])? mmu_exc_out.i_tlb_exc[0]:mmu_exc_out.i_tlb_exc[1];
     always_comb begin 
@@ -332,27 +231,6 @@ module MyCore (
     );
 
 
-    // u1 branch_valid_i;
-    // assign branch_valid_i=dataD_nxt[1].ctl.branch;
-
-    // always_comb begin
-    //     decode_pre_pc='0;
-    //     if (dataD_nxt[branch_valid_i].ctl.branch) begin
-    //         if (dataD_nxt[1].ctl.branch) begin
-    //             decode_pre_pc=slot_pc+target_offset;
-    //         end else if (dataD_nxt[1].ctl.jr) begin
-    //             decode_pre_pc=dataD_nxt[1].rd1;
-    //         end else if (dataD_nxt[1].ctl.jump) begin
-    //             decode_pre_pc={slot_pc[31:28],raw_instr[25:0],2'b00};
-    //         end
-    //     end
-    // end
-    // pc_branch pc_branch_decode(
-    //     .branch(dataD_nxt[1].ctl.branch_type),
-    //     .branch_condition,
-    // );
-    // assign flushF2=flushF2_hazard||zero_prej;
-
     pipereg #(.T(fetch1_data_t))F1F2reg(
         .clk,
         .reset,
@@ -363,32 +241,18 @@ module MyCore (
     );
     u1 rawinstr_saved;
     u64  raw_instrf2_save;
-    // tlb_exc_t [1:0] i_tlb_exc_save;
-    // tlb_exc_t [1:0] selected_i_tlb_exc;
-    // assign selected_i_tlb_exc=rawinstr_saved? i_tlb_exc_save:mmu_exc_out.i_tlb_exc;
-
-    u1 delay_flushF2;
     always_ff @(posedge clk) begin
         if (reset) begin
-            {raw_instrf2_save,rawinstr_saved,delay_flushF2}<='0;
+            {raw_instrf2_save,rawinstr_saved}<='0;
         end else begin
-            delay_flushF2 <=flushF2;
             if (stallF2&&~rawinstr_saved) begin
                 raw_instrf2_save<=iresp.data;
                 rawinstr_saved<='1;
-                // i_tlb_exc_save<=mmu_exc_out.i_tlb_exc;
-                
             end else if (~stallF2) begin
                 {raw_instrf2_save,rawinstr_saved}<='0;
             end
         end
     end
-    //前半部分静止，应当不发起ireq
-    // u1 delay_save_slotD;
-    // always_ff @(posedge clk) begin
-    //     delay_save_slotD<=save_slotD;
-    // end
-
 
     always_comb begin
         dataF2_nxt[1].raw_instr=  iresp.data[31:0];
@@ -400,9 +264,9 @@ module MyCore (
             dataF2_nxt[1].raw_instr='0;
         end else if (rawinstr_saved) begin
             dataF2_nxt[1].raw_instr= raw_instrf2_save[31:0];
-        end else if (delay_flushF2) begin
+        end /*else if (delay_flushF2) begin
             dataF2_nxt[1].raw_instr='0;
-        end
+        end*/
     end
 
     always_comb begin
@@ -412,13 +276,9 @@ module MyCore (
         dataF2_nxt[0].cp0_ctl.ctype=dataF1.nxt_exception? EXCEPTION:NO_EXC;
         if (dataF1.cp0_ctl.exc_eret) begin
             dataF2_nxt[0].raw_instr='0;
-        end else if (rawinstr_saved) begin
+        end 
+        else if (rawinstr_saved) begin
             dataF2_nxt[0].raw_instr=raw_instrf2_save[63:32];
-            // dataF2_nxt[0].i_tlb_exc= i_tlb_exc_save[0];
-            // dataF2_nxt[0].cp0_ctl.ctype=|i_tlb_exc_save[0]? EXCEPTION:NO_EXC;
-        end else if (delay_flushF2) begin
-            dataF2_nxt[0].raw_instr='0;
-            // dataF2_nxt[0].i_tlb_exc='0;
         end
     end
 
@@ -429,15 +289,9 @@ module MyCore (
     assign dataF2_nxt[0].pre_pc='0;
     // assign dataF2_nxt[1].raw_instr=rawinstr_saved? raw_instrf2_save[31:0]:iresp.data[31:0];
     assign dataF2_nxt[1].valid= dataF1.valid;
-    // for ( genvar i = 0; i<2; ++i) begin
-        
-    // end
-    // assign dataF2_nxt[1].cp0_ctl=dataF1.cp0_ctl;
-    // assign dataF2_nxt[0].cp0_ctl.ctype= ~i_tlb_exc_bit&&(|itlbex)
-
     assign dataF2_nxt[0].pc=dataF1.nxt_valid? dataF1.pc+4:'0;
     // assign dataF2_nxt[0].raw_instr=rawinstr_saved? raw_instrf2_save[63:32]:iresp.data[63:32];
-    assign dataF2_nxt[0].valid=/*~pc_except&&*/dataF1.nxt_valid;
+    assign dataF2_nxt[0].valid=dataF1.nxt_valid;
 
 
     pipereg2 #(.T(fetch_data_t))F2Dreg(
@@ -452,9 +306,6 @@ module MyCore (
     decode decode_inst(
         .dataF2(dataF2),
         .dataD(dataD_nxt)
-        // .jr_ra_fail
-        // .rd1,.rd2,
-        // .ra1,.ra2
     );
 
     pipereg2 #(.T(decode_data_t))DIreg(
@@ -486,8 +337,6 @@ module MyCore (
     //     readed_dataD[i].rd2=rd2[i];
     //     end
     // end
-
-
 
     u1 jr_pred_finish;
     decode_data_t candidate1;
@@ -718,10 +567,7 @@ module MyCore (
 		.dataE2(dataM1_nxt),
 		.dreq,
         .d_tlb_exc(mmu_exc_out.d_tlb_exc),
-        // .bypass_input(cp0rd)
-        // .req_finish('0),
         .excpM
-		// .exception(is_eret||is_INTEXC)
 	);
 
 

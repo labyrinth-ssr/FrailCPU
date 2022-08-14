@@ -68,15 +68,7 @@
                 end
             end
             //不需要valid位
-
-                
-                
-                
         end
-    
-        
-
-        
     endmodule
 
 `endif 

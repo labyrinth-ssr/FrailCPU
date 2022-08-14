@@ -10,24 +10,19 @@ module hazard
     input u1 excpW,excpM,
     input u1 clk,reset
 );
-// u1 branch_stall,lwstall,multi_stall;
-u1 excp_iwait,excp_iwait_nxt,branch_iwait,branch_iwait_nxt,branchI_iwait,branchI_iwait_nxt;
-// u64 int_save;
-//E_WAIT
+u1 fihazrd,fihazrd_nxt;
+
 always_ff @(posedge clk) begin
     if (reset) begin
-        {excp_iwait,branch_iwait}<='0;
+        fihazrd<='0;
     end else begin
-        excp_iwait<=excp_iwait_nxt;
-        branch_iwait<=branch_iwait_nxt;
-        branchI_iwait<=branchI_iwait_nxt;
-        // misalign_iwait<=misalign_iwait_nxt;        
+        fihazrd<=fihazrd_nxt;
     end
 end
 
     always_comb begin
-        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;branchI_iwait_nxt=branchI_iwait;
-        stallM='0;stallE='0;excp_iwait_nxt=excp_iwait;stallM2='0;flushW='0;branch_iwait_nxt=branch_iwait;flushM2='0;flushM3='0;
+        stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;
+        stallM='0;stallE='0;fihazrd_nxt=fihazrd;stallM2='0;flushW='0;flushM2='0;flushM3='0;
         pred_flush_que='0;
         if (excpW) begin
             flushF2='1;
@@ -40,7 +35,7 @@ end
             flushM2='1;
             flushW='1;
             if (i_wait) begin
-                excp_iwait_nxt=1'b1;
+                fihazrd_nxt=1'b1;
                 stallF ='1;
             end
         end else if (d_wait||waitM) begin
@@ -53,7 +48,7 @@ end
             flushM='1;
             flush_que='1;
             if (i_wait) begin
-                excp_iwait_nxt=1'b1;
+                fihazrd_nxt=1'b1;
                 stallF ='1;
             end
         end else if (branchM) begin
@@ -64,7 +59,7 @@ end
             flushM='1;    
             flush_que='1;
             if (i_wait) begin
-                branch_iwait_nxt=1'b1;
+                fihazrd_nxt=1'b1;
                 stallF ='1;
             end
         end else if (e_wait) begin
@@ -75,32 +70,18 @@ end
             flushI='1;
             pred_flush_que='1;
             if (i_wait) begin
-                branchI_iwait_nxt=1'b1;
+                fihazrd_nxt=1'b1;
                 stallF ='1;
             end
         end else if (overflowI) begin
             stallF='1;stallF2='1;stallI='1;stallD='1;
-        end /*else if (branchI) begin
-            flushF2='1;
-            flushD='1;
-            if (i_wait) begin
-                stallF='1;
-                branchI_iwait_nxt=1'b1;
-            end
-        end */else if (i_wait) begin
+        end else if (i_wait) begin
             stallF='1;flushF2='1;
         end
-        if (~stallF&&excp_iwait) begin
-            flushF2='1;flushD='1;
-            excp_iwait_nxt='0;
-        end
-        if (~stallF&&branch_iwait) begin
-            flushF2='1;flushD='1;
-            branch_iwait_nxt='0;
-        end
-        if (~stallF&&branchI_iwait) begin
-            flushF2='1;flushD='1;
-            branchI_iwait_nxt='0;
+        
+        if (~stallF&&fihazrd) begin
+            flushF2='1;
+            fihazrd_nxt='0;
         end
     end
 endmodule

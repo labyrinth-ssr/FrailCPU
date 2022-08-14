@@ -48,7 +48,7 @@ for (genvar i=0; i<2; ++i) begin
             dreq[i].strobe=strobe[i];
         end
         dreq[i].valid=dataE[i].ctl.memtoreg||dataE[i].ctl.memwrite||dataE[i].ctl.cache_d ;
-        dreq[i].addr = dataE[i].ctl.cache_d? dataE[i].cache_addr :dataE[i].alu_out;
+        dreq[i].addr = dataE[i].alu_out;
         dreq[i].size=dataE[i].ctl.msize;
     end
     assign dataE2[i].pc=dataE[i].pc;
@@ -66,7 +66,6 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].branch_taken=dataE[i].branch_taken;
     assign dataE2[i].target=dataE[i].target;
     assign dataE2[i].dest_pc=dataE[i].dest_pc;
-    assign dataE2[i].cache_addr=dataE[i].cache_addr;
     assign dataE2[i].cache_ctl=dataE[i].cache_ctl;
     assign dataE2[i].is_jr_ra=dataE[i].is_jr_ra;
 end

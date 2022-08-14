@@ -10,8 +10,12 @@ typedef enum logic[3:0] {
     ALU_SUBU, ALU_SLTU, ALU_PASSA, ALU_LUI, ALU_PASSB
 } alufunc_t;
 
+// typedef enum logic[1:0] { 
+//     NO_J,JAL,JALR,J
+//  } j_type_t;
+
 // op
-`define OP_SPECIAL           6'b000000
+`define OP_SPECIAL      6'b000000
 `define OP_ADDI         6'b001000
 `define OP_ADDIU        6'b001001
 `define OP_SLTI         6'b001010
@@ -21,6 +25,7 @@ typedef enum logic[3:0] {
 `define OP_ORI          6'b001101
 `define OP_XORI         6'b001110
 `define OP_BEQ          6'b000100
+`define OP_BEQL         6'b000100
 `define OP_BNE          6'b000101
 `define OP_BGEZ         6'b000001
 `define OP_BGTZ         6'b000111

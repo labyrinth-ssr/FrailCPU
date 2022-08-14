@@ -204,14 +204,12 @@ module decoder (
             `OP_J: begin
                 ctl.op = J;
                 ctl.jump = 1'b1;
-                //jump='1;
                 srcrega = '0;
                 srcregb = '0;
                 destreg = '0;
             end     
             `OP_JAL: begin
                 ctl.op = JAL;
-                //jump='1;
                 ctl.jump = 1'b1;
                 ctl.regwrite = 1'b1;
                 ctl.is_link = 'b1;
@@ -365,19 +363,23 @@ module decoder (
                     `D_INDEX_WRITEBACK_INVALID:begin
                         cache_ctl.dcache_inst=D_INDEX_WRITEBACK_INVALID;
                         ctl.cache_d='1;
+                        ctl.memwrite='1;
                     end
                     `D_INDEX_STORE_TAG:begin
                         cache_ctl.dcache_inst=D_INDEX_STORE_TAG;
                         ctl.cache_d='1;
                         cp0ra={5'd28,3'b000};
+                        ctl.memwrite='1;
                     end
                     `D_HIT_INVALID:begin
                         cache_ctl.dcache_inst=D_HIT_INVALID;
                         ctl.cache_d='1;
+                        ctl.memwrite='1;
                     end
                     `D_HIT_WRITEBACK_INVALID:begin
                         cache_ctl.dcache_inst=D_HIT_WRITEBACK_INVALID;
                         ctl.cache_d='1;
+                        ctl.memwrite='1;
                     end
                     default: ;
                 endcase
@@ -652,7 +654,6 @@ module decoder (
                     end		
 					`F_JR:begin
                         ctl.op = JR;
-                        //jump='1;
                         ctl.jump = 1'b1;
                         ctl.jr = 1'b1;
                         srcrega = rs;
@@ -661,7 +662,6 @@ module decoder (
                     end		
 					`F_JALR:begin
                         ctl.op = JALR;
-                        //jump='1;
                         ctl.jump = 1'b1;
                         ctl.jr = 1'b1;
                         ctl.regwrite = 1'b1;
