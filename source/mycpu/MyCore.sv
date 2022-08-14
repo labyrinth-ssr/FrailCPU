@@ -91,7 +91,7 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken|dataE[1].ctl.cache_i),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
 	);
     assign ireq.addr= dataP_pc;
 	assign ireq.valid=  ~pc_except /*|| is_eret||is_EXC || excpM*/;
@@ -191,13 +191,13 @@ module MyCore (
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
-    assign dataF1_nxt.valid= ~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait;
+    assign dataF1_nxt.valid= ~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait&&~icache_saved;
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except||(|mmu_exc_out.i_tlb_exc[1]) ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.cp0_ctl.exc_eret= pc_except;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     assign dataF1_nxt.pre_pc= pre_pc;
-    assign dataF1_nxt.nxt_valid=~zero_prej&&~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait;
+    assign dataF1_nxt.nxt_valid=~zero_prej&&~(|dataM1[1].cache_ctl.icache_inst)&&~i_wait&&~icache_saved;
     assign dataF1_nxt.nxt_exception=~(|mmu_exc_out.i_tlb_exc[1]) && (|mmu_exc_out.i_tlb_exc[0]);
     assign dataF1_nxt.i_tlb_exc= ~(|mmu_exc_out.i_tlb_exc[1])? mmu_exc_out.i_tlb_exc[0]:mmu_exc_out.i_tlb_exc[1];
     always_comb begin 
