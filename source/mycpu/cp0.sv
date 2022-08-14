@@ -98,7 +98,7 @@ module cp0
 	always_ff @(posedge clk) begin
 		if (reset) begin
 			regs <= '0;
-			regs.config0<=32'h80000480;
+			regs.config0<=32'h80000483;
 			regs.config1<=32'h20291480;
 			regs.prid<=32'h00004220;
 			regs.ebase.one<='1;
