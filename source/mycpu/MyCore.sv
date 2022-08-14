@@ -292,19 +292,22 @@ module MyCore (
     );
     //pipereg between pcselect and fetch1
     fetch1_data_t dataF1_nxt,dataF1;
-    assign dataF1_nxt.valid='1;
+    assign dataF1_nxt.valid= ~(|dataM1[1].cache_ctl.icache_inst);
     assign dataF1_nxt.pc=dataP_pc;
     assign dataF1_nxt.cp0_ctl.ctype= pc_except||(|mmu_exc_out.i_tlb_exc[1]) ? EXCEPTION : NO_EXC;
     assign dataF1_nxt.cp0_ctl.exc_eret= pc_except;
     assign dataF1_nxt.pre_b= pred_taken&&~zero_prej;
     assign dataF1_nxt.pre_pc= pre_pc;
-    assign dataF1_nxt.nxt_valid=~zero_prej;
+    assign dataF1_nxt.nxt_valid=~zero_prej&&~(|dataM1[1].cache_ctl.icache_inst);
     assign dataF1_nxt.nxt_exception=~(|mmu_exc_out.i_tlb_exc[1]) && (|mmu_exc_out.i_tlb_exc[0]);
     assign dataF1_nxt.i_tlb_exc= ~(|mmu_exc_out.i_tlb_exc[1])? mmu_exc_out.i_tlb_exc[0]:mmu_exc_out.i_tlb_exc[1];
     always_comb begin 
         dataF1_nxt.cp0_ctl.vaddr='0;
         dataF1_nxt.cp0_ctl.etype.badVaddrF=pc_except;
     end
+
+    
+
     // assign dataF1_nxt.cp0_ctl.valid='0;
     // u1 dataF1_pc;
     always_ff @( posedge clk ) begin
