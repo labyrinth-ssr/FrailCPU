@@ -74,12 +74,10 @@ writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dat
 writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]),.memtype(dataE[0].ctl.memtype));     
 
 for (genvar i = 0;i<2 ; ++i) begin
-    always_comb begin
-        dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
-        if (|d_tlb_exc[i]) begin
-            dataE2[i].cp0_ctl.ctype=EXCEPTION;
-        end
-    end
+    assign dataE2[i].cp0_ctl.exc_eret=dataE[i].cp0_ctl.exc_eret;
+    assign dataE2[i].cp0_ctl.etype=dataE[i].cp0_ctl.etype;
+    // assign dataE2[i].cp0_ctl.vaddr=dataE[i].cp0_ctl.vaddr;
+    assign dataE2[i].cp0_ctl.ctype=(|d_tlb_exc[i])? EXCEPTION:dataE[i].cp0_ctl.ctype;
     assign dataE2[i].d_tlb_exc=d_tlb_exc[i];
 end
 

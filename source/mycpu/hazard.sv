@@ -20,6 +20,24 @@ always_ff @(posedge clk) begin
     end
 end
 
+u1 wait_m;
+assign wait_m = d_wait | waitM ;
+
+
+assign stallF = wait_m | e_wait | overflowI | i_wait;
+assign stallF2 = wait_m | e_wait | overflowI;
+assign stallD = wait_m | e_wait | overflowI;
+assign stallI = wait_m | e_wait | overflowI;
+assign stallI_de = wait_m | e_wait;
+assign stallM = wait_m;
+assign stallM2 = wait_m;
+
+assign flushF2 = excpW | (~(overflowI&i_wait) &fihazrd)  | (~wait_m & (excpM| branchM | jrI | i_wait  ));
+assign flushD = 
+
+assign flush_que= excpW | excpM | branchM;
+
+
     always_comb begin
         stallF='0;stallD='0;flushD='0;flushE='0;flushM='0;flushF2='0;flushI='0;flush_que='0;stallF2='0;stallI='0;stallI_de='0;
         stallM='0;stallE='0;fihazrd_nxt=fihazrd;stallM2='0;flushW='0;flushM2='0;flushM3='0;

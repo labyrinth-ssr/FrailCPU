@@ -390,23 +390,23 @@
             dataE[1].cp0_ctl.ctype=EXCEPTION;
             dataE[1].cp0_ctl.etype.adesD= '1;
             // dataE[1].cp0_ctl.valid='1;
-            dataE[1].cp0_ctl.vaddr=aluout;
+            // dataE[1].cp0_ctl.vaddr=aluout;
         end else if (store_misalign[0]) begin
             dataE[0].cp0_ctl.ctype=EXCEPTION;
             // dataE[0].cp0_ctl.valid='1;
             dataE[0].cp0_ctl.etype.adesD='1;
-            dataE[0].cp0_ctl.vaddr=aluout2;
+            // dataE[0].cp0_ctl.vaddr=aluout2;
         end
         if ( load_misalign[1]) begin
             dataE[1].cp0_ctl.ctype=EXCEPTION;
             // dataE[1].cp0_ctl.valid='1;
             dataE[1].cp0_ctl.etype.adelD= '1;
-            dataE[1].cp0_ctl.vaddr=aluout;
+            // dataE[1].cp0_ctl.vaddr=aluout;
         end else if ( load_misalign[0]) begin
             dataE[0].cp0_ctl.ctype=EXCEPTION;
             // dataE[0].cp0_ctl.valid='1;
             dataE[0].cp0_ctl.etype.adelD='1;
-            dataE[0].cp0_ctl.vaddr=aluout2;
+            // dataE[0].cp0_ctl.vaddr=aluout2;
         end
 
         priority case(1'b1)
