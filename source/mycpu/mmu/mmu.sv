@@ -152,6 +152,7 @@ module mmu (
         always_comb begin 
             ireq[i] = v_ireq[i];
             ireq[i].addr = i_paddr[i];
+            ireq[i].valid = v_ireq[i].valid & ~(mmu_exc.i_tlb_exc[i].refill|mmu_exc.i_tlb_exc[i].invalid|mmu_exc.i_tlb_exc[i].modified);
         end
     end
 
@@ -159,6 +160,7 @@ module mmu (
         always_comb begin 
             dreq[i] = v_dreq[i];
             dreq[i].addr = d_paddr[i];
+            dreq[i].valid = v_dreq[i].valid & ~(mmu_exc.d_tlb_exc[i].refill|mmu_exc.d_tlb_exc[i].invalid|mmu_exc.d_tlb_exc[i].modified);
         end
     end
 

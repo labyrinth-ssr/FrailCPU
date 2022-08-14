@@ -25,7 +25,7 @@ module DCache (
     //1 + 7 + 4 + 2
     localparam DATA_PER_LINE = 16;
     localparam ASSOCIATIVITY = 2;
-    localparam SET_NUM = 128;
+    localparam SET_NUM = 64;
 
     localparam BYTE_WIDTH = 8;
     localparam BYTE_PER_DATA = 4;
@@ -242,9 +242,9 @@ module DCache (
     assign invalid_flag = (cache_inst==D_HIT_INVALID & hit_1);
     assign wb_invalid_flag = (cache_inst==D_HIT_WRITEBACK_INVALID & hit_1)
                             | (cache_inst==D_INDEX_WRITEBACK_INVALID);
-    assign cache_oper = invalid_flag ? INVALID
-                        : wb_invalid_flag ? WRITEBACK_INVALID
-                        : (cache_inst==D_INDEX_STORE_TAG) ? INDEX_STORE
+    assign cache_oper = (invalid_flag & dreq_1.valid) ? INVALID
+                        : (wb_invalid_flag & dreq_1.valid) ? WRITEBACK_INVALID
+                        : (cache_inst==D_INDEX_STORE_TAG & dreq_1.valid) ? INDEX_STORE
                         : (cache_inst==D_UNKNOWN) ? REQ
                         : NULL;
 
@@ -378,7 +378,8 @@ module DCache (
                     // | (cache_inst==D_INDEX_WRITEBACK_INVALID & ~meta_r_1[index_line].dirty)
                     | (cache_inst==D_HIT_INVALID)
                     // | (cache_inst==D_HIT_WRITEBACK_INVALID & (~meta_r_1[hit_line_1].dirty|~hit_1));
-                    | (cache_inst==D_HIT_WRITEBACK_INVALID & ~hit_1);
+                    | (cache_inst==D_HIT_WRITEBACK_INVALID & ~hit_1)
+                    | (~dreq_1.valid & ~dreq_2.valid);
 
 
     always_ff @(posedge clk) begin
