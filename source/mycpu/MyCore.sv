@@ -76,13 +76,14 @@ module MyCore (
     word_t pc_selected,pc_succ;
     // word_t dataP_pc;
     // assign dataP_pc=dataP_pc;
-    assign pc_except=dataP.pc[1:0]!=2'b00;
+
+    assign pc_except=dataP.pc[1]|dataP.pc[0];
     // assign d_wait= (dreq[1].valid&& ~dresp[1].addr_ok)||(dreq[0].valid&& ~dresp[0].addr_ok);
     u1 pred_taken;
     word_t pre_pc;
-    u1 jr_ra_fail;
-    u1 is_jr_ra_issue;
-    u1 jrI;
+    // u1 jr_ra_fail;
+    // u1 is_jr_ra_issue;
+    // u1 jrI;
     assign d_wait= ~dresp.addr_ok;
 
     // always_ff @(posedge clk) begin
@@ -95,7 +96,7 @@ module MyCore (
     // end
 
     hazard hazard (
-		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken|dataE[1].ctl.cache_i),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.jrI,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
+		.stallF,.stallD,.flushD,.flushE,.flushM,.flushI,.flush_que,.i_wait,.d_wait,.stallM,.stallM2,.stallE,.branchM(dataE[1].branch_taken|dataE[1].ctl.cache_i),.e_wait,.clk,.flushW,.excpW(is_eret||is_INTEXC),.stallF2,.flushF2,.stallI,.flushM2,.overflowI,.stallI_de,.excpM,.reset,.flushM3,.pred_flush_que,.waitM(dataE[1].ctl.wait_signal)
 	);
     assign ireq.addr= dataP.pc;
 	assign ireq.valid=  ~pc_except /*|| is_eret||is_EXC || excpM*/;
@@ -138,7 +139,9 @@ module MyCore (
             icache_saved<='0;
             forward_pctype_save<=NO_FORWARD;
 		end
+    end
 
+    always_ff @(posedge clk) begin
         if (dataE[1].ctl.cache_i) begin
             icache_pcnxt_save<=dataE[1].pc+4;
             icache_pcnxt_saved<='1;
@@ -191,7 +194,7 @@ module MyCore (
 		.is_INTEXC,
         .pred_taken(pred_taken&&~zero_prej),
         .pre_pc,
-        .issue_taken(jrI),
+        // .issue_taken(jrI),
         .zero_prej,
         .forward_pc_type
     );
@@ -230,8 +233,8 @@ module MyCore (
         .f1_taken(pred_taken),
         .pre_pc,
         // .need_pre()
-        .is_jr_ra_decode(is_jr_ra_issue),
-        .jr_ra_fail,
+        // .is_jr_ra_decode(is_jr_ra_issue),
+        // .jr_ra_fail,
         // .decode_ret_pc,
         // .decode_taken,//预测跳转
         .exe_pc(dataE[1].pc),
@@ -243,8 +246,8 @@ module MyCore (
         .is_branch(dataE[1].ctl.branch),
         .is_j(dataE[1].ctl.op==J),
         .is_jr_ra_exe(dataE[1].is_jr_ra),
-        .pos(hit_bit),
-        .flush_ras(dataE[1].branch_taken)
+        .pos(hit_bit)
+        // .flush_ras(dataE[1].branch_taken)
     );
 
 
@@ -355,38 +358,38 @@ module MyCore (
     //     end
     // end
 
-    u1 jr_pred_finish;
-    decode_data_t candidate1;
-    u1 issue_en_1;
-    u1 candidate2_invalid;
+    // u1 jr_pred_finish;
+    // decode_data_t candidate1;
+    // u1 issue_en_1;
+    // u1 candidate2_invalid;
 
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            jr_pred_finish<='0;
-        end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~candidate2_invalid&&~issue_en_1&&~(d_wait||e_wait)) begin
-            jr_pred_finish<='1;
-        end else if (issue_en_1) begin
-            jr_pred_finish<='0;
-        end
-    end
+    // always_ff @(posedge clk) begin
+    //     if (reset) begin
+    //         jr_pred_finish<='0;
+    //     end else if (candidate1.ctl.op==JR&&candidate1.ra1==31&&~candidate2_invalid&&~issue_en_1&&~(d_wait||e_wait)) begin
+    //         jr_pred_finish<='1;
+    //     end else if (issue_en_1) begin
+    //         jr_pred_finish<='0;
+    //     end
+    // end
 
-    assign jrI=is_jr_ra_issue&&~jr_ra_fail;
-    assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~jr_pred_finish&&~candidate2_invalid&&~issue_en_1&&~(d_wait||e_wait);
+    // assign jrI=is_jr_ra_issue&&~jr_ra_fail;
+    // assign is_jr_ra_issue=candidate1.ctl.op==JR&&candidate1.ra1==31&&~jr_pred_finish&&~candidate2_invalid&&~issue_en_1&&~(d_wait||e_wait);
 
-    u1 jr_predicted;
-    word_t jr_predicted_pc;
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            jr_predicted<='0;
-            jr_predicted_pc<='0;
-        end else if (jrI) begin
-            jr_predicted<='1;
-            jr_predicted_pc<=pre_pc;
-        end else if (issue_en_1) begin
-            jr_predicted<='0;
-            jr_predicted_pc<='0;
-        end
-    end
+    // u1 jr_predicted;
+    // word_t jr_predicted_pc;
+    // always_ff @(posedge clk) begin
+    //     if (reset) begin
+    //         jr_predicted<='0;
+    //         jr_predicted_pc<='0;
+    //     end else if (jrI) begin
+    //         jr_predicted<='1;
+    //         jr_predicted_pc<=pre_pc;
+    //     end else if (issue_en_1) begin
+    //         jr_predicted<='0;
+    //         jr_predicted_pc<='0;
+    //     end
+    // end
 
    
 
@@ -406,13 +409,7 @@ module MyCore (
         .flush_que,
         .stallI,
         .overflow(overflowI),
-        .stallI_de,
-        .candidate1,
-        .issue_en_1,
-        .pred_flush_que,
-        .candidate2_invalid,
-        .jr_predicted,
-        .jr_predicted_pc
+        .stallI_de
     );
 
     bypass_issue_t [1:0] dataI_in,issue_bypass_out,dataE_nxt_in;

@@ -9,7 +9,7 @@ module pcselect(
     input u1 is_eret,
     input word_t pre_pc,
     input u1 pred_taken,
-    input u1 issue_taken,
+    // input u1 issue_taken,
     output word_t pc_selected,
     input u1 zero_prej,
     input word_t entrance,
@@ -36,9 +36,6 @@ module pcselect(
         end else if (branch_taken) begin
             pc_selected=pc_branch;
             forward_pc_type=PCM;
-        end else if (issue_taken) begin
-            pc_selected=pre_pc;
-            forward_pc_type=PCI;
         end else if (zero_prej) begin
             pc_selected=pc_succ-4;
         end else if (pred_taken) begin

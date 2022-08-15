@@ -2,13 +2,14 @@
 `define __JHT_SV
 
 `include "common.svh"
+`include "test.svh"
 `ifdef VERILATOR
 `include "../plru.sv"
 `endif 
 
 module jht#(
     parameter int ASSOCIATIVITY = 2,
-    parameter int SET_NUM = 4,
+    parameter int SET_NUM = 8,
 
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
@@ -43,7 +44,7 @@ module jht#(
     endfunction
 
     function index_t get_index(addr_t addr);
-        return addr[2+INDEX_BITS-1+2:2+2];
+        return addr[2+INDEX_BITS-1+5:2+5];
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
@@ -87,10 +88,7 @@ module jht#(
         else if(pcp4_hit) hit_line = pcp4_hit_line;
     end
 
-    always_comb begin : predict_addr_index_b
-        predict_addr.index = '0;
-        if(pc_hit) predict_addr.index = get_index(j_pc);
-    end
+    assign predict_addr.index = get_index(j_pc);
     assign predict_addr.line = hit_line;
 
     assign predict_pc = hit ? r_pc_predict : '0;
