@@ -151,9 +151,9 @@ module MyCore (
         dataP_nxt.cache_i='0;
         if (pc_saved&&(forward_pc_type<forward_pctype_save)) begin
             dataP_nxt.pc=pc_save;
+            dataP_nxt.cache_i=icache_saved;
         end else if (icache_pcnxt_saved&&~pc_saved) begin
             dataP_nxt.pc=icache_pcnxt_save;
-            dataP_nxt.cache_i='1;
         end else begin
             dataP_nxt.pc=pc_selected;
         end

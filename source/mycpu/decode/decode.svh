@@ -25,7 +25,8 @@ typedef enum logic[3:0] {
 `define OP_ORI          6'b001101
 `define OP_XORI         6'b001110
 `define OP_BEQ          6'b000100
-`define OP_BEQL         6'b000100
+`define OP_BEQ          6'b000100
+`define OP_BEQL         6'b010100
 `define OP_BNE          6'b000101
 `define OP_BGEZ         6'b000001
 `define OP_BGTZ         6'b000111
