@@ -690,14 +690,14 @@ module MyCore (
         for (int i=1; i>=0; --i) begin
             if (dataM3[i].ctl.hiwrite) begin
                 hi_write='1;
-                hi_data=dataM3[i].ctl.op==MTHI? dataM3[i].srca:dataM3[i].hilo[63:32];
+                hi_data=dataM3[i].ctl.op==MTHI? dataM3[i].srca:dataM3[i].alu_out_ext[63:32];
                 unique case(dataM3[i].ctl.hilo_op)
                     HILO_ADD:begin
-                        hilo_res={hi_rd,lo_rd}+dataM3[i].hilo;
+                        hilo_res={hi_rd,lo_rd}+dataM3[i].alu_out_ext;
                         hi_data=hilo_res[63:32];
                     end
                     HILO_SUB:begin
-                        hilo_res={hi_rd,lo_rd}-dataM3[i].hilo;
+                        hilo_res={hi_rd,lo_rd}-dataM3[i].alu_out_ext;
                         hi_data=hilo_res[63:32];
                     end
                     default:;
@@ -706,14 +706,14 @@ module MyCore (
             end 
             if (dataM3[i].ctl.lowrite) begin
                 lo_write='1;
-                lo_data=dataM3[i].ctl.op==MTLO? dataM3[i].srca:dataM3[i].hilo[31:0];
+                lo_data=dataM3[i].ctl.op==MTLO? dataM3[i].srca:dataM3[i].alu_out_ext[31:0];
                 unique case(dataM3[i].ctl.hilo_op)
                     HILO_ADD:begin
-                        hilo_res={hi_rd,lo_rd}+dataM3[i].hilo;
+                        hilo_res={hi_rd,lo_rd}+dataM3[i].alu_out_ext;
                         lo_data=hilo_res[31:0];
                     end
                     HILO_SUB:begin
-                        hilo_res={hi_rd,lo_rd}-dataM3[i].hilo;
+                        hilo_res={hi_rd,lo_rd}-dataM3[i].alu_out_ext;
                         lo_data=hilo_res[31:0];
                     end
                     default:;

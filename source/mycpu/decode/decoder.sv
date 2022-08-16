@@ -707,6 +707,7 @@ module decoder (
                         srcrega = rs;
                         srcregb = 'b0;
                         destreg = 'b0;
+                        ctl.srca='1;
                     end	
 					`F_MTLO:begin
                         ctl.op = MTLO;
@@ -715,6 +716,7 @@ module decoder (
                         srcrega = rs;
                         srcregb = 'b0;
                         destreg = 'b0;
+                        ctl.srca='1;
                     end	
 					`F_BREAK:begin
                         ctl.op = BREAK;

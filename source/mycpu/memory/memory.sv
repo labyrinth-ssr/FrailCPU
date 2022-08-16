@@ -25,7 +25,7 @@ strobe_t [1:0] strobe;
 // u1 [1:0] load_misalign;
 // word_t paddr[1:0];
 u1 uncache;
-assign uncache=dataE[1].alu_out[29] || dataE[0].alu_out[29];
+assign uncache=dataE[1].alu_out_ext[29] || dataE[0].alu_out_ext[29];
 // word_t cp0wd;
 // pvtrans pvtransd1(
 //     .vaddr(dataE[1].alu_out),
@@ -48,21 +48,22 @@ for (genvar i=0; i<2; ++i) begin
             dreq[i].strobe=strobe[i];
         end
         dreq[i].valid=dataE[i].ctl.memtoreg||dataE[i].ctl.memwrite||dataE[i].ctl.cache_d ;
-        dreq[i].addr = dataE[i].alu_out;
+        dreq[i].addr = dataE[i].alu_out_ext[31:0];
         dreq[i].size=dataE[i].ctl.msize;
     end
     assign dataE2[i].pc=dataE[i].pc;
     assign dataE2[i].rdst=dataE[i].rdst;
 //    assign dataE2[i].ctl=dataE[i].ctl;
-    assign dataE2[i].alu_out=dataE[i].alu_out;
+    assign dataE2[i].alu_out_ext=dataE[i].alu_out_ext;
     assign dataE2[i].valid=dataE[i].valid;
     // assign dataE2[i].cp0_ctl=dataE[i].cp0_ctl;
     assign dataE2[i].i_tlb_exc=dataE[i].i_tlb_exc;
     assign dataE2[i].is_slot=dataE[i].is_slot;
     assign dataE2[i].cp0ra=dataE[i].cp0ra;
-    assign dataE2[i].srcb=dataE[i].srcb;
-    assign dataE2[i].srca=dataE[i].srca;
-    assign dataE2[i].hilo=dataE[i].hilo;
+    // assign dataE2[i].srcb=dataE[i].srcb;
+    // assign dataE2[i].srca=dataE[i].srca;
+    assign dataE2[i].reg_data=dataE[i].reg_data;
+    // assign dataE2[i].hilo=dataE[i].hilo;
     assign dataE2[i].branch_taken=dataE[i].branch_taken;
     assign dataE2[i].target=dataE[i].target;
     assign dataE2[i].dest_pc=dataE[i].dest_pc;
@@ -70,8 +71,8 @@ for (genvar i=0; i<2; ++i) begin
     assign dataE2[i].is_jr_ra=dataE[i].is_jr_ra;
 end
     
-writedata writedata1(.addr(dataE[1].alu_out[1:0]),._wd(dataE[1].srcb),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.memtype(dataE[1].ctl.memtype));
-writedata writedata2(.addr(dataE[0].alu_out[1:0]),._wd(dataE[0].srcb),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]),.memtype(dataE[0].ctl.memtype));     
+writedata writedata1(.addr(dataE[1].alu_out_ext[1:0]),._wd(dataE[1].reg_data),.msize(dataE[1].ctl.msize),.wd(wd[1]),.strobe(strobe[1]),.memtype(dataE[1].ctl.memtype));
+writedata writedata2(.addr(dataE[0].alu_out_ext[1:0]),._wd(dataE[0].reg_data),.msize(dataE[0].ctl.msize),.wd(wd[0]),.strobe(strobe[0]),.memtype(dataE[0].ctl.memtype));     
 
 for (genvar i = 0;i<2 ; ++i) begin
     assign dataE2[i].cp0_ctl.exc_eret=dataE[i].cp0_ctl.exc_eret;

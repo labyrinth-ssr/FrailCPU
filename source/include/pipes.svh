@@ -30,7 +30,7 @@
 typedef struct packed {
 	word_t data;
 	creg_addr_t rdst;
-	u1 memtoreg,lotoreg,hitoreg,cp0toreg,mul;
+	u1 memtoreg,lotoreg,hitoreg,cp0toreg;
 	u1 regwrite;
 } bypass_input_t;
 
@@ -74,15 +74,14 @@ typedef enum  u2{
 
 typedef struct packed {
 	word_t pc;
-	// word_t forward_pc;
-	// forward_pc_type_t forward_pc_type;
-	// u1 forward_pc_valid;
-	// u1 pc_valid;
+	word_t forward_pc;
+	forward_pc_type_t forward_pc_type;
+	u1 forward_pc_valid;
+	u1 pc_valid;
 	u1 cache_i;
-	icache_inst_t icache_inst;
-	// u1 forward_cachei;
-	// word_t refetch_pc;
-	// u1 refetch_pc_valid;
+	u1 forward_cachei;
+	word_t refetch_pc;
+	u1 refetch_pc_valid;
 } pcselect_data_t;
 
 // typedef enum logic[1:0] { REGB, IMM} alusrcb_t;
@@ -120,6 +119,7 @@ typedef struct packed {
 	u1 wait_signal;
 	u1 div;
 	u1 sc;
+	u1 srca;
 } control_t;
 
 typedef struct packed {
@@ -147,7 +147,6 @@ typedef struct packed {
 	u1 pre_b;
 	word_t pre_pc;
 	tlb_exc_t i_tlb_exc;
-	u1 use_f2_inst;
 
 	// int_type_t int_type;
     } fetch_data_t;//
@@ -197,11 +196,13 @@ typedef struct packed {
 	word_t pc;
 	control_t ctl;
 	creg_addr_t rdst;
-	word_t alu_out;
+	// word_t alu_out;
 	u8 cp0ra;
-	u64 hilo;
-	word_t srcb;
-	word_t srca;
+	u64 alu_out_ext;
+	// u64 hilo;
+	// word_t srcb;
+	// word_t srca;
+	word_t reg_data;
 	word_t target;
 	u1 branch_taken;
 	u1 is_slot;
@@ -217,15 +218,16 @@ typedef struct packed {
 typedef struct packed {
 	u1 valid;
 	word_t pc;
-	word_t alu_out;
+	u64 alu_out_ext;
 	control_t ctl;
 	creg_addr_t rdst;
 	u8 cp0ra;
 	u1 is_slot;
-	u64 hilo;
+	// u64 hilo;
 	cp0_control_t cp0_ctl;
-	word_t srcb;
-	word_t srca;
+	// word_t srcb;
+	// word_t srca;
+	word_t reg_data;
 	word_t rd;
 	tlb_exc_t i_tlb_exc;
 	tlb_exc_t d_tlb_exc;

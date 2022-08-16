@@ -113,8 +113,16 @@
         .exception_of(exception_of[0])
     );
 
-    assign dataE[0].alu_out=aluout2;
-    assign dataE[1].alu_out=dataI[1].ctl.is_link? dataI[1].pc+8:aluout;
+    assign dataE[0].alu_out_ext= dataI[0].ctl.div|dataI[0].ctl.mul ? {hi_data,lo_data}: {32'b0,aluout2};
+    // assign dataE[1].alu_out_ext=dataI[1].ctl.is_link? dataI[1].pc+8:aluout;
+    always_comb begin
+        dataE[1].alu_out_ext={32'b0,aluout};
+        unique case('1)
+            dataI[1].ctl.is_link:dataE[1].alu_out_ext={32'b0,dataI[1].pc+8};
+            dataI[1].ctl.mul|dataI[1].ctl.div:dataE[1].alu_out_ext={hi_data,lo_data};
+            default:;
+        endcase
+    end
     
     word_t slot_pc;
     assign slot_pc=dataI[1].pc+4;
@@ -205,13 +213,13 @@
     ||(dataI[1].ctl.branch&&~branch_condition&&dataI[1].pre_b)||dataI[1].ctl.tlb||dataI[1].ctl.cache_d;
 
     for (genvar i=0; i<2; ++i) begin
-        assign dataE[i].srcb=rd2[i];
-        assign dataE[i].srca=rd1[i];
+        // assign dataE[i].srcb=rd2[i];
+        // assign dataE[i].srca=rd1[i];
+        assign dataE[i].reg_data= dataI[i].ctl.srca? rd1[i]:rd2[i];
         assign dataE[i].rdst=dataI[i].rdst;
         assign dataE[i].pc=dataI[i].pc;
         assign dataE[i].cache_ctl=dataI[i].cache_ctl;
         assign dataE[i].i_tlb_exc=dataI[i].i_tlb_exc;
-    // assign dataE[i].ctl=dataI[i].ctl;
     end
 
     
@@ -269,15 +277,15 @@
     // u1 hi_write,lo_write;
     word_t hi_data,lo_data;
 
-    always_comb begin
-        if(valid_i == 1'b1) begin
-            dataE[1].hilo={hi_data,lo_data};
-            dataE[0].hilo='0;
-        end else begin
-            dataE[0].hilo={hi_data,lo_data};
-            dataE[1].hilo='0;
-        end
-    end
+    // always_comb begin
+    //     if(valid_i == 1'b1) begin
+    //         dataE[1].hilo={hi_data,lo_data};
+    //         dataE[0].hilo='0;
+    //     end else begin
+    //         dataE[0].hilo={hi_data,lo_data};
+    //         dataE[1].hilo='0;
+    //     end
+    // end
 
     always_comb begin
         valid_i='0;
