@@ -70,9 +70,13 @@ typedef struct packed {
 } tlb_exc_t;
 
 typedef struct packed {
-    tlb_exc_t i_tlb_exc;
+    tlb_exc_t [1:0] i_tlb_exc;
     tlb_exc_t [1:0] d_tlb_exc;
 } mmu_exc_out_t;
+
+typedef enum u3 { 
+    NO_TLB,TLBWI,TLBWR,TLBR,TLBP
+} tlb_type_t;
 
 
 

@@ -49,6 +49,8 @@
                 dataW[i].wd='0;
                 if (dataM[i].ctl.memtoreg) begin
                     dataW[i].wd=dataM[i].rd;
+                end else if (dataM[i].ctl.mul) begin
+                    dataW[i].wd=dataM[i].hilo[31:0];
                 end else if (dataM[i].ctl.regwrite) begin
                     dataW[i].wd=dataM[i].alu_out;
                 end else begin
@@ -64,17 +66,12 @@
                 if (dataM[i].ctl.hitoreg) begin
                     dataW[i].wd=hi_rd;
                 end
+                if (dataM[i].ctl.sc) begin
+                    dataW[i].wd=32'b01;
+                end
             end
             //不需要valid位
-
-                
-                
-                
         end
-    
-        
-
-        
     endmodule
 
 `endif 

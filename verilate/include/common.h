@@ -34,7 +34,7 @@ using ByteSeq = std::vector<uint8_t>;
  * basic constexprs
  */
 
-constexpr size_t MEMORY_SIZE = 1024 * 1024;  // 1 MiB
+constexpr size_t MEMORY_SIZE = 1024 * 1024 * 1024;  // 1 MiB
 
 constexpr word_t STROBE_TO_MASK[] = {
     0x00000000, 0x000000ff, 0x0000ff00, 0x0000ffff,

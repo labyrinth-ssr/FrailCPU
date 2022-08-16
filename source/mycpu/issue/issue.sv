@@ -18,6 +18,12 @@ module issue(
     input u1 flush_que,
     input u1 stallI,stallI_de,
     output u1 overflow
+    // output decode_data_t candidate1,
+    // output u1 issue_en_1,
+    // output u1 candidate2_invalid,
+    // input u1 pred_flush_que,
+    // input u1 jr_predicted,
+    // input word_t jr_predicted_pc
 );
 localparam ISSUE_QUEUE_SIZE = 16;
 localparam ISSUE_QUEUE_WIDTH = $clog2(ISSUE_QUEUE_SIZE);
@@ -33,10 +39,13 @@ index_t tail_even,tail_odd;
 decode_data_t rdata_even,rdata_odd,wdata_even,wdata_odd;
 u1 even_en,odd_en;
 
+u1 issue_en1,issue_en2;
+decode_data_t candidate1,candidate2;
+
 RAM_SimpleDualPort  #(
     .ADDR_WIDTH(ISSUE_QUEUE_WIDTH),
     .DATA_WIDTH($bits(decode_data_t)),
-    .BYTE_WIDTH($bits(decode_data_t)),
+    .BYTE_WIDTH($bits(decode_data_t))
 )issue_queue_even(
     .clk,.en(even_en),
     .raddr(head_even),
@@ -58,24 +67,22 @@ RAM_SimpleDualPort #(
     .rdata(rdata_odd),
     .strobe('1)
 );
-
+// assign candidate2_invalid=~candidate2.valid;
+// assign issue_en_1=issue_en1;
 function index_t push(index_t tail_in);
-    return tail_in==0? 4'd15:tail_in-1;
+    return ~(|tail_in)? 4'd15:tail_in-1;
 endfunction
 function index_t pop(index_t head_in);
-    return head_in==0? 4'd15:head_in-1;
+    return ~(|head_in)? 4'd15:head_in-1;
 endfunction
-function u1 multi_op(decoded_op_t op);
-    return op==DIV||op==DIVU||op==MULT||op==MULTU;
+function u1 multi_op(control_t ctl);
+    return ctl.div||ctl.mul;
 endfunction
 function u1 odd_larger(index_t odd,index_t even);
     return odd==even;
 endfunction
 u1 que_empty;
 assign que_empty= head_even==tail_even && head_odd==tail_odd;
-
-u1 issue_en1,issue_en2;
-decode_data_t candidate1,candidate2;
 
 always_comb begin
     candidate1='0;
@@ -100,11 +107,15 @@ assign have_slot= (candidate1.ctl.branch||candidate1.ctl.jump);
 
 assign issue_en2=candidate2.valid&& bypass_inra1[0].valid && bypass_inra2[0].valid 
 && ~((candidate1.ctl.regwrite&&(candidate1.rdst==candidate2.ra1||candidate1.rdst==candidate2.ra2)&&~have_slot)
-        ||(multi_op(candidate1.ctl.op)&&multi_op(candidate2.ctl.op))
-        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0write)||~issue_en1||candidate2.ctl.branch||candidate2.ctl.jump
+        ||(multi_op(candidate1.ctl)&&multi_op(candidate2.ctl))
+        ||candidate1.ctl.cp0write
+        ||candidate2.ctl.cp0write
+        ||~issue_en1||candidate2.ctl.branch||candidate2.ctl.jump
         ||(candidate1.ctl.lowrite&&candidate2.ctl.lotoreg)||(candidate1.ctl.hiwrite&&candidate2.ctl.hitoreg)
-        ||(candidate1.ctl.cp0write&&candidate2.ctl.cp0toreg)||(candidate1.ctl.cp0toreg&&candidate2.ctl.cp0toreg)
-        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET));
+        ||(candidate1.ctl.cp0toreg&&candidate2.ctl.cp0toreg)
+        ||(candidate1.cp0_ctl.ctype==EXCEPTION||candidate1.cp0_ctl.ctype==ERET)
+        ||candidate1.ctl.single_issue
+        ||candidate2.ctl.single_issue);
 
 assign overflow= push(tail_odd)==head_odd || push(tail_even)==head_even;
 
@@ -178,26 +189,36 @@ end
                 dataI[1].pc=candidate1.pc;
                 dataI[1].valid=candidate1.valid;
                 dataI[1].imm=candidate1.imm;
+                dataI[1].ra1=candidate1.ra1;
+                dataI[1].ra2=candidate1.ra2;
                 dataI[1].rd1=bypass_inra1[1].bypass? bypass_inra1[1].data :rd1[1];
                 dataI[1].rd2=bypass_inra2[1].bypass? bypass_inra2[1].data :rd2[1];
                 dataI[1].raw_instr=candidate1.raw_instr;
                 dataI[1].cp0ra=candidate1.cp0ra;
                 dataI[1].rdst=candidate1.rdst;
+                dataI[1].i_tlb_exc=candidate1.i_tlb_exc;
+                dataI[1].cache_ctl=candidate1.cache_ctl;
                 dataI[1].cp0_ctl=candidate1.cp0_ctl;
                 dataI[1].pre_b=candidate1.pre_b;
+                dataI[1].pre_pc= candidate1.pre_pc;
             end
             if (issue_en2) begin
                     dataI[0].ctl=candidate2.ctl;
                     dataI[0].pc=candidate2.pc;
                     dataI[0].valid=candidate2.valid;
                     dataI[0].imm=candidate2.imm;
+                    dataI[0].ra1=candidate2.ra1;
+                    dataI[0].ra2=candidate2.ra2;
                     dataI[0].rd1=bypass_inra1[0].bypass? bypass_inra1[0].data :rd1[0];
                     dataI[0].rd2=bypass_inra2[0].bypass? bypass_inra2[0].data :rd2[0];
                     dataI[0].raw_instr=candidate2.raw_instr;
                     dataI[0].cp0ra=candidate2.cp0ra;
+                    dataI[0].cache_ctl=candidate2.cache_ctl;
                     dataI[0].rdst=candidate2.rdst;
+                    dataI[0].i_tlb_exc=candidate2.i_tlb_exc;
                     dataI[0].cp0_ctl=candidate2.cp0_ctl;
-                    dataI[0].pre_b=candidate2.pre_b;
+                    dataI[0].pre_b='0;
+                    dataI[0].pre_pc='0;
                     if (have_slot) begin
                         dataI[0].is_slot='1;
                     end

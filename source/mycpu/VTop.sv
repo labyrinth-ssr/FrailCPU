@@ -1,5 +1,7 @@
 `include "access.svh"
 `include "common.svh"
+`include "cache_pkg.svh"
+`include "mmu_pkg.svh"
 `ifdef VERILATOR
 `include "cache/cache_manage.sv"
 `endif 
@@ -15,16 +17,22 @@ module VTop (
 );
     `include "bus_decl"
 
-    ibus_req_t  ireq;
+    ibus_req_t [1:0] p_ireq;
     ibus_resp_t iresp;
-    dbus_req_t  [1:0] dreq;
+
+    dbus_req_t [1:0] p_dreq;
+    logic [1:0] d_uncache;
     dbus_resp_t dresp;
+
+    cbus_req_t  creq;
+    cbus_resp_t cresp;
+
+    icache_inst_t icache_inst;
+    dcache_inst_t dcache_inst;
+    word_t tag_lo;
 
     MyCore core(.*);
     cache_manage cache_manage(
-        .dreq_1(dreq[1]),
-        .dreq_2(dreq[0]),
-        .dresp(dresp),
         .creq(oreq),
         .cresp(oresp),
         .*

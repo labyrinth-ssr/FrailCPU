@@ -2,18 +2,20 @@
 `define __BHT_SV
 
 `include "common.svh"
+`include "test.svh"
 `ifdef VERILATOR
 `include "../plru.sv"
 `endif 
 
 module bht#(
-    parameter int ASSOCIATIVITY = 2,    
-    parameter int SET_NUM = 16,
-    parameter int BH_BITS = 4,
+    parameter int ASSOCIATIVITY = 2,
+    parameter int SET_NUM = 8,
+    parameter int BH_BITS = 1,
     parameter int COUNTER_BITS = 2,
 
     localparam INDEX_BITS = $clog2(SET_NUM),
     localparam ASSOCIATIVITY_BITS = $clog2(ASSOCIATIVITY),
+    localparam COUNTER_NUM = 2 ** BH_BITS,
     localparam TAG_BITS = 18,
     localparam type tag_t = logic [TAG_BITS-1:0],
     localparam type index_t = logic [INDEX_BITS-1:0],
@@ -32,6 +34,7 @@ module bht#(
     localparam type bh_data_t = struct packed {
         addr_t pc;
         bhr_t bhr;
+        counter_t [COUNTER_NUM-1:0] counter;
     }
 ) (
     input logic clk, resetn,
@@ -53,16 +56,16 @@ module bht#(
     endfunction
 
     function index_t get_index(addr_t addr);
-        return addr[2+INDEX_BITS-1+2:2+2];
+        return addr[2+INDEX_BITS-1+13:2+13];
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
     meta_t [ASSOCIATIVITY-1:0] r_meta_in_bht;
     meta_t [ASSOCIATIVITY-1:0] w_meta;
-    addr_t r_pc_predict, r_pc_replace, w_pc_replace;
-    counter_t r_counter_set_predict, r_counter_set_replace, w_counter_set_replace;
+    bh_data_t r_pc_predict, r_pc_replace, w_pc_replace;
+    // counter_t [2**BH_BITS-1:0] r_counter_set_predict, r_counter_set_replace, w_counter_set_replace;
     associativity_t pc_hit_line, pcp4_hit_line, hit_line, replace_line, in_bht_line;
-    ram_addr_t predict_addr, replace_addr, counter_addr;
+    ram_addr_t predict_addr, replace_addr;
     logic in_bht, pc_hit, pcp4_hit;
 
     // for predict
@@ -100,18 +103,13 @@ module bht#(
     // always_comb begin : is_jump_out_b
     //     is_jump_out = '0;
     //     if(pc_hit) is_jump_out = is_pc_jump;
-    //     else if(pcp4_hit) is_jump_out = is_pcp4_jump;
     // end
 
-    always_comb begin : predict_addr_index_b
-        predict_addr.index = '0;
-        if(pc_hit) predict_addr.index = get_index(branch_pc);
-        else if(pcp4_hit) predict_addr.index = get_index(branch_pc+4);
-    end
+    assign predict_addr.index = get_index(branch_pc);
     assign predict_addr.line = hit_line;
 
-    assign predict_pc = hit ? r_pc_predict : '0;
-    assign dpre = r_counter_set_predict[COUNTER_BITS-1];
+    assign predict_pc = hit ? r_pc_predict.pc : '0;
+    assign dpre = r_pc_predict.counter[r_pc_predict.bhr][COUNTER_BITS-1];
 
 
     // for repalce
@@ -141,10 +139,10 @@ module bht#(
         end
     end
 
-    assign replace_addr.line = replace_line;
+    assign replace_addr.line = in_bht ? in_bht_line : replace_line;
     assign replace_addr.index = get_index(executed_branch_pc);
 
-    assign w_pc_replace = (~in_bht && is_write && is_taken) ? dest_pc : r_pc_replace;
+    assign w_pc_replace.pc = (~in_bht && is_write) ? dest_pc : r_pc_replace.pc;
     // always_comb begin : w_pc_replace_bhr
     //     w_pc_replace.bhr = '0;
     //     if(in_bht) begin
@@ -154,7 +152,7 @@ module bht#(
 
     always_comb begin : w_meta_b
         for (int i = 0; i < ASSOCIATIVITY; i++) begin
-            if (~in_bht && is_write && is_taken && associativity_t'(i) == replace_line) begin
+            if (~in_bht && is_write && associativity_t'(i) == replace_line) begin
                 w_meta[i].valid = 1'b1;
                 w_meta[i].tag = get_tag(executed_branch_pc);
             end else begin
@@ -166,7 +164,7 @@ module bht#(
     counter_t w_counter;
 
     always_comb begin : gen_w_counter 
-            unique case (r_counter_set_replace)
+            unique case (r_pc_replace.counter[is_taken])
                 2'b00: begin
                     if (is_taken) w_counter = 2'b01;
                     else w_counter = 2'b00;
@@ -192,10 +190,16 @@ module bht#(
             endcase
     end
 
-    assign w_counter_set_replace = in_bht ? w_counter : 2'b11;
 
-    assign counter_addr.index = get_index(executed_branch_pc);
-    assign counter_addr.line = in_bht ? in_bht_line : replace_line;
+    always_comb begin
+        w_pc_replace.counter = r_pc_replace.counter;
+        if (is_taken) begin
+            w_pc_replace.counter[1] = in_bht ? w_counter : '1;
+        end else begin
+            w_pc_replace.counter[0] = in_bht ? w_counter : '1;
+        end
+    end
+    assign w_pc_replace.bhr = in_bht ? is_taken : '1;
 
     // always_comb begin : w_counter_set_replace_b 
     //     w_counter_set_replace = '0;
@@ -236,18 +240,6 @@ module bht#(
         reset_addr <= reset_addr + 1;
     end
 
-/* LUTRAM Tri_port ram*/
-
-    // meta_set_t meta_ram [(2 ** INDEX_BITS)-1:0];
-
-    // assign r_meta_in_bht = meta_ram[resetn ? replace_addr.index : reset_addr.index];
-	// assign r_meta_hit_pc = meta_ram[get_index(branch_pc)];
-    // assign r_meta_hit_pcp4 = meta_ram[get_index(branch_pc+4)];
-
-    // always_ff @(posedge clk) begin
-	// 	meta_ram[resetn ? replace_addr.index : reset_addr.index] <= resetn ? w_meta : '0;
-	// end
-
 
 
     LUTRAM_DualPort #(
@@ -259,7 +251,7 @@ module bht#(
         .clk(clk),
 
         .en_1(1'b1), //port1 for replace
-        .addr_1(resetn ? replace_addr.index : reset_addr.index),
+        .addr_1(resetn ? get_index(executed_branch_pc) : reset_addr.index),
         .rdata_1(r_meta_in_bht),
         .strobe(1'b1),  
         .wdata(resetn ? w_meta : '0),
@@ -271,10 +263,10 @@ module bht#(
 
     LUTRAM_DualPort #(
         .ADDR_WIDTH($bits(ram_addr_t)),
-        .DATA_WIDTH($bits(addr_t)),
-        .BYTE_WIDTH($bits(addr_t)),
+        .DATA_WIDTH($bits(bh_data_t)),
+        .BYTE_WIDTH($bits(bh_data_t)),
         .READ_LATENCY(0)
-    ) dest_pc_ram(
+    ) bh_data_ram(
         .clk(clk),
 
         .en_1(in_bht | is_write | ~resetn), //port1 for replace
@@ -288,24 +280,24 @@ module bht#(
         .rdata_2(r_pc_predict)
     );
 
-    LUTRAM_DualPort #(
-        .ADDR_WIDTH(INDEX_BITS+ASSOCIATIVITY_BITS),
-        .DATA_WIDTH(COUNTER_BITS),
-        .BYTE_WIDTH(COUNTER_BITS),
-        .READ_LATENCY(0)
-    ) counter_ram(
-        .clk(clk), 
+    // LUTRAM_DualPort #(
+    //     .ADDR_WIDTH(INDEX_BITS+ASSOCIATIVITY_BITS),
+    //     .DATA_WIDTH(COUNTER_BITS * (2**BH_BITS)),
+    //     .BYTE_WIDTH(COUNTER_BITS * (2**BH_BITS)),
+    //     .READ_LATENCY(0)
+    // ) counter_ram(
+    //     .clk(clk), 
 
-        .en_1(in_bht | is_write | ~resetn), //port1 for replace
-        .addr_1(resetn ? counter_addr : reset_addr),
-        .rdata_1(r_counter_set_replace),
-        .strobe(1'b1),  
-        .wdata(resetn ? w_counter_set_replace : 2'b11),
+    //     .en_1(in_bht | is_write | ~resetn), //port1 for replace
+    //     .addr_1(resetn ? replace_addr : reset_addr),
+    //     .rdata_1(r_counter_set_replace),
+    //     .strobe(1'b1),  
+    //     .wdata(resetn ? w_counter_set_replace : '1),
 
-        .en_2(1'b1), //port2 for predict
-        .addr_2(predict_addr),
-        .rdata_2(r_counter_set_predict)
-    );
+    //     .en_2(1'b1), //port2 for predict
+    //     .addr_2(predict_addr),
+    //     .rdata_2(r_counter_set_predict)
+    // );
 
 endmodule
 

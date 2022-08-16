@@ -20,13 +20,13 @@ module mmu (
     input logic [2:0] config_k0,
 
     //地址翻译 
-    input ibus_req_t v_ireq,
-    output ibus_req_t ireq,
+    input ibus_req_t [1:0] v_ireq,
+    output ibus_req_t [1:0] ireq,
     input dbus_req_t [1:0] v_dreq,
     output dbus_req_t [1:0] dreq,
 
     //uncache信号
-    output logic i_uncache,
+    output logic [1:0] i_uncache,
     output logic [1:0] d_uncache,
 
     //TLB指令相关
@@ -53,7 +53,7 @@ module mmu (
 
 
     //mapped : translator
-    tlb_search_t i_tlb_result;
+    tlb_search_t [1:0] i_tlb_result;
     tlb_search_t [1:0] d_tlb_result;
 
     //TLBP
@@ -111,7 +111,7 @@ module mmu (
 
         .asid(mmu_in.entry_hi.asid),
 
-        .i_vaddr(v_ireq.addr),
+        .i_vaddr({v_ireq[1].addr, v_ireq[0].addr}),
         .i_search_result(i_tlb_result),
         .d_vaddr({v_dreq[1].addr, v_dreq[0].addr}),
         .d_search_result(d_tlb_result),
@@ -127,12 +127,15 @@ module mmu (
         .w_entry
     );
 
-    logic i_is_mapped;
-    paddr_t i_paddr;
-    logic i_is_uncached;
-    assign i_is_mapped = is_mapped(v_ireq.addr);
-    assign i_paddr = i_is_mapped ? i_tlb_result.paddr : unmapped_translator(v_ireq.addr);
-    assign i_is_uncached = unmapped_is_uncached(v_ireq.addr) | (i_is_mapped & i_tlb_result.C != 3'd3);
+    logic [1:0] i_is_mapped;
+    paddr_t [1:0] i_paddr;
+    logic [1:0] i_is_uncached;
+
+    for (genvar i = 0; i < 2; i++) begin
+        assign i_is_mapped[i] = is_mapped(v_ireq[i].addr);
+        assign i_paddr[i] = i_is_mapped[i] ? i_tlb_result[i].paddr : unmapped_translator(v_ireq[i].addr);
+        assign i_is_uncached[i] = unmapped_is_uncached(v_ireq[i].addr) | (i_is_mapped[i] & i_tlb_result[i].C != 3'd3);
+    end
 
     logic [1:0] d_is_mapped;
     paddr_t [1:0] d_paddr;
@@ -145,15 +148,19 @@ module mmu (
     end
 
     //ireq, dreq输出
-    always_comb begin 
-        ireq = v_ireq;
-        ireq.addr = i_paddr;
+    for (genvar i = 0; i < 2; i++) begin
+        always_comb begin 
+            ireq[i] = v_ireq[i];
+            ireq[i].addr = i_paddr[i];
+            ireq[i].valid = v_ireq[i].valid & ~(mmu_exc.i_tlb_exc[i].refill|mmu_exc.i_tlb_exc[i].invalid|mmu_exc.i_tlb_exc[i].modified);
+        end
     end
 
     for (genvar i = 0; i < 2; i++) begin
         always_comb begin 
             dreq[i] = v_dreq[i];
             dreq[i].addr = d_paddr[i];
+            dreq[i].valid = v_dreq[i].valid & ~(mmu_exc.d_tlb_exc[i].refill|mmu_exc.d_tlb_exc[i].invalid|mmu_exc.d_tlb_exc[i].modified);
         end
     end
 
@@ -161,9 +168,11 @@ module mmu (
     assign d_uncache = d_is_uncached;
 
     //TLB例外
-    assign mmu_exc.i_tlb_exc.refill = v_ireq.valid & i_is_mapped & ~i_tlb_result.found;
-    assign mmu_exc.i_tlb_exc.invalid = v_ireq.valid & i_is_mapped & i_tlb_result.found & ~i_tlb_result.V;
-	assign mmu_exc.i_tlb_exc.modified = '0;
+    for (genvar i = 0; i < 2; i++) begin
+        assign mmu_exc.i_tlb_exc[i].refill = v_ireq[i].valid & i_is_mapped[i] & ~i_tlb_result[i].found;
+        assign mmu_exc.i_tlb_exc[i].invalid = v_ireq[i].valid & i_is_mapped[i] & i_tlb_result[i].found & ~i_tlb_result[i].V;
+        assign mmu_exc.i_tlb_exc[i].modified = '0;
+    end
 
     for (genvar i = 0; i < 2; i++) begin
         assign mmu_exc.d_tlb_exc[i].refill = v_dreq[i].valid & d_is_mapped[i] & ~d_tlb_result[i].found;
