@@ -796,9 +796,6 @@ module MyCore (
     // assign config_k0=regs_out.config0[2:0];
     assign config_k0=regs_out.config0[2:0];
 
-
-
-
     //ireq
     ibus_req_t [1:0] v_ireq;
     assign v_ireq[0] = ireq;
@@ -808,17 +805,7 @@ module MyCore (
         v_ireq[1].valid = icache_inst==I_UNKNOWN & ireq.valid;
     end
 
-    //dreq
-    dbus_req_t [1:0] v_dreq;
-    assign v_dreq[0] = dreq[1];
-    always_comb begin
-        v_dreq[1] = dreq[0];
-        v_dreq[1].valid = dcache_inst==D_UNKNOWN & dreq[0].valid;
-    end
-
     assign i_wait = p_ireq[0].valid & ~iresp.addr_ok;
-
-    logic [1:0] i_uncache;
 
     mmu mmu (
         .clk,
@@ -829,11 +816,10 @@ module MyCore (
         //地址翻译 
         .v_ireq,
         .ireq(p_ireq),
-        .v_dreq,
+        .v_dreq({dreq[0], dreq[1]}),
         .dreq(p_dreq),
 
         //uncache信号
-        .i_uncache,
         .d_uncache,
 
         //TLB指令相关

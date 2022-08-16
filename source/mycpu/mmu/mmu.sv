@@ -26,7 +26,6 @@ module mmu (
     output dbus_req_t [1:0] dreq,
 
     //uncache信号
-    output logic [1:0] i_uncache,
     output logic [1:0] d_uncache,
 
     //TLB指令相关
@@ -129,22 +128,19 @@ module mmu (
 
     logic [1:0] i_is_mapped;
     paddr_t [1:0] i_paddr;
-    logic [1:0] i_is_uncached;
 
     for (genvar i = 0; i < 2; i++) begin
         assign i_is_mapped[i] = is_mapped(v_ireq[i].addr);
         assign i_paddr[i] = i_is_mapped[i] ? i_tlb_result[i].paddr : unmapped_translator(v_ireq[i].addr);
-        assign i_is_uncached[i] = unmapped_is_uncached(v_ireq[i].addr) | (i_is_mapped[i] & i_tlb_result[i].C != 3'd3);
     end
 
     logic [1:0] d_is_mapped;
     paddr_t [1:0] d_paddr;
-    logic [1:0] d_is_uncached;
 
     for (genvar i = 0; i < 2; i++) begin
         assign d_is_mapped[i] = is_mapped(v_dreq[i].addr);
         assign d_paddr[i] = d_is_mapped[i] ? d_tlb_result[i].paddr : unmapped_translator(v_dreq[i].addr);
-        assign d_is_uncached[i] = unmapped_is_uncached(v_dreq[i].addr) | (d_is_mapped[i] & d_tlb_result[i].C != 3'd3);
+        assign d_uncache[i] = unmapped_is_uncached(v_dreq[i].addr) | (d_is_mapped[i] & d_tlb_result[i].C != 3'd3);
     end
 
     //ireq, dreq输出
@@ -164,8 +160,6 @@ module mmu (
         end
     end
 
-    assign i_uncache = i_is_uncached;
-    assign d_uncache = d_is_uncached;
 
     //TLB例外
     for (genvar i = 0; i < 2; i++) begin
@@ -180,16 +174,6 @@ module mmu (
         assign mmu_exc.d_tlb_exc[i].modified = v_dreq[i].valid & d_is_mapped[i] & d_tlb_result[i].found & d_tlb_result[i].V & ~d_tlb_result[i].D & |v_dreq[i].strobe;
     end
     
-	
-	
-
-    
-
-    
-
-
-
-
 
 endmodule
 
