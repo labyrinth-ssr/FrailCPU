@@ -44,7 +44,9 @@ module jht#(
     endfunction
 
     function index_t get_index(addr_t addr);
+        
         return addr[2+INDEX_BITS-1+5:2+5];
+
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
