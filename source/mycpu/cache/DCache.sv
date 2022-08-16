@@ -72,8 +72,8 @@ module DCache (
 
     localparam type plru_t = logic [ASSOCIATIVITY-2:0];
 
-    localparam type state_t = enum logic[2:0] {
-        IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2, UNCACHE_1, UNCACHE_2, STORE
+    localparam type state_t = enum logic[3:0] {
+        IDLE, FETCH_1, WRITEBACK_1, FETCH_2, WRITEBACK_2, UNCACHE_1, UNCACHE_2, STORE, WRITEBACK
     };
 
     localparam type process_pkg_t = struct packed {
@@ -213,7 +213,7 @@ module DCache (
 
     //FSM
     logic cache_dirty_1, cache_dirty_2;
-    logic fetch_1_end, fetch_2_end, writeback_1_end, writeback_2_end, uncache_1_end, uncache_2_end, store_end;
+    logic fetch_1_end, fetch_2_end, writeback_1_end, writeback_2_end, uncache_1_end, uncache_2_end, store_end, writeback_end;
 
     logic wb_dirty;
 
@@ -617,10 +617,10 @@ module DCache (
                     IDLE: begin
                         unique case(cache_handle.cache_oper)
                             WRITEBACK_INVALID: begin
-                                if (wb_dirty & ~writeback_1_end) begin
-                                    state <= WRITEBACK_1;
-                                    miss_addr <= {cache_handle.inst_oper_line, process_dreq_1_addr.index, process_dreq_1_addr.offset};
-                                    offset_count <= process_dreq_1_addr.offset;
+                                if (wb_dirty & ~writeback_end) begin
+                                    state <= WRITEBACK;
+                                    miss_addr <= {cache_handle.inst_oper_line, process_dreq_1_addr.index, offset_t'(1'b0)};
+                                    offset_count <= '0;
                                 end
                             end
 
@@ -637,16 +637,16 @@ module DCache (
                                 end
                                 else if (cache_handle.dreq_1.valid & ~cache_handle.hit_1 & ~cache_handle.dreq_1_is_uncached & ~fetch_1_end) begin
                                     state <= (cache_dirty_1 & ~writeback_1_end) ? WRITEBACK_1 : FETCH_1;
-                                    miss_addr <= {process_replace_line_1, process_dreq_1_addr.index, process_dreq_1_addr.offset};
-                                    offset_count <= process_dreq_1_addr.offset;
+                                    miss_addr <= {process_replace_line_1, process_dreq_1_addr.index, offset_t'(1'b0)};
+                                    offset_count <= '0;
                                 end
                                 else if (cache_handle.dreq_2.valid & cache_handle.dreq_2_is_uncached & ~uncache_2_end) begin
                                     state <= UNCACHE_2;
                                 end
                                 else if (cache_handle.dreq_2.valid & ~cache_handle.dreq_2_is_uncached & ~cache_handle.hit_2 & ~fetch_2_end & ~same_line) begin
                                     state <= (cache_dirty_2 & ~writeback_2_end) ? WRITEBACK_2 : FETCH_2;
-                                    miss_addr <= {process_replace_line_2, process_dreq_2_addr.index, process_dreq_2_addr.offset};
-                                    offset_count <= process_dreq_2_addr.offset;
+                                    miss_addr <= {process_replace_line_2, process_dreq_2_addr.index, offset_t'(1'b0)};
+                                    offset_count <= '0;
                                 end
                                 else begin
                                 end        
@@ -669,7 +669,7 @@ module DCache (
 
                     WRITEBACK_1: begin
                         if (dcresp.ready) begin
-                            state  <= dcresp.last ? IDLE : WRITEBACK_1;
+                            state  <= dcresp.last ? FETCH_1 : WRITEBACK_1;
                             offset_count <= offset_count + 1;
                         end
 
@@ -681,7 +681,7 @@ module DCache (
                         end
                         
                         if (dcresp.last) begin
-                            miss_addr.offset <= process_dreq_1_addr.offset;  
+                            miss_addr.offset <= '0;  
                         end
 
                         delay_counter <= 1'b1;
@@ -708,7 +708,7 @@ module DCache (
                         end
 
                         if (dcresp.last) begin
-                            miss_addr.offset <= process_dreq_2_addr.offset;  
+                            miss_addr.offset <= '0;  
                         end
 
                         delay_counter <= 1'b1;
@@ -725,6 +725,25 @@ module DCache (
                     STORE: begin
                         state <= (&miss_addr.offset) ? IDLE : STORE;
                         miss_addr.offset <= miss_addr.offset + 1;
+                    end
+
+                    WRITEBACK: begin
+                        if (dcresp.ready) begin
+                            state  <= dcresp.last ? IDLE : WRITEBACK;
+                            offset_count <= offset_count + 1;
+                        end
+
+                        miss_addr.offset <= miss_addr.offset + 1;  
+                        buffer_offset <= miss_addr.offset;
+                        for (int i = 0; i < DATA_PER_LINE; i++) begin
+                            buffer[i] <= (buffer_offset == offset_t'(i)) ? port_2_data_r : buffer[i];
+                        end
+
+                        if (dcresp.last) begin
+                            miss_addr.offset <= '0;  
+                        end
+
+                        delay_counter <= 1'b1;
                     end
 
                     default: begin   
@@ -756,6 +775,7 @@ module DCache (
                 uncache_1_end <= '0;
                 uncache_2_end <= '0;
                 store_end <= '0;
+                writeback_end <= '0;
             end
             else begin
                 fetch_1_end <= state==FETCH_1 ? 1'b1 : fetch_1_end;
@@ -765,6 +785,7 @@ module DCache (
                 uncache_1_end <= state==UNCACHE_1 ? 1'b1 : uncache_1_end;
                 uncache_2_end <= state==UNCACHE_2 ? 1'b1 : uncache_2_end;
                 store_end <= state==STORE ? 1'b1 : store_end;
+                writeback_end <= state==WRITEBACK ? 1'b1 : writeback_end;
             end
         end
         else begin
@@ -775,6 +796,7 @@ module DCache (
             uncache_1_end <= '0;
             uncache_2_end <= '0;
             store_end <= '0;
+            writeback_end <= '0;
         end
     end
 
@@ -784,21 +806,23 @@ module DCache (
         cbus_addr = '0;
         unique case (state)
             FETCH_1: begin
-                cbus_addr = process_dreq_1_addr;
+                cbus_addr.tag = process_dreq_1_addr.tag;
+                cbus_addr.index = process_dreq_1_addr.index;
             end
 
             WRITEBACK_1: begin
-                cbus_addr = process_dreq_1_addr;
                 cbus_addr.tag = cache_handle.meta_r_1[process_replace_line_1].tag;
+                cbus_addr.index = process_dreq_1_addr.index;
             end
 
             FETCH_2: begin
-                cbus_addr = process_dreq_2_addr;
+                cbus_addr.tag = process_dreq_2_addr.tag;
+                cbus_addr.index = process_dreq_2_addr.index;
             end
 
             WRITEBACK_2: begin
-                cbus_addr = process_dreq_2_addr;
                 cbus_addr.tag = cache_handle.meta_r_2[process_replace_line_2].tag;
+                cbus_addr.index = process_dreq_2_addr.index;
             end
 
             UNCACHE_1: begin
@@ -899,7 +923,9 @@ module DCache (
                         : state==UNCACHE_2 ? cache_handle.dreq_2.size : MSIZE4;      
     assign dcreq.addr = cbus_addr;      
     assign dcreq.strobe = state==UNCACHE_1 ? cache_handle.dreq_1.strobe
-                        : state==UNCACHE_2 ? cache_handle.dreq_2.strobe : {BYTE_PER_DATA{1'b1}};    
+                        : state==UNCACHE_2 ? cache_handle.dreq_2.strobe 
+                        : (state==WRITEBACK_1|state==WRITEBACK_2|state==WRITEBACK) ? {BYTE_PER_DATA{1'b1}}
+                        : '0;    
     assign dcreq.data = state==UNCACHE_1 ? cache_handle.dreq_1.data
                         : state==UNCACHE_2 ? cache_handle.dreq_2.data : buffer[offset_count];    
     assign dcreq.len = (state==UNCACHE_1 | state==UNCACHE_2) ? MLEN1 : MLEN16;  

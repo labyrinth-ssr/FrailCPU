@@ -273,7 +273,7 @@ module MyCore (
         .flush(flushF2)
     );
 
-    // assign dataF2_nxt=dataF1;
+    assign dataF2_nxt=dataF1;
     u1 rawinstr_saved;
     u64  raw_instrf2_save;
 
@@ -325,7 +325,7 @@ module MyCore (
     assign dataF2_nxt[0].pc=dataF1.nxt_valid? dataF1.pc+4:'0;
     assign dataF2_nxt[0].valid=dataF1.nxt_valid;
 
-    pipereg2 #(.T(fetch_data_t))F2F3reg(
+    pipereg #(.T(fetch1_data_t))F2F3reg(
         .clk,
         .reset,
         .in(dataF2_nxt),
