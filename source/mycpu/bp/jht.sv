@@ -44,7 +44,27 @@ module jht#(
     endfunction
 
     function index_t get_index(addr_t addr);
-        return addr[2+INDEX_BITS-1+5:2+5];
+        unique case (addr[16:10])
+            7'b0000110: begin
+                if(addr[4]) return addr[2+INDEX_BITS-1+4:2+4];
+                else return addr[2+INDEX_BITS-1+5:2+5];
+            end 
+            7'b0000111, 7'b0001000, 7'b0001001, 7'b0001010, 7'b0001011, 7'b0001100, 7'b0001101, 7'b0001110, 7'b0001111, 7'b0010000, 7'b0010001, 7'b0010010, 7'b0010011, 7'b0010100, 7'b0010101, 7'b0010110, 7'b0010111, 7'b0011000, 7'b0011001, 7'b0011010, 7'b0011011, 7'b0011100, 7'b0011101, 7'b0011110, 7'b0011111, 7'b0100000, 7'b0100001, 7'b0100010, 7'b0100011, 7'b0100100, 7'b0100101, 7'b0100110, 7'b0100111, 7'b0101000, 7'b0101001, 7'b0101010, 7'b0101011: begin
+                return addr[2+INDEX_BITS-1+4:2+4];
+            end
+            7'b0101100: begin
+                if(addr[5]) return addr[2+INDEX_BITS-1+5:2+5];
+                else return addr[2+INDEX_BITS-1+4:2+4];
+            end 
+            7'b1000111: begin
+                if(addr[5]) return addr[2+INDEX_BITS-1+4:2+4];
+                else return addr[2+INDEX_BITS-1+5:2+5];
+            end
+            7'b1001000, 7'b1001001 : begin
+                return addr[2+INDEX_BITS-1+4:2+4];
+            end
+            default: return addr[2+INDEX_BITS-1+5:2+5];
+        endcase
     endfunction
 
     meta_t [ASSOCIATIVITY-1:0] r_meta_hit;
