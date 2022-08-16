@@ -111,7 +111,8 @@ module MyCore (
     execute_data_t [1:0] dataM2_nxt,dataM2;
     memory_data_t [1:0] dataM3_nxt;
     memory_data_t [1:0] dataM3;
-    assign icache_inst = dataM1[1].cache_ctl.icache_inst;
+    // assign icache_inst = dataM1[1].cache_ctl.icache_inst;
+    assign icache_inst = dataP.cache_i? dataP.icache_inst : dataM1[1].cache_ctl.icache_inst;
     assign dcache_inst = dataE[1].cache_ctl.dcache_inst;
     // always_comb begin
     assign pc_succ=dataP.pc+8;
@@ -121,22 +122,26 @@ module MyCore (
     forward_pc_type_t forward_pctype_save;
     // word_t dataP_nxt.pc;
     forward_pc_type_t forward_pc_type;
+     icache_inst_t icache_inst_save;
     //icache，且无stallF时，存下一条
     //icache且有stallF时，存两条
     always_ff @(posedge clk) begin
         if (reset) begin
             {pc_save,pc_saved,icache_saved,forward_pctype_save}<='0;
+            icache_inst_save<=I_UNKNOWN;
         end else if (stallF&(|forward_pc_type)) begin
 			pc_save<=pc_selected;
 			pc_saved<='1;
             forward_pctype_save<=forward_pc_type;
             if (dataE[1].ctl.cache_i)begin
                 icache_saved<='1;
+                icache_inst_save<=dataE[1].cache_ctl.icache_inst;
             end
         end else if (~stallF) begin
             pc_save<='0;
             pc_saved<='0;
             icache_saved<='0;
+            icache_inst_save<=I_UNKNOWN;
             forward_pctype_save<=NO_FORWARD;
 		end
     end
@@ -151,10 +156,12 @@ module MyCore (
     end 
 
     always_comb begin
-        dataP_nxt.cache_i='0;
+        dataP_nxt.cache_i=dataE[1].ctl.cache_i;
+        dataP_nxt.icache_inst=I_UNKNOWN;
         if (pc_saved&&(forward_pc_type<forward_pctype_save)) begin
             dataP_nxt.pc=pc_save;
             dataP_nxt.cache_i=icache_saved;
+            dataP_nxt.icache_inst=icache_inst_save;
         end else if (icache_pcnxt_saved&&~pc_saved) begin
             dataP_nxt.pc=icache_pcnxt_save;
         end else begin
