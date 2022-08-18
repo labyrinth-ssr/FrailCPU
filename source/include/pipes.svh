@@ -74,14 +74,15 @@ typedef enum  u2{
 
 typedef struct packed {
 	word_t pc;
-	word_t forward_pc;
-	forward_pc_type_t forward_pc_type;
-	u1 forward_pc_valid;
-	u1 pc_valid;
+	// word_t forward_pc;
+	// forward_pc_type_t forward_pc_type;
+	// u1 forward_pc_valid;
+	// u1 pc_valid;
 	u1 cache_i;
-	u1 forward_cachei;
-	word_t refetch_pc;
-	u1 refetch_pc_valid;
+	// u1 forward_cachei;
+	// word_t refetch_pc;
+	// u1 refetch_pc_valid;
+	icache_inst_t icache_inst;
 } pcselect_data_t;
 
 // typedef enum logic[1:0] { REGB, IMM} alusrcb_t;
