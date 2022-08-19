@@ -226,9 +226,9 @@ module MyCore (
 		if (reset) begin
 			dataP.pc<=32'hbfc0_0000;//
             dataP.cache_i<='0;
+            dataP.icache_inst<=I_UNKNOWN;
 		end else if(~stallF) begin
-			dataP.pc<=dataP_nxt.pc;
-            dataP.cache_i<=dataP_nxt.cache_i;
+			dataP<=dataP_nxt;
 		end
 	end
     // word_t pc_f1;
